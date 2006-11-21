@@ -1794,7 +1794,7 @@ def test_explicit_wrapper_as___parent__():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    Note that also the (implicit) acquisition wrapper has a __parent__
+    Note that also the (explicit) acquisition wrapper has a __parent__
     pointer, which is automatically computed from the acquisition
     container (it's identical to aq_parent):
 
@@ -1818,6 +1818,74 @@ def test_explicit_wrapper_as___parent__():
       Traceback (most recent call last):
         ...
       AttributeError: __parent__
+
+    TODO aq_parent, aq_chain
+    """
+
+def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
+    """Let's do this the other way around: The root and the
+    intermediate parent is an object that doesn't support acquisition,
+
+      >>> y = ECLocation()
+      >>> z = Location()
+      >>> y.__parent__ = z
+      >>> y.foo = 42
+      >>> z.foo = 43  # this should not be found
+      >>> z.bar = 3.145
+
+    only the outmost object does:
+
+      >>> class Impl(Acquisition.Implicit):
+      ...     hello = 'world'
+      >>> x = Impl().__of__(y)
+
+    Again, acquiring objects work as usual:
+
+      >>> Acquisition.aq_acquire(x, 'hello')
+      'world'
+      >>> Acquisition.aq_acquire(x, 'foo')
+      42
+      >>> Acquisition.aq_acquire(x, 'bar')
+      3.145
+
+    Because the outmost object, ``x``, is wrapped in an implicit
+    acquisition wrapper, we can also use direct attribute access:
+
+      >>> x.hello
+      'world'
+      >>> x.foo
+      42
+      >>> x.bar
+      3.145
+
+    TODO aq_parent, aq_chain
+    """
+
+def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
+    """Let's do this the other way around: The root and the
+    intermediate parent is an object that doesn't support acquisition,
+
+      >>> y = ECLocation()
+      >>> z = Location()
+      >>> y.__parent__ = z
+      >>> y.foo = 42
+      >>> z.foo = 43  # this should not be found
+      >>> z.bar = 3.145
+
+    only the outmost object does:
+
+      >>> class Expl(Acquisition.Explicit):
+      ...     hello = 'world'
+      >>> x = Expl().__of__(y)
+
+    Again, acquiring objects work as usual:
+
+      >>> Acquisition.aq_acquire(x, 'hello')
+      'world'
+      >>> Acquisition.aq_acquire(x, 'foo')
+      42
+      >>> Acquisition.aq_acquire(x, 'bar')
+      3.145
 
     TODO aq_parent, aq_chain
     """

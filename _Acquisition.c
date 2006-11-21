@@ -1650,7 +1650,7 @@ module_aq_inner(PyObject *ignored, PyObject *args)
 static PyObject *
 capi_aq_chain(PyObject *self, int containment)
 {
-  PyObject *result;
+  PyObject *result, *v, *tb;
 
   UNLESS (result=PyList_New(0)) return NULL;
 
@@ -1673,8 +1673,27 @@ capi_aq_chain(PyObject *self, int containment)
             }
         }
       else
-        if (PyList_Append(result, self) < 0)
-          goto err;
+        {
+          if (PyList_Append(result, self) < 0)
+            goto err;
+
+          if ((self=PyObject_GetAttr(self, py__parent__)))
+            {
+              Py_DECREF(self); /* don't need our own reference */
+              if (self!=Py_None)
+                continue;
+            }
+          else
+            {
+              PyErr_Fetch(&self,&v,&tb);
+              if (self && (self != PyExc_AttributeError))
+                {
+                  PyErr_Restore(self,v,tb);
+                  return NULL;
+                }
+              Py_XDECREF(self); Py_XDECREF(v); Py_XDECREF(tb);
+            }
+        }
 
       break;
     }

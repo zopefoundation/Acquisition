@@ -1714,7 +1714,10 @@ def test___parent__no_wrappers():
       >>> Acquisition.aq_parent(y) is z
       True
 
-    TODO aq_chain
+    as well as ``aq_chain``:
+
+      >>> Acquisition.aq_chain(x) == [x, y, z]
+      True
     """
 
 def test_implicit_wrapper_as___parent__():
@@ -1767,6 +1770,11 @@ def test_implicit_wrapper_as___parent__():
       >>> Acquisition.aq_parent(y) is z
       True
 
+    as well as ``aq_chain``:
+
+      >>> Acquisition.aq_chain(x) == [x, y, z]
+      True
+
     Note that also the (implicit) acquisition wrapper has a __parent__
     pointer, which is automatically computed from the acquisition
     container (it's identical to aq_parent):
@@ -1791,8 +1799,6 @@ def test_implicit_wrapper_as___parent__():
       Traceback (most recent call last):
         ...
       AttributeError: __parent__
-
-    TODO aq_chain
     """
 
 def test_explicit_wrapper_as___parent__():
@@ -1843,6 +1849,11 @@ def test_explicit_wrapper_as___parent__():
       >>> Acquisition.aq_parent(y) is z
       True
 
+    as well as ``aq_chain``:
+
+      >>> Acquisition.aq_chain(x) == [x, y, z]
+      True
+
     Note that also the (explicit) acquisition wrapper has a __parent__
     pointer, which is automatically computed from the acquisition
     container (it's identical to aq_parent):
@@ -1867,8 +1878,6 @@ def test_explicit_wrapper_as___parent__():
       Traceback (most recent call last):
         ...
       AttributeError: __parent__
-
-    TODO aq_chain
     """
 
 def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
@@ -1917,6 +1926,13 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> Acquisition.aq_parent(y) is z
       True
 
+    as well as ``aq_chain``:
+
+      >>> Acquisition.aq_chain(x) == [x, y, z]
+      True
+      >>> x.aq_chain == [x, y, z]
+      True
+
     Because the outmost object, ``x``, is wrapped in an implicit
     acquisition wrapper, we can also use direct attribute access:
 
@@ -1926,8 +1942,6 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       42
       >>> x.bar
       3.145
-
-    TODO aq_chain
     """
 
 def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
@@ -1976,7 +1990,12 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> Acquisition.aq_parent(y) is z
       True
 
-    TODO aq_chain
+    as well as ``aq_chain``:
+
+      >>> Acquisition.aq_chain(x) == [x, y, z]
+      True
+      >>> x.aq_chain == [x, y, z]
+      True
     """
 
 import unittest

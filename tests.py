@@ -1713,9 +1713,9 @@ def test_implicit_wrapper_as___parent__():
     The intermediate parent is an object that supports implicit
     acquisition.  We bind it to the root via the __of__ protocol:
 
-      >>> class ImplWrapper(Acquisition.Implicit):
+      >>> class Impl(Acquisition.Implicit):
       ...     foo = 42
-      >>> y = ImplWrapper().__of__(z)
+      >>> y = Impl().__of__(z)
 
     The child object is again a simple object with a simple __parent__
     pointer:
@@ -1740,6 +1740,24 @@ def test_implicit_wrapper_as___parent__():
 
       >>> y.__parent__ is z
       True
+
+    Just as much as you can assign to aq_parent, you can also assign
+    to __parent__ to change the acquisition context of the wrapper:
+
+      >>> newroot = Root()
+      >>> y.__parent__ = newroot
+      >>> y.__parent__ is z
+      False
+      >>> y.__parent__ is newroot
+      True
+
+    Note that messing with the wrapper won't in any way affect the
+    wrapped object:
+
+      >>> Acquisition.aq_base(y).__parent__
+      Traceback (most recent call last):
+        ...
+      AttributeError: __parent__
 
     TODO aq_parent, aq_chain
     """
@@ -1755,9 +1773,9 @@ def test_explicit_wrapper_as___parent__():
     The intermediate parent is an object that supports implicit
     acquisition.  We bind it to the root via the __of__ protocol:
 
-      >>> class ExplWrapper(Acquisition.Explicit):
+      >>> class Expl(Acquisition.Explicit):
       ...     foo = 42
-      >>> y = ExplWrapper().__of__(z)
+      >>> y = Expl().__of__(z)
 
     The child object is again a simple object with a simple __parent__
     pointer:
@@ -1782,6 +1800,24 @@ def test_explicit_wrapper_as___parent__():
 
       >>> y.__parent__ is z
       True
+
+    Just as much as you can assign to aq_parent, you can also assign
+    to __parent__ to change the acquisition context of the wrapper:
+
+      >>> newroot = Root()
+      >>> y.__parent__ = newroot
+      >>> y.__parent__ is z
+      False
+      >>> y.__parent__ is newroot
+      True
+
+    Note that messing with the wrapper won't in any way affect the
+    wrapped object:
+
+      >>> Acquisition.aq_base(y).__parent__
+      Traceback (most recent call last):
+        ...
+      AttributeError: __parent__
 
     TODO aq_parent, aq_chain
     """

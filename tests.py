@@ -1688,7 +1688,8 @@ def test___parent__no_wrappers():
       >>> z.foo = 43  # this should not be found
       >>> z.bar = 3.145
 
-    ``aq_acquire`` works we know it from implicit/acquisition wrappers:
+    ``aq_acquire`` works as we know it from implicit/acquisition
+    wrappers:
 
       >>> Acquisition.aq_acquire(x, 'hello')
       'world'
@@ -1697,7 +1698,16 @@ def test___parent__no_wrappers():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    as does ``aq_parent``:
+    as does ``aq_get``:
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+      >>> Acquisition.aq_get(x, 'foo')
+      42
+      >>> Acquisition.aq_get(x, 'bar')
+      3.145
+
+    and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) is y
       True
@@ -1741,7 +1751,16 @@ def test_implicit_wrapper_as___parent__():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    as does ``aq_parent``:
+    as does ``aq_get``:
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+      >>> Acquisition.aq_get(x, 'foo')
+      42
+      >>> Acquisition.aq_get(x, 'bar')
+      3.145
+
+    and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) is y
       True
@@ -1808,7 +1827,16 @@ def test_explicit_wrapper_as___parent__():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    as does ``aq_parent``:
+    as does ``aq_get``:
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+      >>> Acquisition.aq_get(x, 'foo')
+      42
+      >>> Acquisition.aq_get(x, 'bar')
+      3.145
+
+    and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) is y
       True
@@ -1869,7 +1897,16 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    as does ``aq_parent``:
+    as does ``aq_get``:
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+      >>> Acquisition.aq_get(x, 'foo')
+      42
+      >>> Acquisition.aq_get(x, 'bar')
+      3.145
+
+    and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) == y
       True
@@ -1915,7 +1952,16 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    as does ``aq_parent``:
+    as does ``aq_get``:
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+      >>> Acquisition.aq_get(x, 'foo')
+      42
+      >>> Acquisition.aq_get(x, 'bar')
+      3.145
+
+    and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) == y
       True

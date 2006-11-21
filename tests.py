@@ -1910,6 +1910,10 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
 
       >>> Acquisition.aq_parent(x) == y
       True
+      >>> x.aq_parent == y
+      True
+      >>> x.aq_parent.aq_parent == z
+      True
       >>> Acquisition.aq_parent(y) is z
       True
 
@@ -1964,6 +1968,10 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
     and ``aq_parent``:
 
       >>> Acquisition.aq_parent(x) == y
+      True
+      >>> x.aq_parent == y
+      True
+      >>> x.aq_parent.aq_parent == z
       True
       >>> Acquisition.aq_parent(y) is z
       True

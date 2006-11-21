@@ -1391,12 +1391,13 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
   /* Not wrapped; check if we have a __parent__ pointer.  If that's
      the case, we create a wrapper and pretend it's business as
      usual */
-  if ((__parent__ = PyObject_GetAttr(self, py__parent__))) {
-    self = newWrapper(self, __parent__, (PyTypeObject*)&Wrappertype);
-    return Wrapper_findattr(
-              WRAPPER(self), name, filter, extra, OBJECT(self), 1, 1,
-              explicit, containment);
-  }
+  if ((__parent__ = PyObject_GetAttr(self, py__parent__)))
+    {
+      self = newWrapper(self, __parent__, (PyTypeObject*)&Wrappertype);
+      return Wrapper_findattr(
+                WRAPPER(self), name, filter, extra, OBJECT(self), 1, 1,
+                explicit, containment);
+    }
 
   /* no filter, and no __parent__, so just getattr */
   if (! filter) return PyObject_GetAttr(self, name);

@@ -1697,7 +1697,14 @@ def test___parent__no_wrappers():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    TODO aq_parent, aq_chain
+    as does ``aq_parent``:
+
+      >>> Acquisition.aq_parent(x) is y
+      True
+      >>> Acquisition.aq_parent(y) is z
+      True
+
+    TODO aq_chain
     """
 
 def test_implicit_wrapper_as___parent__():
@@ -1734,6 +1741,13 @@ def test_implicit_wrapper_as___parent__():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
+    as does ``aq_parent``:
+
+      >>> Acquisition.aq_parent(x) is y
+      True
+      >>> Acquisition.aq_parent(y) is z
+      True
+
     Note that also the (implicit) acquisition wrapper has a __parent__
     pointer, which is automatically computed from the acquisition
     container (it's identical to aq_parent):
@@ -1759,7 +1773,7 @@ def test_implicit_wrapper_as___parent__():
         ...
       AttributeError: __parent__
 
-    TODO aq_parent, aq_chain
+    TODO aq_chain
     """
 
 def test_explicit_wrapper_as___parent__():
@@ -1794,6 +1808,13 @@ def test_explicit_wrapper_as___parent__():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
+    as does ``aq_parent``:
+
+      >>> Acquisition.aq_parent(x) is y
+      True
+      >>> Acquisition.aq_parent(y) is z
+      True
+
     Note that also the (explicit) acquisition wrapper has a __parent__
     pointer, which is automatically computed from the acquisition
     container (it's identical to aq_parent):
@@ -1819,7 +1840,7 @@ def test_explicit_wrapper_as___parent__():
         ...
       AttributeError: __parent__
 
-    TODO aq_parent, aq_chain
+    TODO aq_chain
     """
 
 def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
@@ -1839,7 +1860,7 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       ...     hello = 'world'
       >>> x = Impl().__of__(y)
 
-    Again, acquiring objects work as usual:
+    Again, acquiring objects works as usual:
 
       >>> Acquisition.aq_acquire(x, 'hello')
       'world'
@@ -1847,6 +1868,13 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       42
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
+
+    as does ``aq_parent``:
+
+      >>> Acquisition.aq_parent(x) == y
+      True
+      >>> Acquisition.aq_parent(y) is z
+      True
 
     Because the outmost object, ``x``, is wrapped in an implicit
     acquisition wrapper, we can also use direct attribute access:
@@ -1858,7 +1886,7 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> x.bar
       3.145
 
-    TODO aq_parent, aq_chain
+    TODO aq_chain
     """
 
 def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
@@ -1878,7 +1906,7 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       ...     hello = 'world'
       >>> x = Expl().__of__(y)
 
-    Again, acquiring objects work as usual:
+    Again, acquiring objects works as usual:
 
       >>> Acquisition.aq_acquire(x, 'hello')
       'world'
@@ -1887,7 +1915,14 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> Acquisition.aq_acquire(x, 'bar')
       3.145
 
-    TODO aq_parent, aq_chain
+    as does ``aq_parent``:
+
+      >>> Acquisition.aq_parent(x) == y
+      True
+      >>> Acquisition.aq_parent(y) is z
+      True
+
+    TODO aq_chain
     """
 
 import unittest

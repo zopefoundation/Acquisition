@@ -1998,6 +1998,37 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       True
     """
 
+def test___parent__aq_parent_cycles():
+    """
+    Sometimes __parent__ pointers and normal Acquisition can cause aq_chains
+    to go in circles:
+
+      >>> class Expl(Acquisition.Explicit):
+      ...     hello = 'world'
+
+      >>> class Expl2(Acquisition.Explicit):
+      ...     hello = 'world2'
+
+      >>> x = Expl()
+      >>> y = Expl2().__of__(x)
+      >>> x.__parent__ = y
+
+      >>> x.__parent__.aq_base is y.aq_base
+      True
+
+      >>> x.__parent__.__parent__ is x
+      True
+
+      >>> Acquisition.aq_get(x, 'hello')
+      'world'
+
+      XXX This causes a segmentation fault, as some tests in Products.Five do
+      as well
+      >>> Acquisition.aq_get(x, 'hello2')
+      
+
+    """
+
 import unittest
 from zope.testing.doctest import DocTestSuite
 

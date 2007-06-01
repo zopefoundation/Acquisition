@@ -574,7 +574,16 @@ Wrapper_acquire(Wrapper *self, PyObject *oname,
         {
           ASSIGN(self->container, newWrapper(self->container, r,
                                              (PyTypeObject*)&Wrappertype));
+
+          /* Don't try to get any attributes when the parent object of the
+             parent object is the same as the object itself. */
+          if (WRAPPER(r)->obj==WRAPPER(self)->obj) {
+            Py_DECREF(r);
+            PyErr_SetObject(PyExc_AttributeError,oname);
+            return NULL;
+          }
           Py_DECREF(r); /* don't need __parent__ anymore */
+
           r=Wrapper_findattr((Wrapper*)self->container,
                              oname, filter, extra, orig, sob, sco, explicit, 
                              containment);

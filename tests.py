@@ -2010,11 +2010,9 @@ def test___parent__aq_parent_cycles():
       ...     hello = 'world2'
 
       >>> x = Expl()
-      >>> y = Expl2().__of__(x)
+      >>> y = Expl2()
       >>> x.__parent__ = y
-
-      >>> x.__parent__.aq_base is y.aq_base
-      True
+      >>> y.__parent__ = x
 
       >>> x.__parent__.__parent__ is x
       True
@@ -2022,11 +2020,10 @@ def test___parent__aq_parent_cycles():
       >>> Acquisition.aq_get(x, 'hello')
       'world'
 
-      XXX This causes a segmentation fault, as some tests in Products.Five do
-      as well
-      >>> Acquisition.aq_get(x, 'hello2')
-      
-
+      >>> Acquisition.aq_get(x, 'hello2') #doctest:+ELLIPSIS
+      Traceback (most recent call last):
+      ...
+      AttributeError: hello2
     """
 
 import unittest

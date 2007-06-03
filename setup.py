@@ -22,19 +22,18 @@ setup(name='Acquisition',
       license='ZPL 2.1',
       description='',
       author='Zope Corporation and Contributors',
-      author_email='zope3-dev@zope.org',
-      long_description='The Security framework provides a generic mechanism '
-                       'to implement security policies on Python objects.',
+      author_email='zope-dev@zope.org',
+      long_description='',
       
 	  packages=find_packages('src'),
-	  package_dir = {'': 'src'},
+	  package_dir={'': 'src'},
 
       ext_modules=[Extension("Acquistion._Acquisition",
                              [os.path.join('src', 'Acquisition',
-                                           '_Acquisition.c')
-                              ], include_dirs=['include']),
+                                           '_Acquisition.c')],
+                             include_dirs=['include', 'src']),
                    ],
       install_requires=['zope.interface'],
-      include_package_data = True,
-      zip_safe = False,
+      include_package_data=True,
+      zip_safe=False,
       )

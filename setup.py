@@ -28,7 +28,7 @@ setup(name='Acquisition',
 	  packages=find_packages('src'),
 	  package_dir={'': 'src'},
 
-      ext_modules=[Extension("Acquistion._Acquisition",
+      ext_modules=[Extension("Acquisition._Acquisition",
                              [os.path.join('src', 'Acquisition',
                                            '_Acquisition.c')],
                              include_dirs=['include', 'src']),

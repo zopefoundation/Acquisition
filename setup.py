@@ -24,7 +24,8 @@ setup(name='Acquisition',
       "attributes from the containment hierarchy they're in.",
       author='Zope Corporation and Contributors',
       author_email='zope-dev@zope.org',
-      long_description=open('README.txt').read(),
+      long_description=open(
+          os.path.join('src', 'Acquisition', 'README.txt')).read(),
 
       packages=find_packages('src'),
       package_dir={'': 'src'},

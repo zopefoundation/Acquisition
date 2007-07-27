@@ -20,13 +20,14 @@ setup(name='Acquisition',
       version = '2.11.0a2',
       url='http://cheeseshop.python.org/pypi/Acquisition',
       license='ZPL 2.1',
-      description='',
+      description="Acquisition is a mechanism that allows objects to obtain "
+      "attributes from the containment hierarchy they're in.",
       author='Zope Corporation and Contributors',
       author_email='zope-dev@zope.org',
-      long_description='',
-      
-	  packages=find_packages('src'),
-	  package_dir={'': 'src'},
+      long_description=open('README.txt').read(),
+
+      packages=find_packages('src'),
+      package_dir={'': 'src'},
 
       ext_modules=[Extension("Acquisition._Acquisition",
                              [os.path.join('src', 'Acquisition',

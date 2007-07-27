@@ -18,7 +18,7 @@ from setuptools import setup, find_packages, Extension
 
 setup(name='Acquisition',
       version = '2.11.0a2',
-      url='http://cheesehop.python.org/pypi/Acquisition',
+      url='http://cheeseshop.python.org/pypi/Acquisition',
       license='ZPL 2.1',
       description='',
       author='Zope Corporation and Contributors',

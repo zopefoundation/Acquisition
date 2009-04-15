@@ -1,0 +1,14 @@
+Changelog
+=========
+
+2.12.1 - 2009-04-15
+-------------------
+
+- Update for iteration proxying: The proxy for `__iter__` must not rely on the
+  object to have an `__iter__` itself, but also support fall-back iteration via
+  `__getitem__` (this fixes https://bugs.launchpad.net/zope2/+bug/360761).
+
+2.12 - 2009-01-25
+-----------------
+
+- Release as separate package.

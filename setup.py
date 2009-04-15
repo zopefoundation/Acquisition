@@ -17,7 +17,7 @@ import os
 from setuptools import setup, find_packages, Extension
 
 setup(name='Acquisition',
-      version = '2.12.0dev',
+      version = '2.12.1',
       url='http://pypi.python.org/pypi/Acquisition',
       license='ZPL 2.1',
       description="Acquisition is a mechanism that allows objects to obtain "
@@ -25,7 +25,8 @@ setup(name='Acquisition',
       author='Zope Corporation and Contributors',
       author_email='zope-dev@zope.org',
       long_description=open(
-          os.path.join('src', 'Acquisition', 'README.txt')).read(),
+          os.path.join('src', 'Acquisition', 'README.txt')).read() + '\n' +
+          open('CHANGES.txt').read(),
 
       packages=find_packages('src'),
       package_dir={'': 'src'},

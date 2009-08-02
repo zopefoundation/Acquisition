@@ -31,6 +31,17 @@ PyVar_Assign(PyObject **v,  PyObject *e)
 #define UNLESS_ASSIGN(V,E) ASSIGN(V,E); UNLESS(V)
 #define OBJECT(O) ((PyObject*)(O))
 
+#if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
+typedef int Py_ssize_t;
+typedef Py_ssize_t (*lenfunc)(PyObject *);
+typedef PyObject *(*ssizeargfunc)(PyObject *, Py_ssize_t);
+typedef PyObject *(*ssizessizeargfunc)(PyObject *, Py_ssize_t, Py_ssize_t);
+typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
+typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
+#define PY_SSIZE_T_MAX INT_MAX
+#define PY_SSIZE_T_MIN INT_MIN
+#endif
+
 static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__mod__, *py__pow__, *py__divmod__, *py__lshift__, *py__rshift__,
   *py__and__, *py__or__, *py__xor__, *py__coerce__, *py__neg__,
@@ -841,7 +852,7 @@ Wrapper_call(Wrapper *self, PyObject *args, PyObject *kw)
 
 /* Code to handle accessing Wrapper objects as sequence objects */
 
-static int
+static Py_ssize_t
 Wrapper_length(Wrapper *self)
 {
   long l;
@@ -861,26 +872,26 @@ Wrapper_add(Wrapper *self, PyObject *bb)
 }
 
 static PyObject *
-Wrapper_mul(Wrapper *self, int  n)
+Wrapper_mul(Wrapper *self, Py_ssize_t  n)
 {
   return CallMethodO(OBJECT(self),py__mul__,Build("(i)", n),NULL);
 }
 
 static PyObject *
-Wrapper_item(Wrapper *self, int  i)
+Wrapper_item(Wrapper *self, Py_ssize_t  i)
 {
   return CallMethodO(OBJECT(self),py__getitem__, Build("(i)", i),NULL);
 }
 
 static PyObject *
-Wrapper_slice(Wrapper *self, int  ilow, int  ihigh)
+Wrapper_slice(Wrapper *self, Py_ssize_t  ilow, Py_ssize_t  ihigh)
 {
   return CallMethodO(OBJECT(self),py__getslice__,
 		     Build("(ii)", ilow, ihigh),NULL);
 }
 
 static int
-Wrapper_ass_item(Wrapper *self, int  i, PyObject *v)
+Wrapper_ass_item(Wrapper *self, Py_ssize_t  i, PyObject *v)
 {
   if (v)
     {
@@ -899,7 +910,7 @@ Wrapper_ass_item(Wrapper *self, int  i, PyObject *v)
 }
 
 static int
-Wrapper_ass_slice(Wrapper *self, int  ilow, int  ihigh, PyObject *v)
+Wrapper_ass_slice(Wrapper *self, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
 {
   if (v)
     {
@@ -936,13 +947,13 @@ Wrapper_iter(Wrapper *self)
 }
 
 static PySequenceMethods Wrapper_as_sequence = {
-	(inquiry)Wrapper_length,		/*sq_length*/
+	(lenfunc)Wrapper_length,		/*sq_length*/
 	(binaryfunc)Wrapper_add,		/*sq_concat*/
-	(intargfunc)Wrapper_mul,		/*sq_repeat*/
-	(intargfunc)Wrapper_item,		/*sq_item*/
-	(intintargfunc)Wrapper_slice,		/*sq_slice*/
-	(intobjargproc)Wrapper_ass_item,	/*sq_ass_item*/
-	(intintobjargproc)Wrapper_ass_slice,	/*sq_ass_slice*/
+	(ssizeargfunc)Wrapper_mul,		/*sq_repeat*/
+	(ssizeargfunc)Wrapper_item,		/*sq_item*/
+	(ssizessizeargfunc)Wrapper_slice,		/*sq_slice*/
+	(ssizeobjargproc)Wrapper_ass_item,	/*sq_ass_item*/
+	(ssizessizeobjargproc)Wrapper_ass_slice,	/*sq_ass_slice*/
 	(objobjproc)Wrapper_contains,		/*sq_contains*/
 };
 
@@ -976,7 +987,7 @@ Wrapper_ass_sub(Wrapper *self, PyObject *key, PyObject *v)
 }
 
 static PyMappingMethods Wrapper_as_mapping = {
-  (inquiry)Wrapper_length,		/*mp_length*/
+  (lenfunc)Wrapper_length,		/*mp_length*/
   (binaryfunc)Wrapper_subscript,	/*mp_subscript*/
   (objobjargproc)Wrapper_ass_sub,	/*mp_ass_subscript*/
 };

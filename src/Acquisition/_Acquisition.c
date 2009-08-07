@@ -887,7 +887,7 @@ static PyObject *
 Wrapper_slice(Wrapper *self, Py_ssize_t  ilow, Py_ssize_t  ihigh)
 {
   return CallMethodO(OBJECT(self),py__getslice__,
-		     Build("(ii)", ilow, ihigh),NULL);
+		     Build("(nn)", ilow, ihigh),NULL);
 }
 
 static int

@@ -31,6 +31,7 @@ PyVar_Assign(PyObject **v,  PyObject *e)
 #define UNLESS_ASSIGN(V,E) ASSIGN(V,E); UNLESS(V)
 #define OBJECT(O) ((PyObject*)(O))
 
+#define FORMAT_N "n"
 #if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
 typedef int Py_ssize_t;
 typedef Py_ssize_t (*lenfunc)(PyObject *);
@@ -40,6 +41,7 @@ typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
 typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
 #define PY_SSIZE_T_MAX INT_MAX
 #define PY_SSIZE_T_MIN INT_MIN
+#define FORMAT_N "i"
 #endif
 
 static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
@@ -874,20 +876,20 @@ Wrapper_add(Wrapper *self, PyObject *bb)
 static PyObject *
 Wrapper_mul(Wrapper *self, Py_ssize_t  n)
 {
-  return CallMethodO(OBJECT(self),py__mul__,Build("(i)", n),NULL);
+  return CallMethodO(OBJECT(self),py__mul__,Build("(" FORMAT_N ")", n),NULL);
 }
 
 static PyObject *
 Wrapper_item(Wrapper *self, Py_ssize_t  i)
 {
-  return CallMethodO(OBJECT(self),py__getitem__, Build("(i)", i),NULL);
+  return CallMethodO(OBJECT(self),py__getitem__, Build("(" FORMAT_N ")", i),NULL);
 }
 
 static PyObject *
 Wrapper_slice(Wrapper *self, Py_ssize_t  ilow, Py_ssize_t  ihigh)
 {
   return CallMethodO(OBJECT(self),py__getslice__,
-		     Build("(nn)", ilow, ihigh),NULL);
+		     Build("(" FORMAT_N FORMAT_N ")", ilow, ihigh),NULL);
 }
 
 static int
@@ -896,13 +898,13 @@ Wrapper_ass_item(Wrapper *self, Py_ssize_t  i, PyObject *v)
   if (v)
     {
       UNLESS(v=CallMethodO(OBJECT(self),py__setitem__,
-			   Build("(iO)", i, v),NULL))
+			   Build("(" FORMAT_N "O)", i, v),NULL))
 	return -1;
     }
   else
     {
       UNLESS(v=CallMethodO(OBJECT(self),py__delitem__,
-			   Build("(i)", i),NULL))
+			   Build("(" FORMAT_N ")", i),NULL))
 	return -1;
     }
   Py_DECREF(v);
@@ -915,13 +917,13 @@ Wrapper_ass_slice(Wrapper *self, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
   if (v)
     {
       UNLESS(v=CallMethodO(OBJECT(self),py__setslice__,
-			   Build("(iiO)", ilow, ihigh, v),NULL))
+			   Build("(" FORMAT_N FORMAT_N "O)", ilow, ihigh, v),NULL))
 	return -1;
     }
   else
     {
       UNLESS(v=CallMethodO(OBJECT(self),py__delslice__,
-			   Build("(ii)", ilow, ihigh),NULL))
+			   Build("(" FORMAT_N FORMAT_N ")", ilow, ihigh),NULL))
 	return -1;
     }
   Py_DECREF(v);

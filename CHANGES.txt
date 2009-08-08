@@ -4,8 +4,9 @@ Changelog
 2.12.3 (unreleased)
 -------------------
 
+- More 64-bit fixes in Py_BuildValue calls.
+
 - More 64-bit issues fixed: Use correct integer size for slice operations.
-  Most likely this is not the only 'i' -> 'n' fix required.
 
 2.12.2 (2009-08-02)
 -------------------

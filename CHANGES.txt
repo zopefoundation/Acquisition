@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.12.3 (unreleased)
+2.12.3 (2009-08-08)
 -------------------
 
 - More 64-bit fixes in Py_BuildValue calls.

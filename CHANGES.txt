@@ -4,6 +4,7 @@ Changelog
 2.12.4 (unreleased)
 -------------------
 
+- Add tests for the __getslice__ proxying, including open-ended slicing.
 
 2.12.3 (2009-08-08)
 -------------------

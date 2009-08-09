@@ -1686,6 +1686,7 @@ def test_Wrapper_gc():
 def test_proxying():
     """Make sure that recent python slots are proxied.
 
+    >>> import sys
     >>> import Acquisition
     >>> class Impl(Acquisition.Implicit):
     ...     pass
@@ -1702,6 +1703,9 @@ def test_proxying():
     ...     def __iter__(self):
     ...         print 'iterating...'
     ...         return iter((42,))
+    ...     def __getslice__(self, start, end):
+    ...         print 'slicing...'
+    ...         return (start, end)
 
     The naked class behaves like this:
 
@@ -1715,6 +1719,12 @@ def test_proxying():
     >>> list(c)
     iterating...
     [42]
+    >>> c[5:10]
+    slicing...
+    (5, 10)
+    >>> c[5:] == (5, sys.maxint)
+    slicing...
+    True
 
     Let's put c in the context of i:
 
@@ -1732,6 +1742,12 @@ def test_proxying():
     >>> list(i.c)
     iterating...
     [42]
+    >>> i.c[5:10]
+    slicing...
+    (5, 10)
+    >>> i.c[5:] == (5, sys.maxint)
+    slicing...
+    True
 
     Let's let's test the same again with an explicit wrapper:
 
@@ -1751,6 +1767,9 @@ def test_proxying():
     ...     def __iter__(self):
     ...         print 'iterating...'
     ...         return iter((42,))
+    ...     def __getslice__(self, start, end):
+    ...         print 'slicing...'
+    ...         return (start, end)
 
     The naked class behaves like this:
 
@@ -1764,6 +1783,12 @@ def test_proxying():
     >>> list(c)
     iterating...
     [42]
+    >>> c[5:10]
+    slicing...
+    (5, 10)
+    >>> c[5:] == (5, sys.maxint)
+    slicing...
+    True
 
     Let's put c in the context of i:
 
@@ -1781,6 +1806,12 @@ def test_proxying():
     >>> list(i.c)
     iterating...
     [42]
+    >>> i.c[5:10]
+    slicing...
+    (5, 10)
+    >>> i.c[5:] == (5, sys.maxint)
+    slicing...
+    True
 
     Finally let's check that https://bugs.launchpad.net/zope2/+bug/360761
     has been fixed:

@@ -2270,6 +2270,7 @@ from zope.testing.doctest import DocTestSuite, DocFileSuite
 def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
+        DocTestSuite('Acquisition.test_dynamic_acquisition'),
         DocFileSuite('README.txt', package='Acquisition'),
         ))
 

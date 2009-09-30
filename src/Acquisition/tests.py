@@ -1813,8 +1813,9 @@ def test_proxying():
     slicing...
     True
 
-    Finally let's check that https://bugs.launchpad.net/zope2/+bug/360761
-    has been fixed:
+    Finally let's check that the wrapper's __iter__ proxy falls back
+    to using the object's __getitem__ if it has no __iter__.  See
+    https://bugs.launchpad.net/zope2/+bug/360761 .
 
     >>> class C(Acquisition.Implicit):
     ...     l=[1,2,3]

@@ -1863,6 +1863,30 @@ def test_proxying():
     >>> list(i.c)
     [0, 1, 2, 3, 4]
 
+    Finally let's make sure errors are still correctly raised after having
+    to use a modified version of `PyObject_GetIter` for iterator support::
+
+    >>> class C(Acquisition.Implicit):
+    ...     pass
+    >>> c = C()
+    >>> i = Impl()
+    >>> i.c = c
+    >>> list(i.c)
+    Traceback (most recent call last):
+      ...
+    TypeError: iteration over non-sequence
+
+    >>> class C(Acquisition.Implicit):
+    ...     def __iter__(self):
+    ...         return [42]
+    >>> c = C()
+    >>> i = Impl()
+    >>> i.c = c
+    >>> list(i.c)
+    Traceback (most recent call last):
+      ...
+    TypeError: iter() returned non-iterator of type 'list'
+
     """
 
 class Location(object):

@@ -1834,8 +1834,36 @@ def test_proxying():
     >>> list(c2)
     [1, 2, 3]
 
-    """
+    The __iter__proxy should also pass the wrapped object as self to
+    the __iter__ of objects defining __iter__::
 
+    >>> class C(Acquisition.Implicit):
+    ...     def __iter__(self):
+    ...         print 'iterating...'
+    ...         for i in range(5):
+    ...             yield i, self.aq_parent.name
+    >>> c = C()
+    >>> i = Impl()
+    >>> i.c = c
+    >>> i.name = 'i'
+    >>> list(i.c)
+    iterating...
+    [(0, 'i'), (1, 'i'), (2, 'i'), (3, 'i'), (4, 'i')]
+
+    And it should pass the wrapped object as self to
+    the __getitem__ of objects without an __iter__::
+
+    >>> class C(Acquisition.Implicit):
+    ...     def __getitem__(self, i):
+    ...         return self.aq_parent.l[i]
+    >>> c = C()
+    >>> i = Impl()
+    >>> i.c = c
+    >>> i.l = range(5)
+    >>> list(i.c)
+    [0, 1, 2, 3, 4]
+
+    """
 
 class Location(object):
     __parent__ = None

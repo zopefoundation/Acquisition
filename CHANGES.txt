@@ -1,8 +1,16 @@
 Changelog
 =========
 
-2.12.4 (unreleased)
+2.12.5 (unreleased)
 -------------------
+
+
+2.12.4 (2009-10-29)
+-------------------
+
+- Fix iteration proxying to pass `self` acquisition-wrapped into both
+  `__iter__` as well as `__getitem__` (this fixes
+  https://bugs.launchpad.net/zope2/+bug/360761).
 
 - Add tests for the __getslice__ proxying, including open-ended slicing.
 

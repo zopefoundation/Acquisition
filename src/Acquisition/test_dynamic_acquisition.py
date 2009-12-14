@@ -11,7 +11,6 @@
 # FOR A PARTICULAR PURPOSE
 #
 ##############################################################################
-from ExtensionClass import Base
 import Acquisition
 
 def checkContext(self, o):

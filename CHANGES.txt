@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.0 (unreleased)
+2.13.0 (2010-02-14)
 -------------------
 
 - Added support for method cache in Acquisition. Patch contributed by

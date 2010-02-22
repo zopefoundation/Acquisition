@@ -1391,6 +1391,9 @@ static PyExtensionClass Wrappertype = {
   /* tp_flags          */ Py_TPFLAGS_DEFAULT 
                           | Py_TPFLAGS_BASETYPE
                           | Py_TPFLAGS_HAVE_GC
+#ifdef Py_TPFLAGS_HAVE_VERSION_TAG
+                          | Py_TPFLAGS_HAVE_VERSION_TAG
+#endif
                           ,
   "Wrapper object for implicit acquisition", /* Documentation string */
   /* tp_traverse       */ (traverseproc)Wrapper_traverse,
@@ -1435,6 +1438,9 @@ static PyExtensionClass XaqWrappertype = {
   /* tp_flags          */ Py_TPFLAGS_DEFAULT 
                           | Py_TPFLAGS_BASETYPE
                           | Py_TPFLAGS_HAVE_GC
+#ifdef Py_TPFLAGS_HAVE_VERSION_TAG
+                          | Py_TPFLAGS_HAVE_VERSION_TAG
+#endif
                           ,
   "Wrapper object for implicit acquisition", /* Documentation string */
   /* tp_traverse       */ (traverseproc)Wrapper_traverse,

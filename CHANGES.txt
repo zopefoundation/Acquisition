@@ -1,9 +1,15 @@
 Changelog
 =========
 
-2.12.5 (unreleased)
+2.13.1 (unreleased)
 -------------------
 
+
+2.13.0 (2010-02-14)
+-------------------
+
+- Added support for method cache in Acquisition. Patch contributed by
+  Yoshinori K. Okuji. See https://bugs.launchpad.net/zope2/+bug/486182.
 
 2.12.4 (2009-10-29)
 -------------------

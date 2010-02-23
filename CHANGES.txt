@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.1 (unreleased)
+2.13.1 (2010-02-23)
 -------------------
 
 - Update to include ExtensionClass 2.13.0.

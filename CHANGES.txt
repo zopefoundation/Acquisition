@@ -4,6 +4,8 @@ Changelog
 2.13.1 (unreleased)
 -------------------
 
+- Update to include ExtensionClass 2.13.0.
+
 - Fix the ``tp_name`` of the ImplicitAcquisitionWrapper and
   ExplicitAcquisitionWrapper to match their Python visible names and thus have
   a correct ``__name__``.

@@ -1311,7 +1311,7 @@ static struct PyMethodDef Wrapper_methods[] = {
 static PyExtensionClass Wrappertype = {
   PyObject_HEAD_INIT(NULL)
   0,					/*ob_size*/
-  "Acquisition.ImplicitAcquirerWrapper",		/*tp_name*/
+  "Acquisition.ImplicitAcquisitionWrapper",		/*tp_name*/
   sizeof(Wrapper),       		/*tp_basicsize*/
   0,					/*tp_itemsize*/
   /* methods */
@@ -1358,7 +1358,7 @@ static PyExtensionClass Wrappertype = {
 static PyExtensionClass XaqWrappertype = {
   PyObject_HEAD_INIT(NULL)
   0,					/*ob_size*/
-  "Acquisition.ExplicitAcquirerWrapper",		/*tp_name*/
+  "Acquisition.ExplicitAcquisitionWrapper",		/*tp_name*/
   sizeof(Wrapper),       		/*tp_basicsize*/
   0,					/*tp_itemsize*/
   /* methods */

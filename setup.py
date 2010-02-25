@@ -25,7 +25,8 @@ setup(name='Acquisition',
       author='Zope Corporation and Contributors',
       author_email='zope-dev@zope.org',
       long_description=open(
-          os.path.join('src', 'Acquisition', 'README.txt')).read(),
+          os.path.join('src', 'Acquisition', 'README.txt')).read() + '\n' +
+          open('CHANGES.txt').read(),
 
       packages=find_packages('src'),
       package_dir={'': 'src'},

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.11.2 (unreleased)
+2.11.2 (2010-02-25)
 -------------------
 
 - Fix the ``tp_name`` of the ImplicitAcquisitionWrapper and

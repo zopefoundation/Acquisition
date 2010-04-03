@@ -4,6 +4,17 @@ Changelog
 2.11.3 (unreleased)
 -------------------
 
+- Give both wrapper classes a ``__getnewargs__`` method, which causes the ZODB
+  optimization to fail and create persistent references using the ``_p_oid``
+  alone. This happens to be the persistent oid of the wrapped object. This lets
+  these objects to be persisted correctly, even though they are passed to the
+  ZODB in a wrapped state.
+
+- Added failing tests for http://dev.plone.org/plone/ticket/10318. This shows
+  an edge-case where AQ wrappers can be pickled using the specific combination
+  of cPickle, pickle protocol one and a custom Pickler class with an
+  ``inst_persistent_id`` hook. Unfortunately this is the exact combination used
+  by ZODB3.
 
 2.11.2 (2010-02-25)
 -------------------

@@ -1502,7 +1502,126 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
     TypeError: Can't pickle objects in acquisition wrappers.
     """
 
-def test_z3interfaces():
+
+def test_cant_persist_acquisition_wrappers_classic():
+    """
+    >>> import cPickle
+
+    >>> class X:
+    ...     _p_oid = '1234'
+    ...     def __getstate__(self):
+    ...         return 1
+
+    We shouldn't be able to pickle wrappers:
+
+    >>> from Acquisition import ImplicitAcquisitionWrapper
+    >>> w = ImplicitAcquisitionWrapper(X(), X())
+    >>> cPickle.dumps(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check for pickle protocol one:
+
+    >>> cPickle.dumps(w, 1)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler:
+
+    >>> from cStringIO import StringIO
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> pickler.dump(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler with a persistent_id method matching the semantics
+    in ZODB.serialize.ObjectWriter.persistent_id:
+
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> def persistent_id(obj):
+    ...     klass = type(obj)
+    ...     oid = obj._p_oid
+    ...     if hasattr(klass, '__getnewargs__'):
+    ...         return oid
+    ...     return 'class_and_oid', klass
+
+    >>> pickler.inst_persistent_id = persistent_id
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
+    """
+
+
+def test_cant_persist_acquisition_wrappers_newstyle():
+    """
+    >>> import cPickle
+
+    >>> class X(object):
+    ...     _p_oid = '1234'
+    ...     def __getstate__(self):
+    ...         return 1
+
+    We shouldn't be able to pickle wrappers:
+
+    >>> from Acquisition import ImplicitAcquisitionWrapper
+    >>> w = ImplicitAcquisitionWrapper(X(), X())
+    >>> cPickle.dumps(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check for pickle protocol one:
+
+    >>> cPickle.dumps(w, 1)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler:
+
+    >>> from cStringIO import StringIO
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> pickler.dump(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler with a persistent_id method matching the semantics
+    in ZODB.serialize.ObjectWriter.persistent_id:
+
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> def persistent_id(obj):
+    ...     klass = type(obj)
+    ...     oid = obj._p_oid
+    ...     if hasattr(klass, '__getnewargs__'):
+    ...         return oid
+    ...     return 'class_and_oid', klass
+
+    >>> pickler.inst_persistent_id = persistent_id
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
+    """
+
+
+def test_interfaces():
     """
     >>> from zope.interface.verify import verifyClass
 

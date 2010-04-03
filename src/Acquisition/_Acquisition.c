@@ -1206,6 +1206,12 @@ Wrappers_are_not_picklable(PyObject *wrapper, PyObject *args)
   return NULL;
 }
 
+static PyObject *
+Wrapper___getnewargs__(PyObject *self)
+{
+  return PyTuple_New(0);
+}
+
 static struct PyMethodDef Wrapper_methods[] = {
   {"acquire", (PyCFunction)Wrapper_acquire_method, 
    METH_VARARGS|METH_KEYWORDS,
@@ -1215,6 +1221,8 @@ static struct PyMethodDef Wrapper_methods[] = {
    "Get an attribute, acquiring it if necessary"},
   {"aq_inContextOf", (PyCFunction)Wrapper_inContextOf, METH_VARARGS,
    "Test whether the object is currently in the context of the argument"},
+  {"__getnewargs__", (PyCFunction)Wrapper___getnewargs__, METH_NOARGS,
+    "Get arguments to be passed to __new__"},
   {"__getstate__", (PyCFunction)Wrappers_are_not_picklable, METH_VARARGS,
    "Wrappers are not picklable"},
   {"__reduce__", (PyCFunction)Wrappers_are_not_picklable, METH_VARARGS,

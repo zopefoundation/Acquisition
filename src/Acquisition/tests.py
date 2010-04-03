@@ -1565,7 +1565,7 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
     TypeError: Can't pickle objects in acquisition wrappers.
     """
 
-def test_z3interfaces():
+def test_interfaces():
     """
     >>> from zope.interface.verify import verifyClass
 

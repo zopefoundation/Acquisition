@@ -1570,6 +1570,7 @@ def test_cant_persist_acquisition_wrappers_classic():
     >>> import cPickle
 
     >>> class X:
+    ...     _p_oid = '1234'
     ...     def __getstate__(self):
     ...         return 1
 
@@ -1608,15 +1609,18 @@ def test_cant_persist_acquisition_wrappers_classic():
 
     >>> def persistent_id(obj):
     ...     klass = type(obj)
+    ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
-    ...         return id(obj)
-    ...     return id(obj), klass
+    ...         return oid
+    ...     return 'class_and_oid', klass
 
     >>> pickler.inst_persistent_id = persistent_id
-    >>> pickler.dump(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
     """
 
 
@@ -1625,6 +1629,7 @@ def test_cant_persist_acquisition_wrappers_newstyle():
     >>> import cPickle
 
     >>> class X(object):
+    ...     _p_oid = '1234'
     ...     def __getstate__(self):
     ...         return 1
 
@@ -1663,15 +1668,18 @@ def test_cant_persist_acquisition_wrappers_newstyle():
 
     >>> def persistent_id(obj):
     ...     klass = type(obj)
+    ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
-    ...         return id(obj)
-    ...     return id(obj), klass
+    ...         return oid
+    ...     return 'class_and_oid', klass
 
     >>> pickler.inst_persistent_id = persistent_id
-    >>> pickler.dump(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
     """
 
 

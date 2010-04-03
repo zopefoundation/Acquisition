@@ -4,6 +4,11 @@ Changelog
 2.13.2 (unreleased)
 -------------------
 
+- Added failing tests for http://dev.plone.org/plone/ticket/10318. This shows
+  an edge-case where AQ wrappers can be pickled using the specific combination
+  of cPickle, pickle protocol one and a custom Pickler class with an
+  ``inst_persistent_id`` hook. Unfortunately this is the exact combination used
+  by ZODB3.
 
 2.13.1 (2010-02-23)
 -------------------

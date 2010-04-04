@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.11.3 (unreleased)
+2.11.3 (2010-04-04)
 -------------------
 
 - Give both wrapper classes a ``__getnewargs__`` method, which causes the ZODB

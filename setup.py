@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2007 Zope Corporation and Contributors.
+# Copyright (c) 2007 Zope Foundation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -17,12 +17,12 @@ import os
 from setuptools import setup, find_packages, Extension
 
 setup(name='Acquisition',
-      version = '2.13.2dev',
+      version = '2.13.3dev',
       url='http://pypi.python.org/pypi/Acquisition',
       license='ZPL 2.1',
       description="Acquisition is a mechanism that allows objects to obtain "
       "attributes from the containment hierarchy they're in.",
-      author='Zope Corporation and Contributors',
+      author='Zope Foundation and Contributors',
       author_email='zope-dev@zope.org',
       long_description=open(
           os.path.join('src', 'Acquisition', 'README.txt')).read() + '\n' +

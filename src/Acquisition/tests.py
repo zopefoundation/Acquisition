@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2003 Zope Corporation and Contributors.
+# Copyright (c) 2003 Zope Foundation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -70,9 +70,9 @@
     cannot be found in 'a'.
 
     Aquisition wrappers provide access to the wrapped objects
-    through the attributes 'aq_parent', 'aq_self', 'aq_base'.  
+    through the attributes 'aq_parent', 'aq_self', 'aq_base'.
     In the example above, the expressions::
-      
+
        >>> c.a.aq_parent is c
        1
 
@@ -97,28 +97,28 @@
 
     Two styles of acquisition are supported in the current
     ExtensionClass release, implicit and explicit aquisition.
-  
+
     Implicit acquisition
-    
+
       Implicit acquisition is so named because it searches for
       attributes from the environment automatically whenever an
       attribute cannot be obtained directly from an object or
       through inheritence.
-  
+
       An attribute may be implicitly acquired if it's name does
       not begin with an underscore, '_'.
-  
+
       To support implicit acquisition, an object should inherit
       from the mix-in class 'Acquisition.Implicit'.
-  
+
     Explicit Acquisition
-  
+
       When explicit acquisition is used, attributes are not
       automatically obtained from the environment.  Instead, the
       method 'aq_aquire' must be used, as in::
-  
+
         print c.a.aq_acquire('color')
-  
+
       To support explicit acquisition, an object should inherit
       from the mix-in class 'Acquisition.Explicit'.
 
@@ -206,31 +206,31 @@
       For example, in::
 
         >>> from Acquisition import Explicit
-        
+
         >>> class HandyForTesting:
         ...     def __init__(self, name): self.name=name
         ...     def __str__(self):
         ...       return "%s(%s)" % (self.name, self.__class__.__name__)
         ...     __repr__=__str__
-        
+
         >>> class E(Explicit, HandyForTesting):
         ...     pass
-        
+
         >>> class Nice(HandyForTesting):
         ...     isNice=1
         ...     def __str__(self):
         ...        return HandyForTesting.__str__(self)+' and I am nice!'
         ...     __repr__=__str__
-        
+
         >>> a = E('a')
         >>> a.b = E('b')
         >>> a.b.c = E('c')
         >>> a.p = Nice('spam')
         >>> a.b.p = E('p')
-        
+
         >>> def find_nice(self, ancestor, name, object, extra):
         ...     return hasattr(object,'isNice') and object.isNice
-        
+
         >>> print a.b.c.aq_acquire('p', find_nice)
         spam(Nice) and I am nice!
 
@@ -258,13 +258,13 @@
     Consider the following example::
 
       >>> from Acquisition import Implicit
-      
+
       >>> class C(Implicit):
       ...     def __init__(self, name): self.name=name
       ...     def __str__(self):
       ...         return "%s(%s)" % (self.name, self.__class__.__name__)
       ...     __repr__=__str__
-      
+
       >>> a = C("a")
       >>> a.b = C("b")
       >>> a.b.pref = "spam"
@@ -323,9 +323,9 @@
     'a' is searched no more than once, even though it is wrapped three
     times.
 
-.. [1] Gil, J., Lorenz, D., 
+.. [1] Gil, J., Lorenz, D.,
    "Environmental Acquisition--A New Inheritance-Like Abstraction Mechanism",
-   http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz, 
+   http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz,
    OOPSLA '96 Proceedings, ACM SIG-PLAN, October, 1996
 
 $Id$
@@ -368,7 +368,7 @@ def test_unwrapped():
     Traceback (most recent call last):
     ...
     AttributeError: x
-    
+
     >>> Acquisition.aq_acquire(c, 'id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -409,8 +409,8 @@ def test_unwrapped():
     >>> Acquisition.aq_self(c) is c
     1
 
-    
-    
+
+
     """
 
 def test_simple():
@@ -475,7 +475,7 @@ def test_simple():
     Traceback (most recent call last):
     ...
     AttributeError: x
-    
+
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -497,7 +497,7 @@ def test_simple():
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
-    
+
     >>> Acquisition.aq_acquire(a.b.c, 'id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -685,19 +685,19 @@ def test_muliple():
 
     >>> show(a.a1.a11.a2.a21.aq_inner.aq_parent.aq_inner.aq_parent)
     a
-    
+
     >>> a.a1.a11.a2.a21.aq_chain
     [a21, a2, a11, a1, a]
-    
+
     >>> a.a1.a11.a2.a21.aq_inContextOf(a)
     1
-    
+
     >>> a.a1.a11.a2.a21.aq_inContextOf(a.a2)
     1
 
     >>> a.a1.a11.a2.a21.aq_inContextOf(a.a1)
     0
-    
+
     >>> a.a1.a11.a2.a21.aq_acquire('color')
     'red'
     >>> a.a1.a11.a2.a21.aq_acquire('id')
@@ -712,7 +712,7 @@ def test_muliple():
     >>> a.a1.a11.a2.a21.aq_acquire('color',
     ...     lambda ob, parent, name, v, extra: extra, 1)
     'red'
-    
+
     >>> a.a1.y = 42
     >>> a.a1.a11.a2.a21.aq_acquire('y')
     42
@@ -796,13 +796,13 @@ def test_muliple():
     >>> show(Acquisition.aq_parent(
     ...       a.a1.a11.a2.a21.aq_inner.aq_parent.aq_inner))
     a
-    
+
     >>> Acquisition.aq_chain(a.a1.a11.a2.a21)
     [a21, a2, a11, a1, a]
-    
+
     >>> Acquisition.aq_chain(a.a1.a11.a2.a21, 1)
     [a21, a2, a]
-    
+
     >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'color')
     'red'
     >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'id')
@@ -817,7 +817,7 @@ def test_muliple():
     >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'color',
     ...     lambda ob, parent, name, v, extra: extra, 1)
     'red'
-    
+
     >>> a.a1.y = 42
     >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'y')
     42
@@ -829,7 +829,7 @@ def test_muliple():
 
 
     """
-    
+
 def test_pinball():
     r"""
     >>> a = I('a')
@@ -943,7 +943,7 @@ def test_pinball():
     a1
     |
     a
-    
+
     """
 
 def test_explicit():
@@ -1003,7 +1003,7 @@ def test_explicit():
     Traceback (most recent call last):
     ...
     AttributeError: x
-    
+
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -1025,7 +1025,7 @@ def test_explicit():
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
-    
+
     >>> Acquisition.aq_acquire(a.b.c, 'id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -1143,7 +1143,7 @@ def test_mixed_explicit_and_explicit():
     Traceback (most recent call last):
     ...
     AttributeError: x
-    
+
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -1165,7 +1165,7 @@ def test_mixed_explicit_and_explicit():
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
-    
+
     >>> Acquisition.aq_acquire(a.b.c, 'id',
     ...  lambda searched, parent, name, ob, extra: extra)
     Traceback (most recent call last):
@@ -1221,7 +1221,7 @@ def test_mixed_explicit_and_explicit():
 
 
 def test_aq_inContextOf():
-    """    
+    """
     >>> from ExtensionClass import Base
     >>> import Acquisition
 
@@ -1247,9 +1247,9 @@ def test_aq_inContextOf():
     ...     raise 'Program error', 'spam'
     ... except AttributeError: pass
     A()
-    
+
        New test for wrapper comparisons.
-    
+
     >>> foo = b.a
     >>> bar = b.a
     >>> foo == bar
@@ -1379,14 +1379,14 @@ def test_AqAlg():
     [D, C, A]
     >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C.D, 1))
     [D, C, A]
-    
+
 
     >>> A.B.C.D.color
     'red'
     >>> Acquisition.aq_get(A.B.C.D, "color", None)
     'red'
     >>> Acquisition.aq_get(A.B.C.D, "color", None, 1)
-    
+
     """
 
 def test_explicit_acquisition():
@@ -1414,7 +1414,7 @@ def test_explicit_acquisition():
     ...     raise 'Program error', 'spam'
     ... except AttributeError: pass
     A
-    
+
     """
 
 def test_creating_wrappers_directly():
@@ -1565,7 +1565,125 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
     TypeError: Can't pickle objects in acquisition wrappers.
     """
 
-def test_z3interfaces():
+def test_cant_persist_acquisition_wrappers_classic():
+    """
+    >>> import cPickle
+
+    >>> class X:
+    ...     _p_oid = '1234'
+    ...     def __getstate__(self):
+    ...         return 1
+
+    We shouldn't be able to pickle wrappers:
+
+    >>> from Acquisition import ImplicitAcquisitionWrapper
+    >>> w = ImplicitAcquisitionWrapper(X(), X())
+    >>> cPickle.dumps(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check for pickle protocol one:
+
+    >>> cPickle.dumps(w, 1)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler:
+
+    >>> from cStringIO import StringIO
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> pickler.dump(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler with a persistent_id method matching the semantics
+    in ZODB.serialize.ObjectWriter.persistent_id:
+
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> def persistent_id(obj):
+    ...     klass = type(obj)
+    ...     oid = obj._p_oid
+    ...     if hasattr(klass, '__getnewargs__'):
+    ...         return oid
+    ...     return 'class_and_oid', klass
+
+    >>> pickler.inst_persistent_id = persistent_id
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
+    """
+
+
+def test_cant_persist_acquisition_wrappers_newstyle():
+    """
+    >>> import cPickle
+
+    >>> class X(object):
+    ...     _p_oid = '1234'
+    ...     def __getstate__(self):
+    ...         return 1
+
+    We shouldn't be able to pickle wrappers:
+
+    >>> from Acquisition import ImplicitAcquisitionWrapper
+    >>> w = ImplicitAcquisitionWrapper(X(), X())
+    >>> cPickle.dumps(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check for pickle protocol one:
+
+    >>> cPickle.dumps(w, 1)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler:
+
+    >>> from cStringIO import StringIO
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> pickler.dump(w)
+    Traceback (most recent call last):
+    ...
+    TypeError: Can't pickle objects in acquisition wrappers.
+
+    Check custom pickler with a persistent_id method matching the semantics
+    in ZODB.serialize.ObjectWriter.persistent_id:
+
+    >>> file = StringIO()
+    >>> pickler = cPickle.Pickler(file, 1)
+
+    >>> def persistent_id(obj):
+    ...     klass = type(obj)
+    ...     oid = obj._p_oid
+    ...     if hasattr(klass, '__getnewargs__'):
+    ...         return oid
+    ...     return 'class_and_oid', klass
+
+    >>> pickler.inst_persistent_id = persistent_id
+    >>> _ = pickler.dump(w)
+    >>> state = file.getvalue()
+    >>> '1234' in state
+    True
+    >>> 'class_and_oid' in state
+    False
+    """
+
+
+def test_interfaces():
     """
     >>> from zope.interface.verify import verifyClass
 
@@ -1593,7 +1711,7 @@ def test_z3interfaces():
 
 def show(x):
     print showaq(x).strip()
-    
+
 def showaq(m_self, indent=''):
     rval = ''
     obj = m_self
@@ -1631,11 +1749,11 @@ def test_Basic_gc():
     >>> for B in I, E:
     ...     class C1(B):
     ...         pass
-    ... 
+    ...
     ...     class C2(Base):
     ...         def __del__(self):
     ...             print 'removed'
-    ... 
+    ...
     ...     a=C1('a')
     ...     a.b = C1('a.b')
     ...     a.b.a = a
@@ -1664,7 +1782,7 @@ def test_Wrapper_gc():
     ...     class C:
     ...         def __del__(self):
     ...             print 'removed'
-    ... 
+    ...
     ...     a=B('a')
     ...     a.b = B('b')
     ...     a.a_b = a.b # circ ref through wrapper
@@ -1891,7 +2009,7 @@ def test_proxying():
 
 class Location(object):
     __parent__ = None
- 
+
 class ECLocation(ExtensionClass.Base):
     __parent__ = None
 

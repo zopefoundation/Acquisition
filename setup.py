@@ -36,7 +36,7 @@ setup(name='Acquisition',
                                            '_Acquisition.c')],
                              include_dirs=['include', 'src']),
                    ],
-      install_requires=['ExtensionClass', 'zope.interface', 'zope.testing'],
+      install_requires=['ExtensionClass', 'zope.interface'],
       include_package_data=True,
       zip_safe=False,
       )

@@ -4,6 +4,8 @@ Changelog
 2.13.3 (unreleased)
 -------------------
 
+- Use the doctest module from the standard library and no longer depend on
+  zope.testing.
 
 2.13.2 (2010-04-04)
 -------------------

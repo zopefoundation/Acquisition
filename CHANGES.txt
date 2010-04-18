@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.3 (unreleased)
+2.13.3 (2010-04-19)
 -------------------
 
 - Use the doctest module from the standard library and no longer depend on

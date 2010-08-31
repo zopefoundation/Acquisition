@@ -4,6 +4,7 @@ Changelog
 2.13.4 (unreleased)
 -------------------
 
+- LP 623665: Fixed typo in Acquisition.h.
 
 2.13.3 (2010-04-19)
 -------------------

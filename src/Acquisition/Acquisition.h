@@ -33,7 +33,7 @@ typedef struct {
 
 #define aq_Acquire(obj, name, filter, extra, explicit, deflt, containment ) (AcquisitionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Acquire(obj, name, filter, extra, explicit, deflt, containment)))
 #define aq_acquire(obj, name) (AcquisitionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Acquire(obj, name, NULL, NULL, 1, NULL, 0)))
-#define aq_get(obj, name, deflt, containment) (AcquistionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Get(obj, name, deflt, containment)))
+#define aq_get(obj, name, deflt, containment) (AcquisitionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Get(obj, name, deflt, containment)))
 #define aq_isWrapper(obj)   (AcquisitionCAPI == NULL ? -1 : (AcquisitionCAPI->AQ_IsWrapper(obj)))
 #define aq_base(obj)   (AcquisitionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Base(obj)))
 #define aq_parent(obj) (AcquisitionCAPI == NULL ? NULL : (AcquisitionCAPI->AQ_Parent(obj)))

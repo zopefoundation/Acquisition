@@ -157,3 +157,4 @@ def test_wrapper_comparissons():
         >>> assert not b.c.aq_inContextOf(b.a)
         >>> assert not b.a.aq_inContextOf('somestring')
 '''
+

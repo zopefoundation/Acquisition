@@ -17,7 +17,7 @@ import os
 from setuptools import setup, find_packages, Extension
 
 setup(name='Acquisition',
-      version = '2.13.3dev',
+      version = '2.13.5dev',
       url='http://pypi.python.org/pypi/Acquisition',
       license='ZPL 2.1',
       description="Acquisition is a mechanism that allows objects to obtain "
@@ -36,7 +36,7 @@ setup(name='Acquisition',
                                            '_Acquisition.c')],
                              include_dirs=['include', 'src']),
                    ],
-      install_requires=['ExtensionClass', 'zope.interface', 'zope.testing'],
+      install_requires=['ExtensionClass', 'zope.interface'],
       include_package_data=True,
       zip_safe=False,
       )

@@ -2436,7 +2436,7 @@ def test___parent__parent__circles():
     """
 
 import unittest
-from zope.testing.doctest import DocTestSuite, DocFileSuite
+from doctest import DocTestSuite, DocFileSuite
 
 def test_suite():
     return unittest.TestSuite((

@@ -1,9 +1,20 @@
 Changelog
 =========
 
-2.13.3 (unreleased)
+2.13.5 (unreleased)
 -------------------
 
+
+2.13.4 (2010-08-31)
+-------------------
+
+- LP 623665: Fixed typo in Acquisition.h.
+
+2.13.3 (2010-04-19)
+-------------------
+
+- Use the doctest module from the standard library and no longer depend on
+  zope.testing.
 
 2.13.2 (2010-04-04)
 -------------------

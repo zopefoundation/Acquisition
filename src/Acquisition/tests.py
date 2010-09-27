@@ -1840,7 +1840,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxint)
+    >>> c[5:] == (5, sys.maxsize)
     slicing...
     True
 
@@ -1863,7 +1863,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxint)
+    >>> i.c[5:] == (5, sys.maxsize)
     slicing...
     True
 
@@ -1904,7 +1904,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxint)
+    >>> c[5:] == (5, sys.maxsize)
     slicing...
     True
 
@@ -1927,7 +1927,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxint)
+    >>> i.c[5:] == (5, sys.maxsize)
     slicing...
     True
 

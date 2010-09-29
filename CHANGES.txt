@@ -1,11 +1,10 @@
 Changelog
 =========
 
-2.13.5 (unreleased)
+2.13.5 (2010-09-29)
 -------------------
 
-- Fixed unit tests that failed on 64bit python on Windows machines
-
+- Fixed unit tests that failed on 64bit Python on Windows machines.
 
 2.13.4 (2010-08-31)
 -------------------

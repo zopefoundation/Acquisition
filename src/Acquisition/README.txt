@@ -118,7 +118,7 @@ selected objects that smell like private objects.
 Sometimes, you want to dynamically make an implicitly acquiring object
 acquire explicitly. You can do this by getting the object's
 aq_explicit attribute. This attribute provides the object with an
-explicit wrapper that places the original implicit wrapper.
+explicit wrapper that replaces the original implicit wrapper.
 
 Filtered Acquisition
 ====================

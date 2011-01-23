@@ -4,6 +4,7 @@ Changelog
 2.13.6 (unreleased)
 -------------------
 
+- Add ``aq_explicit`` to ``IAcquisitionWrapper``.
 
 2.13.5 (2010-09-29)
 -------------------

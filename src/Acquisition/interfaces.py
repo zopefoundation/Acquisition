@@ -62,3 +62,7 @@ class IAcquisitionWrapper(Interface):
     aq_chain = Attribute(
         """Get a list of objects in the acquisition environment."""
         )
+
+    aq_explicit = Attribute(
+        """Get the object with an explicit acquisition wrapper."""
+        )

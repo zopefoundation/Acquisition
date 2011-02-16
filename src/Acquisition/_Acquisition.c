@@ -51,8 +51,8 @@ static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__long__, *py__float__, *py__oct__, *py__hex__,
   *py__getitem__, *py__setitem__, *py__delitem__,
   *py__getslice__, *py__setslice__, *py__delslice__,  *py__contains__,
-  *py__len__, *py__of__, *py__call__, *py__repr__, *py__str__, *py__unicode__, *py__cmp__,
-  *py__parent__, *py__iter__;
+  *py__len__, *py__of__, *py__call__, *py__repr__, *py__str__, *py__unicode__,
+  *py__cmp__, *py__parent__, *py__iter__;
 
 static PyObject *Acquired=0;
 

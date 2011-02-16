@@ -6,6 +6,9 @@ Changelog
 
 - Add ``aq_explicit`` to ``IAcquisitionWrapper``.
 
+- Fixed bug: ``unicode(wrapped)`` was not calling a ``__unicode__`` 
+  method on wrapped objects.
+
 2.13.5 (2010-09-29)
 -------------------
 

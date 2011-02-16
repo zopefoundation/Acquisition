@@ -2435,13 +2435,31 @@ def test___parent__parent__circles():
       AttributeError: non_existant_attr
     """
 
+
 import unittest
 from doctest import DocTestSuite, DocFileSuite
+
+
+class TestUnicode(unittest.TestCase):
+
+    def test_implicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Implicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        self.assertEqual(u'unicode was called', unicode(A().__of__(A())))
+
+    def test_explicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Explicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        self.assertEqual(u'unicode was called', unicode(A().__of__(A())))
+
 
 def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
         DocFileSuite('README.txt', package='Acquisition'),
+        unittest.makeSuite(TestUnicode),
         ))
 
 if __name__ == '__main__':

@@ -2454,6 +2454,13 @@ class TestUnicode(unittest.TestCase):
                 return u'unicode was called'
         self.assertEqual(u'unicode was called', unicode(A().__of__(A())))
 
+    def test_should_fall_back_to_str(self):
+        class A(Acquisition.Explicit):
+            def __str__(self):
+                return 'str was called'
+        self.assertEqual(u'str was called', unicode(A().__of__(A())))
+
+
 
 def test_suite():
     return unittest.TestSuite((

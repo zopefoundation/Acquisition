@@ -2481,6 +2481,3 @@ def test_suite():
         DocFileSuite('README.txt', package='Acquisition'),
         unittest.makeSuite(TestUnicode),
         ))
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

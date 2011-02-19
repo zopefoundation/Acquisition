@@ -2397,47 +2397,35 @@ def test___parent__aq_parent_circles():
       Traceback (most recent call last):
       ...
       AttributeError: non_existant_attr
-
-    """
-
-def test___parent__parent__circles():
-    """
-    Acquisition won't follow circular __parent__ references:
-
-      >>> class Impl(Acquisition.Implicit):
-      ...     hello = 'world'
-
-      >>> class Impl2(Acquisition.Implicit):
-      ...     hello = 'world2'
-      ...     only = 'here'
-
-      >>> x = Impl()
-      >>> y = Impl2()
-      >>> x.__parent__ = y
-      >>> y.__parent__ = x
-
-      >>> x.__parent__.__parent__ is x
-      True
-
-      >>> Acquisition.aq_acquire(x, 'hello')
-      'world'
-      >>> Acquisition.aq_acquire(x, 'only')
-      'here'
-
-      >>> Acquisition.aq_acquire(x, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
-
-      >>> Acquisition.aq_acquire(y, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
     """
 
 
 import unittest
 from doctest import DocTestSuite, DocFileSuite
+
+
+class TestParent(unittest.TestCase):
+
+    def test_parent_parent_circles(self):
+        class Impl(Acquisition.Implicit):
+            hello = 'world'
+        class Impl2(Acquisition.Implicit):
+            hello = 'world2'
+            only = 'here'
+
+        x = Impl()
+        y = Impl2()
+        x.__parent__ = y
+        y.__parent__ = x
+
+        self.assertTrue(x.__parent__.__parent__ is x)
+        self.assertEqual(Acquisition.aq_acquire(x, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(x, 'only'), 'here')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            x, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            y, 'non_existant_attr')
 
 
 class TestUnicode(unittest.TestCase):
@@ -2479,5 +2467,6 @@ def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
         DocFileSuite('README.txt', package='Acquisition'),
+        unittest.makeSuite(TestParent),
         unittest.makeSuite(TestUnicode),
         ))

@@ -2435,13 +2435,51 @@ def test___parent__parent__circles():
       AttributeError: non_existant_attr
     """
 
+
 import unittest
 from doctest import DocTestSuite, DocFileSuite
+
+
+class TestUnicode(unittest.TestCase):
+
+    def test_implicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Implicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(str(wrapped), repr(wrapped))
+
+    def test_explicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Explicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(str(wrapped), repr(wrapped))
+
+    def test_implicit_should_fall_back_to_str(self):
+        class A(Acquisition.Implicit):
+            def __str__(self):
+                return 'str was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual('str was called', str(wrapped))
+
+    def test_explicit_should_fall_back_to_str(self):
+        class A(Acquisition.Explicit):
+            def __str__(self):
+                return 'str was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual('str was called', str(wrapped))
+
 
 def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
         DocFileSuite('README.txt', package='Acquisition'),
+        unittest.makeSuite(TestUnicode),
         ))
 
 if __name__ == '__main__':

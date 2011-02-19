@@ -2427,6 +2427,45 @@ class TestParent(unittest.TestCase):
         self.assertRaises(AttributeError, Acquisition.aq_acquire,
             y, 'non_existant_attr')
 
+    def test_parent_parent_parent_circles(self):
+        class Impl(Acquisition.Implicit):
+            hello = 'world'
+        class Impl2(Acquisition.Implicit):
+            hello = 'world'
+        class Impl3(Acquisition.Implicit):
+            hello = 'world2'
+            only = 'here'
+
+        a = Impl()
+        b = Impl2()
+        c = Impl3()
+        a.__parent__ = b
+        b.__parent__ = c
+        c.__parent__ = a
+
+        # This is not quite what you'd expect, an AQ circle with an
+        # intermediate object gives strange results
+        self.assertTrue(a.__parent__.__parent__ is a)
+        self.assertTrue(a.__parent__.__parent__.__parent__.aq_base is b)
+        self.assertTrue(b.__parent__.__parent__ is b)
+        self.assertTrue(c.__parent__.__parent__ is c)
+
+        self.assertEqual(Acquisition.aq_acquire(a, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(b, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(c, 'hello'), 'world2')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            a, 'only')
+        self.assertEqual(Acquisition.aq_acquire(b, 'only'), 'here')
+        self.assertEqual(Acquisition.aq_acquire(c, 'only'), 'here')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            a, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            b, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            c, 'non_existant_attr')
+
 
 class TestUnicode(unittest.TestCase):
 

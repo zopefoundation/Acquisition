@@ -2501,6 +2501,22 @@ class TestUnicode(unittest.TestCase):
         self.assertEqual(u'str was called', unicode(wrapped))
         self.assertEqual('str was called', str(wrapped))
 
+    def test_str_fallback_should_be_called_with_wrapped_self(self):
+        class A(Acquisition.Implicit):
+            def __str__(self):
+                return str(self.aq_parent == outer)
+        outer = A()
+        inner = A().__of__(outer)
+        self.assertEqual(u'True', unicode(inner))
+
+    def test_unicode_should_be_called_with_wrapped_self(self):
+        class A(Acquisition.Implicit):
+            def __unicode__(self):
+                return str(self.aq_parent == outer)
+        outer = A()
+        inner = A().__of__(outer)
+        self.assertEqual(u'True', unicode(inner))
+
 
 def test_suite():
     return unittest.TestSuite((

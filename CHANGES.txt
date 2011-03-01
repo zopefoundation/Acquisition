@@ -4,6 +4,9 @@ Changelog
 2.13.7 (unreleased)
 -------------------
 
+- Fixed bug: When an object did not implement ``__unicode__``, calling
+  ``unicode(wrapped)`` was calling ``__str__`` with an unwrapped ``self``.
+
 
 2.13.6 (2011-02-19)
 -------------------

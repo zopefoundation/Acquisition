@@ -853,7 +853,7 @@ Wrapper_unicode(Wrapper *self)
   else
     {
       PyErr_Clear();
-      return PyObject_Unicode(self->obj);
+      return Wrapper_str(self);
     }
 }
 

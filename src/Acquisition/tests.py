@@ -2397,53 +2397,132 @@ def test___parent__aq_parent_circles():
       Traceback (most recent call last):
       ...
       AttributeError: non_existant_attr
-
     """
 
-def test___parent__parent__circles():
-    """
-    Acquisition won't follow circular __parent__ references:
-
-      >>> class Impl(Acquisition.Implicit):
-      ...     hello = 'world'
-
-      >>> class Impl2(Acquisition.Implicit):
-      ...     hello = 'world2'
-      ...     only = 'here'
-
-      >>> x = Impl()
-      >>> y = Impl2()
-      >>> x.__parent__ = y
-      >>> y.__parent__ = x
-
-      >>> x.__parent__.__parent__ is x
-      True
-
-      >>> Acquisition.aq_acquire(x, 'hello')
-      'world'
-      >>> Acquisition.aq_acquire(x, 'only')
-      'here'
-
-      >>> Acquisition.aq_acquire(x, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
-
-      >>> Acquisition.aq_acquire(y, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
-    """
 
 import unittest
 from doctest import DocTestSuite, DocFileSuite
+
+
+class TestParent(unittest.TestCase):
+
+    def test_parent_parent_circles(self):
+        class Impl(Acquisition.Implicit):
+            hello = 'world'
+        class Impl2(Acquisition.Implicit):
+            hello = 'world2'
+            only = 'here'
+
+        x = Impl()
+        y = Impl2()
+        x.__parent__ = y
+        y.__parent__ = x
+
+        self.assertTrue(x.__parent__.__parent__ is x)
+        self.assertEqual(Acquisition.aq_acquire(x, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(x, 'only'), 'here')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            x, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            y, 'non_existant_attr')
+
+    def test_parent_parent_parent_circles(self):
+        class Impl(Acquisition.Implicit):
+            hello = 'world'
+        class Impl2(Acquisition.Implicit):
+            hello = 'world'
+        class Impl3(Acquisition.Implicit):
+            hello = 'world2'
+            only = 'here'
+
+        a = Impl()
+        b = Impl2()
+        c = Impl3()
+        a.__parent__ = b
+        b.__parent__ = c
+        c.__parent__ = a
+
+        # This is not quite what you'd expect, an AQ circle with an
+        # intermediate object gives strange results
+        self.assertTrue(a.__parent__.__parent__ is a)
+        self.assertTrue(a.__parent__.__parent__.__parent__.aq_base is b)
+        self.assertTrue(b.__parent__.__parent__ is b)
+        self.assertTrue(c.__parent__.__parent__ is c)
+
+        self.assertEqual(Acquisition.aq_acquire(a, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(b, 'hello'), 'world')
+        self.assertEqual(Acquisition.aq_acquire(c, 'hello'), 'world2')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            a, 'only')
+        self.assertEqual(Acquisition.aq_acquire(b, 'only'), 'here')
+        self.assertEqual(Acquisition.aq_acquire(c, 'only'), 'here')
+
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            a, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            b, 'non_existant_attr')
+        self.assertRaises(AttributeError, Acquisition.aq_acquire,
+            c, 'non_existant_attr')
+
+
+class TestUnicode(unittest.TestCase):
+
+    def test_implicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Implicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(str(wrapped), repr(wrapped))
+
+    def test_explicit_aq_unicode_should_be_called(self):
+        class A(Acquisition.Explicit):
+            def __unicode__(self):
+                return u'unicode was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(str(wrapped), repr(wrapped))
+
+    def test_implicit_should_fall_back_to_str(self):
+        class A(Acquisition.Implicit):
+            def __str__(self):
+                return 'str was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual('str was called', str(wrapped))
+
+    def test_explicit_should_fall_back_to_str(self):
+        class A(Acquisition.Explicit):
+            def __str__(self):
+                return 'str was called'
+        wrapped = A().__of__(A())
+        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual('str was called', str(wrapped))
+
+    def test_str_fallback_should_be_called_with_wrapped_self(self):
+        class A(Acquisition.Implicit):
+            def __str__(self):
+                return str(self.aq_parent == outer)
+        outer = A()
+        inner = A().__of__(outer)
+        self.assertEqual(u'True', unicode(inner))
+
+    def test_unicode_should_be_called_with_wrapped_self(self):
+        class A(Acquisition.Implicit):
+            def __unicode__(self):
+                return str(self.aq_parent == outer)
+        outer = A()
+        inner = A().__of__(outer)
+        self.assertEqual(u'True', unicode(inner))
+
 
 def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
         DocTestSuite('Acquisition.test_dynamic_acquisition'),
         DocFileSuite('README.txt', package='Acquisition'),
+        unittest.makeSuite(TestParent),
+        unittest.makeSuite(TestUnicode),
         ))
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

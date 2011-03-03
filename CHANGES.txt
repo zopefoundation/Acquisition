@@ -1,9 +1,23 @@
 Changelog
 =========
 
-2.13.6 (unreleased)
+2.13.8 (unreleased)
 -------------------
 
+
+2.13.7 (2011-03-02)
+-------------------
+
+- Fixed bug: When an object did not implement ``__unicode__``, calling
+  ``unicode(wrapped)`` was calling ``__str__`` with an unwrapped ``self``.
+
+2.13.6 (2011-02-19)
+-------------------
+
+- Add ``aq_explicit`` to ``IAcquisitionWrapper``.
+
+- Fixed bug: ``unicode(wrapped)`` was not calling a ``__unicode__`` 
+  method on wrapped objects.
 
 2.13.5 (2010-09-29)
 -------------------

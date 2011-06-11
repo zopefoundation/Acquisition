@@ -17,7 +17,7 @@ import os
 from setuptools import setup, find_packages, Extension
 
 setup(name='Acquisition',
-      version = '2.13.8',
+      version = '2.13.9dev',
       url='http://pypi.python.org/pypi/Acquisition',
       license='ZPL 2.1',
       description="Acquisition is a mechanism that allows objects to obtain "

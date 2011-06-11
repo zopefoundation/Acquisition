@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.8 (unreleased)
+2.13.8 (2011-06-11)
 -------------------
 
 - Fixed a segfault on 64bit platforms when providing the `explicit` argument to

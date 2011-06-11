@@ -2463,6 +2463,37 @@ class TestParent(unittest.TestCase):
         self.assertRaises(AttributeError, Acquisition.aq_acquire,
             c, 'non_existant_attr')
 
+
+class TestAcquire(unittest.TestCase):
+
+    def test_explicit_default(self):
+        class Impl(Acquisition.Implicit):
+            pass
+        class Expl(Acquisition.Explicit):
+            pass
+
+        a = Impl('a')
+        a.y = 42
+        a.b = Expl('b')
+        a.b.z = 3
+        a.b.c = Impl('c')
+        value = a.b.c.aq_acquire('z')
+        self.assertEqual(value, 3)
+
+    def test_explicit_true(self):
+        class Impl(Acquisition.Implicit):
+            pass
+        class Expl(Acquisition.Explicit):
+            pass
+
+        a = Impl('a')
+        a.y = 42
+        a.b = Expl('b')
+        a.b.z = 3
+        a.b.c = Impl('c')
+        value = a.b.c.aq_acquire('z', explicit=True)
+        self.assertEqual(value, 3)
+
     def test_explicit_false(self):
         class Impl(Acquisition.Implicit):
             pass
@@ -2475,6 +2506,7 @@ class TestParent(unittest.TestCase):
         a.b.z = 3
         a.b.c = Impl('c')
         value = a.b.c.aq_acquire('z', explicit=False)
+        self.assertEqual(value, 3)
 
 
 class TestUnicode(unittest.TestCase):
@@ -2533,5 +2565,6 @@ def test_suite():
         DocTestSuite(),
         DocFileSuite('README.txt', package='Acquisition'),
         unittest.makeSuite(TestParent),
+        unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
         ))

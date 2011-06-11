@@ -1251,7 +1251,7 @@ Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
 
   UNLESS (PyArg_ParseTupleAndKeywords(
 	     args, kw, "O|OOOOi", acquire_args+1,
-	     &name, &filter, &extra, &explicit, &defalt, &containment
+	     &name, &filter, &extra, &expl, &defalt, &containment
 	     ))
     return NULL;
 

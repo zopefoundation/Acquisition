@@ -4,6 +4,10 @@ Changelog
 2.13.8 (unreleased)
 -------------------
 
+- Fixed a segfault on 64bit platforms when providing the `explicit` argument to
+  the aq_acquire method of an Acquisition wrapper. Thx to LP #675064 for the
+  hint to the solution. The code passed an int instead of a pointer into a
+  function.
 
 2.13.7 (2011-03-02)
 -------------------

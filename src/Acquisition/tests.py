@@ -2466,47 +2466,36 @@ class TestParent(unittest.TestCase):
 
 class TestAcquire(unittest.TestCase):
 
-    def test_explicit_default(self):
+    def setUp(self):
         class Impl(Acquisition.Implicit):
             pass
         class Expl(Acquisition.Explicit):
             pass
-
         a = Impl('a')
         a.y = 42
         a.b = Expl('b')
         a.b.z = 3
         a.b.c = Impl('c')
-        value = a.b.c.aq_acquire('z')
-        self.assertEqual(value, 3)
+        self.a = a
+        self.acquire = Acquisition.aq_acquire
 
-    def test_explicit_true(self):
-        class Impl(Acquisition.Implicit):
-            pass
-        class Expl(Acquisition.Explicit):
-            pass
+    def test_explicit_module_default(self):
+        self.assertEqual(self.acquire(self.a.b.c, 'z'), 3)
 
-        a = Impl('a')
-        a.y = 42
-        a.b = Expl('b')
-        a.b.z = 3
-        a.b.c = Impl('c')
-        value = a.b.c.aq_acquire('z', explicit=True)
-        self.assertEqual(value, 3)
+    def test_explicit_module_true(self):
+        self.assertEqual(self.acquire(self.a.b.c, 'z', explicit=True), 3)
 
-    def test_explicit_false(self):
-        class Impl(Acquisition.Implicit):
-            pass
-        class Expl(Acquisition.Explicit):
-            pass
+    def test_explicit_module_false(self):
+        self.assertEqual(self.acquire(self.a.b.c, 'z', explicit=False), 3)
 
-        a = Impl('a')
-        a.y = 42
-        a.b = Expl('b')
-        a.b.z = 3
-        a.b.c = Impl('c')
-        value = a.b.c.aq_acquire('z', explicit=False)
-        self.assertEqual(value, 3)
+    def test_explicit_wrapper_default(self):
+        self.assertEqual(self.a.b.c.aq_acquire('z'), 3)
+
+    def test_explicit_wrapper_true(self):
+        self.assertEqual(self.a.b.c.aq_acquire('z', explicit=True), 3)
+
+    def test_explicit_wrapper_false(self):
+        self.assertEqual(self.a.b.c.aq_acquire('z', explicit=False), 3)
 
 
 class TestUnicode(unittest.TestCase):

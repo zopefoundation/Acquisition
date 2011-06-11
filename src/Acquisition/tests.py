@@ -1133,9 +1133,6 @@ def test_mixed_explicit_and_explicit():
     >>> a.b.c.aq_acquire('z')
     3
 
-    >>> a.b.c.aq_acquire('z', explicit=False)
-    3
-
     >>> a.b.c.aq_acquire('id')
     'c'
 
@@ -2465,6 +2462,19 @@ class TestParent(unittest.TestCase):
             b, 'non_existant_attr')
         self.assertRaises(AttributeError, Acquisition.aq_acquire,
             c, 'non_existant_attr')
+
+    def test_explicit_false(self):
+        class Impl(Acquisition.Implicit):
+            pass
+        class Expl(Acquisition.Explicit):
+            pass
+
+        a = Impl('a')
+        a.y = 42
+        a.b = Expl('b')
+        a.b.z = 3
+        a.b.c = Impl('c')
+        value = a.b.c.aq_acquire('z', explicit=False)
 
 
 class TestUnicode(unittest.TestCase):

@@ -2362,7 +2362,7 @@ def test___parent__aq_parent_circles():
 
       >>> x.__parent__.__parent__ is x
       True
-
+      
       >>> x.hello
       'world'
       >>> Acquisition.aq_acquire(x, 'hello')
@@ -2396,6 +2396,23 @@ def test___parent__aq_parent_circles():
       AttributeError: non_existant_attr
     """
 
+def test_unwrapped_implicit_acquirer_unwraps__parent__():
+    """
+    Set up an implicit acquirer with a parent:
+    
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+    
+    >>> y = Impl()
+    >>> x = Impl()
+    >>> x.__parent__ = y
+    
+    Now if we retrieve the parent from the (unwrapped) instance,
+    the parent should not be wrapped in the instance's acquisition chain.
+    
+    >>> x.__parent__ is y
+    True
+    """
 
 import unittest
 from doctest import DocTestSuite, DocFileSuite

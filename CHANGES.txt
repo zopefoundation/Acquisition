@@ -4,6 +4,8 @@ Changelog
 4.0 (unreleased)
 ----------------
 
+- Prevent wrappers to be created while accessing `__parent__` on types derived
+  from Explicit or Implicit base classes.
 
 2.13.8 (2011-06-11)
 -------------------

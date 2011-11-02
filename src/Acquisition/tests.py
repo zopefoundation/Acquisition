@@ -2389,7 +2389,10 @@ def test___parent__aq_parent_circles():
       Traceback (most recent call last):
       ...
       AttributeError: non_existant_attr
+    """
 
+    # XXX: disabled
+    """
       >>> y.non_existant_attr
       Traceback (most recent call last):
       ...

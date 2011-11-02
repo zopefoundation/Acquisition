@@ -636,13 +636,15 @@ Wrapper_acquire(Wrapper *self, PyObject *oname,
 	 acquisition wrapper in the first place (see above). */
       else if ((r = PyObject_GetAttr(self->container, py__parent__)))
         {
-          ASSIGN(self->container, newWrapper(self->container, r,
-                                               (PyTypeObject*)&Wrappertype));
-
           /* Don't search the container when the parent of the parent
              is the same object as 'self' */
-          if (WRAPPER(r)->obj == WRAPPER(self)->obj)
-            sco=0;
+          if (r == WRAPPER(self)->obj)
+              sco=0;
+          else if (WRAPPER(r)->obj == WRAPPER(self)->obj)
+              sco=0;
+
+          ASSIGN(self->container, newWrapper(self->container, r,
+                                               (PyTypeObject*)&Wrappertype));
 
           Py_DECREF(r); /* don't need __parent__ anymore */
 

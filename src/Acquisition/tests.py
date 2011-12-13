@@ -2362,7 +2362,7 @@ def test___parent__aq_parent_circles():
 
       >>> x.__parent__.__parent__ is x
       True
-      
+
       >>> x.hello
       'world'
       >>> Acquisition.aq_acquire(x, 'hello')
@@ -2383,20 +2383,17 @@ def test___parent__aq_parent_circles():
       >>> Acquisition.aq_acquire(y, 'non_existant_attr')
       Traceback (most recent call last):
       ...
-      AttributeError: non_existant_attr
+      RuntimeError: Recursion detected in acquisition wrapper
 
       >>> x.non_existant_attr
       Traceback (most recent call last):
       ...
       AttributeError: non_existant_attr
-    """
 
-    # XXX: disabled
-    """
       >>> y.non_existant_attr
       Traceback (most recent call last):
       ...
-      AttributeError: non_existant_attr
+      RuntimeError: Recursion detected in acquisition wrapper
     """
 
 def test_unwrapped_implicit_acquirer_unwraps__parent__():

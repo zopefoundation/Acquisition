@@ -545,7 +545,15 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
 	  Py_XDECREF(r); Py_XDECREF(v); Py_XDECREF(tb);
 	  r=NULL;
 	}
-	  /* normal attribute lookup */
+      /* Deal with mixed __parent__ / aq_parent circles */
+      else if (self->container && isWrapper(self->container) &&
+               WRAPPER(self->container)->container &&
+               self == WRAPPER(WRAPPER(self->container)->container)) {
+          PyErr_SetString(PyExc_RuntimeError,
+              "Recursion detected in acquisition wrapper");
+          return NULL;
+      }
+      /* normal attribute lookup */
       else if ((r=PyObject_GetAttr(self->obj,oname)))
 	{
 	  if (r==Acquired)

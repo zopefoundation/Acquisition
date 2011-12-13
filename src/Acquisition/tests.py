@@ -2471,13 +2471,9 @@ class TestParent(unittest.TestCase):
         self.assertEqual(Acquisition.aq_acquire(b, 'only'), 'here')
         self.assertEqual(Acquisition.aq_acquire(c, 'only'), 'here')
 
-        # XXX: disabled
-        # self.assertRaises(AttributeError, Acquisition.aq_acquire,
-        #     a, 'non_existant_attr')
-        # self.assertRaises(AttributeError, Acquisition.aq_acquire,
-        #     b, 'non_existant_attr')
-        # self.assertRaises(AttributeError, Acquisition.aq_acquire,
-        #     c, 'non_existant_attr')
+        self.assertRaises(AttributeError, getattr, a, 'non_existant_attr')
+        self.assertRaises(AttributeError, getattr, b, 'non_existant_attr')
+        self.assertRaises(AttributeError, getattr, c, 'non_existant_attr')
 
 
 class TestAcquire(unittest.TestCase):

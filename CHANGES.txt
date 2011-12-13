@@ -1,8 +1,8 @@
 Changelog
 =========
 
-4.0 (unreleased)
-----------------
+4.0a1 (2011-12-13)
+------------------
 
 - Raise `RuntimeError: Recursion detected in acquisition wrapper` if an object
   with a `__parent__` pointer points to a wrapper that in turn points to the

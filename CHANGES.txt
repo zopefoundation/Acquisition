@@ -1,9 +1,10 @@
 Changelog
 =========
 
-4.0 (unreleased)
+4.0 (2013-02-24)
 ----------------
 
+- Added trove classifiers to project metadata.
 
 4.0a1 (2011-12-13)
 ------------------

@@ -44,6 +44,10 @@ typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject 
 #define FORMAT_N "i"
 #endif
 
+#define PyECMethod_Self(M) (PyMethod_Check((M)) ? PyMethod_GET_SELF((PyMethodObject*)(M)) : NULL)
+
+
+
 static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__mod__, *py__pow__, *py__divmod__, *py__lshift__, *py__rshift__,
   *py__and__, *py__or__, *py__xor__, *py__coerce__, *py__neg__,

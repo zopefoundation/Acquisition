@@ -984,6 +984,7 @@ Wrapper_iter(Wrapper *self)
           res = NULL;
       }
   } else if (PySequence_Check(obj)) {
+      PyErr_Clear();
       ASSIGN(res,PySeqIter_New(OBJECT(self)));
   } else {
       res = PyErr_Format(PyExc_TypeError, "iteration over non-sequence");

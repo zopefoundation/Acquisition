@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.13.9 (unreleased)
+-------------------
+
+- Don't raise an attribute error for ``__iter__`` if the fallback to
+  ``__getitem__`` succeeds.  LP #1155760.
+
 2.13.8 (2011-06-11)
 -------------------
 

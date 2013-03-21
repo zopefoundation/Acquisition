@@ -2414,6 +2414,24 @@ def test_unwrapped_implicit_acquirer_unwraps__parent__():
     True
     """
 
+def test__iter__after_AttributeError():
+    """ See https://bugs.launchpad.net/zope2/+bug/1155760
+
+    >>> from Acquisition import Implicit
+    >>> class C(Implicit):
+    ...     l = [0, 1, 2, 3, 4]
+    ...     def __getitem__(self, i):
+    ...         return self.l[i]
+    >>> a = C()
+    >>> b = C().__of__(a)
+    >>> import time
+    >>> try:
+    ...     for n in b:
+    ...         t = time.gmtime()
+    ... except AttributeError:
+    ...     raise
+    """
+
 import unittest
 from doctest import DocTestSuite, DocFileSuite
 

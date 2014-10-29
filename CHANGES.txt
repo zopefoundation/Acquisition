@@ -4,6 +4,9 @@ Changelog
 4.0.1 (unreleased)
 ------------------
 
+- Make module-level ``aq_acquire`` API respect the ``default`` parameter.
+  LP #1387363.
+
 - Don't raise an attribute error for ``__iter__`` if the fallback to
   ``__getitem__`` succeeds.  LP #1155760.
 

@@ -2527,6 +2527,9 @@ class TestAcquire(unittest.TestCase):
     def test_explicit_wrapper_false(self):
         self.assertEqual(self.a.b.c.aq_acquire('z', explicit=False), 3)
 
+    def test_falls_back_to_default(self):
+        self.assertEqual(self.acquire(object(), 'nonesuch', default=4), 4)
+
 
 class TestUnicode(unittest.TestCase):
 

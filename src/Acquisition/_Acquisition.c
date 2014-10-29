@@ -1499,12 +1499,14 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
   if (filter==Py_None) filter=0;
 
   /* We got a wrapped object, so business as usual */
-  if (isWrapper(self)) 
-    return Wrapper_findattr(
+  if (isWrapper(self)) {
+    result = Wrapper_findattr(
 	      WRAPPER(self), name, filter, extra, OBJECT(self),1,
 	      explicit || 
 	      WRAPPER(self)->ob_type==(PyTypeObject*)&Wrappertype,
 	      explicit, containment);  
+    goto check_default;
+  }
   /* Not wrapped; check if we have a __parent__ pointer.  If that's
      the case, create a wrapper and pretend it's business as usual. */
   else if ((result = PyObject_GetAttr(self, py__parent__)))
@@ -1515,7 +1517,7 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
                                 OBJECT(self), 1, 1, explicit, containment);
       /* Get rid of temporary wrapper */
       Py_DECREF(self);
-      return result;
+      goto check_default;
     }
   /* No wrapper and no __parent__, so just getattr. */
   else
@@ -1530,7 +1532,10 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
         }
       Py_XDECREF(result); Py_XDECREF(v); Py_XDECREF(tb);
 
-      if (! filter) return PyObject_GetAttr(self, name);
+      if (! filter) {
+        result = PyObject_GetAttr(self, name);
+        goto check_default;
+      }
 
       /* Crap, we've got to construct a wrapper so we can use
          Wrapper_findattr */
@@ -1542,8 +1547,22 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
 
       /* Get rid of temporary wrapper */
       Py_DECREF(self);
-      return result;
+      goto check_default;
     }
+check_default:
+    if (result == NULL && defalt != NULL) {
+      /* as "Python/bltinmodule.c:builtin_getattr" turn
+        only 'AttributeError' into a default value, such
+        that e.g. "ConflictError" and errors raised by the filter
+        are not mapped to the default value.
+      */
+      if (PyErr_ExceptionMatches(PyExc_AttributeError)) {
+        PyErr_Clear();
+        Py_INCREF(defalt);
+        result = defalt;
+      }
+    }
+    return result;
 }
 
 static PyObject *

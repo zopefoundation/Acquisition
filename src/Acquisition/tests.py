@@ -2515,6 +2515,19 @@ class TestAcquire(unittest.TestCase):
     def test_explicit_wrapper_false(self):
         self.assertEqual(self.a.b.c.aq_acquire('z', explicit=False), 3)
 
+    def test_wrapper_falls_back_to_default(self):
+        self.assertEqual(self.acquire(self.a.b.c, 'nonesuch', default=4), 4)
+
+    def test_no_wrapper_but___parent___falls_back_to_default(self):
+        class NotWrapped(object):
+            pass
+        child = NotWrapped()
+        parent = child.__parent__ = NotWrapped()
+        self.assertEqual(self.acquire(child, 'nonesuch', default=4), 4)
+
+    def test_unwrapped_falls_back_to_default(self):
+        self.assertEqual(self.acquire(object(), 'nonesuch', default=4), 4)
+
 
 class TestUnicode(unittest.TestCase):
 

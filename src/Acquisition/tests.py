@@ -2595,7 +2595,7 @@ class TestUnicode(unittest.TestCase):
 def test_suite():
     return unittest.TestSuite((
         DocTestSuite(),
-        DocFileSuite('README.txt', package='Acquisition'),
+        DocFileSuite('../../README.rst'),
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),

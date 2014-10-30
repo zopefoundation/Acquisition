@@ -1,3 +1,23 @@
+============================
+Environmental Acquisiton
+============================
+
+This package implements "environmental acquisiton" for Python, as
+proposed in `1996 OOPSLA paper by Joseph Gil and David H. Lorenz 
+http://www.cs.virginia.edu/~lorenz/papers/oopsla96/>`_:
+
+    We propose a new programming paradigm, environmental acquisition in
+    the context of object aggregation, in which objects acquire
+    behaviour from their current containers at runtime. The key idea is
+    that the behaviour of a component may depend upon its enclosing
+    composite(s). In particular, we propose a form of feature sharing in
+    which an object "inherits" features from the classes of objects in
+    its environment.  By examining the declaration of classes, it is
+    possible to determine which kinds of classes may contain a
+    component, and which components must be contained in a given kind of
+    composite. These relationships are the basis for language constructs
+    that supports acquisition.
+
 .. contents::
 
 Introductory Example

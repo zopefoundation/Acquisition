@@ -16,6 +16,12 @@
 import os
 from setuptools import setup, find_packages, Extension
 
+with open('README.rst') as f:
+    README = f.read()
+
+with open('CHANGES.rst') as f:
+    CHANGES = f.read()
+
 setup(
     name='Acquisition',
     version='4.0.1dev',
@@ -25,9 +31,7 @@ setup(
     "attributes from the containment hierarchy they're in.",
     author='Zope Foundation and Contributors',
     author_email='zope-dev@zope.org',
-    long_description=open(
-        os.path.join('src', 'Acquisition', 'README.txt')).read() + '\n' +
-        open('CHANGES.txt').read(),
+    long_description='\n\n'.join([README, CHANGES]),
     packages=find_packages('src'),
     package_dir={'': 'src'},
     classifiers=[

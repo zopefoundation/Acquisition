@@ -474,10 +474,16 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
     attribute.
 */
 {
-  PyObject *r, *v, *tb;
+  PyObject *r, *v, *tb, *tmp;
   char *name="";
 
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
+  if (PyUnicode_Check(oname)) {
+    tmp=PyUnicode_AsASCIIString(oname);
+    if (tmp==NULL) return NULL;
+    name=PyString_AS_STRING(tmp);
+    Py_DECREF(tmp);
+  }
   if ((*name=='a' && name[1]=='q' && name[2]=='_') ||
       (strcmp(name, "__parent__")==0))
     {
@@ -726,10 +732,17 @@ Wrapper_getattro(Wrapper *self, PyObject *oname)
 static PyObject *
 Xaq_getattro(Wrapper *self, PyObject *oname)
 {
+  PyObject *tmp;
   char *name="";
 
   /* Special case backward-compatible acquire method. */
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
+  if (PyUnicode_Check(oname)) {
+    tmp=PyUnicode_AsASCIIString(oname);
+    if (tmp==NULL) return NULL;
+    name=PyString_AS_STRING(tmp);
+    Py_DECREF(tmp);
+  }
   if (*name=='a' && name[1]=='c' && strcmp(name+2,"quire")==0)
     return Py_FindAttr(OBJECT(self),oname);
 
@@ -743,10 +756,17 @@ Xaq_getattro(Wrapper *self, PyObject *oname)
 static int
 Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
 {
+  PyObject *tmp;
   char *name="";
 
   /* Allow assignment to parent, to change context. */
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
+  if (PyUnicode_Check(oname)) {
+    tmp=PyUnicode_AsASCIIString(oname);
+    if (tmp==NULL) return -1;
+    name=PyString_AS_STRING(tmp);
+    Py_DECREF(tmp);
+  }
   if ((*name=='a' && name[1]=='q' && name[2]=='_' 
        && strcmp(name+3,"parent")==0) || (strcmp(name, "__parent__")==0))
     {

@@ -4,6 +4,8 @@ Changelog
 4.0.1 (unreleased)
 ------------------
 
+- Tolerate Unicode attribute names (ASCII only).  LP #143358.
+
 - Make module-level ``aq_acquire`` API respect the ``default`` parameter.
   LP #1387363.
 

@@ -1270,13 +1270,6 @@ Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
 
   if (filter==Py_None) filter=0;
 
-  /* DM 2005-08-25: argument "default" ignored -- fix it! */
-# if 0
-  return Wrapper_findattr(self,name,filter,extra,OBJECT(self),1,
-			  explicit || 
-			  self->ob_type==(PyTypeObject*)&Wrappertype,
-			  explicit, containment);
-# else
   result = Wrapper_findattr(self,name,filter,extra,OBJECT(self),1,
 			  explicit || 
 			  self->ob_type==(PyTypeObject*)&Wrappertype,
@@ -1294,7 +1287,6 @@ Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
     }
   }
   return result;
-# endif
 }
 
 /* forward declaration so that we can use it in Wrapper_inContextOf */

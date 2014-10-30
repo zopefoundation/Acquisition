@@ -2528,6 +2528,11 @@ class TestAcquire(unittest.TestCase):
     def test_unwrapped_falls_back_to_default(self):
         self.assertEqual(self.acquire(object(), 'nonesuch', default=4), 4)
 
+    def test_w_unicode_attr_name(self):
+        # See https://bugs.launchpad.net/acquisition/+bug/143358
+        found = self.acquire(self.a.b.c, u'aq_parent')
+        self.assertTrue(found.aq_self is self.a.b.aq_self)
+
 
 class TestUnicode(unittest.TestCase):
 

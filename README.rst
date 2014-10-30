@@ -1,10 +1,8 @@
-============================
 Environmental Acquisiton
-============================
+========================
 
 This package implements "environmental acquisiton" for Python, as
-proposed in `1996 OOPSLA paper by Joseph Gil and David H. Lorenz 
-http://www.cs.virginia.edu/~lorenz/papers/oopsla96/>`_:
+proposed in the OOPSLA96_ paper by Joseph Gil and David H. Lorenz:
 
     We propose a new programming paradigm, environmental acquisition in
     the context of object aggregation, in which objects acquire
@@ -18,10 +16,12 @@ http://www.cs.virginia.edu/~lorenz/papers/oopsla96/>`_:
     composite. These relationships are the basis for language constructs
     that supports acquisition.
 
+.. _OOPSLA96: http://www.cs.virginia.edu/~lorenz/papers/oopsla96/>`_:
+
 .. contents::
 
 Introductory Example
-====================
+--------------------
 
 Zope implements acquisition with "Extension Class" mix-in classes. To
 use acquisition your classes must inherit from an acquisition base
@@ -30,7 +30,7 @@ class. For example::
   >>> import ExtensionClass, Acquisition
 
   >>> class C(ExtensionClass.Base):
-  ...     color='red'
+  ...     color = 'red'
 
   >>> class A(Acquisition.Implicit):
   ...     def report(self):
@@ -63,7 +63,7 @@ environment, where its environment is defined by the access path used
 to reach ``a``.
 
 Acquisition Wrappers
-====================
+--------------------
 
 When an object that supports acquisition is accessed through an
 extension class instance, a special object, called an acquisition
@@ -82,7 +82,7 @@ example from above::
   True
 
 Explicit and Implicit Acquisition
-=================================
+---------------------------------
 
 Two styles of acquisition are supported: implicit and explicit
 acquisition.
@@ -123,10 +123,10 @@ all attributes that should be acquired to the special value
 inherited attributes to be overridden with acquired ones. For example::
 
   >>> class C(Acquisition.Explicit):
-  ...     id=1
-  ...     secret=2
-  ...     color=Acquisition.Acquired
-  ...     __roles__=Acquisition.Acquired
+  ...     id = 1
+  ...     secret = 2
+  ...     color = Acquisition.Acquired
+  ...     __roles__ = Acquisition.Acquired
 
 The only attributes that are automatically acquired from containing
 objects are color, and ``__roles__``. Note that the ``__roles__``
@@ -141,7 +141,7 @@ aq_explicit attribute. This attribute provides the object with an
 explicit wrapper that replaces the original implicit wrapper.
 
 Filtered Acquisition
-====================
+--------------------
 
 The acquisition method, ``aq_acquire``, accepts two optional
 arguments. The first of the additional arguments is a "filtering"
@@ -178,10 +178,10 @@ Here's an example::
   >>> class E(Explicit, HandyForTesting): pass
   ...
   >>> class Nice(HandyForTesting):
-  ...     isNice= 1 
+  ...     isNice = 1 
   ...     def __str__(self):
   ...         return HandyForTesting.__str__(self)+' and I am nice!'
-  ...     __repr__=__str__
+  ...     __repr__ = __str__
   ...
   >>> a = E('a')
   >>> a.b = E('b')
@@ -202,7 +202,7 @@ satisfy the condition given in the filter.
 Filtered acquisition is rarely used in Zope.
 
 Acquiring from Context
-======================
+----------------------
 
 Normally acquisition allows objects to acquire data from their
 containers. However an object can acquire from objects that aren't its
@@ -252,7 +252,7 @@ Here acquisition context is defined by the objects used to access
 another object.
 
 Containment Before Context
-==========================
+--------------------------
 
 If in the example above suppose both a and b have an color attribute::
 
@@ -294,7 +294,7 @@ found in ``g`` or any of its containers, then the search moves to
 ``f`` and all its containers, and so on.
 
 Additional Attributes and Methods
-=================================
+---------------------------------
 
 You can use the special method ``aq_inner`` to access an object
 wrapped only by containment. So in the example above,
@@ -322,7 +322,7 @@ object using the ``aq_inContextOf`` method. For example:
    just need to get to it).
 
 Acquisition Module Functions
-============================
+----------------------------
 
 In addition to using acquisition attributes and methods directly on
 objects you can use similar functions defined in the ``Acquisition``
@@ -409,7 +409,7 @@ In most cases it is more convenient to use these module functions
 instead of the acquisition attributes and methods directly.
 
 Acquisition and Methods
-=======================
+-----------------------
 
 Python methods of objects that support acquisition can use acquired
 attributes. When a Python method is called on an object that is
@@ -424,7 +424,7 @@ structures expected by these methods. In practice, you will seldom
 find this a problem.
 
 Conclusion
-==========
+----------
 
 Acquisition provides a powerful way to dynamically share information
 between objects. Zope 2 uses acquisition for a number of its key

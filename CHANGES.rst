@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.0.1 (unreleased)
+4.0.1 (2014-10-30)
 ------------------
 
 - Tolerate Unicode attribute names (ASCII only).  LP #143358.

@@ -327,24 +327,29 @@
    "Environmental Acquisition--A New Inheritance-Like Abstraction Mechanism",
    http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz,
    OOPSLA '96 Proceedings, ACM SIG-PLAN, October, 1996
-
-$Id$
 """
 
 import ExtensionClass
 import Acquisition
 
+
 class I(Acquisition.Implicit):
+
     def __init__(self, id):
         self.id = id
+
     def __repr__(self):
         return self.id
 
+
 class E(Acquisition.Explicit):
+
     def __init__(self, id):
         self.id = id
+
     def __repr__(self):
         return self.id
+
 
 def test_unwrapped():
     """
@@ -409,9 +414,8 @@ def test_unwrapped():
     >>> Acquisition.aq_self(c) is c
     1
 
-
-
     """
+
 
 def test_simple():
     """
@@ -554,6 +558,7 @@ def test_simple():
     True
     """
 
+
 def test__of__exception():
     """
     Wrapper_findattr did't check for an exception in a user defined
@@ -580,6 +585,7 @@ def test__of__exception():
     UserError: ack
 
     """
+
 
 def test_muliple():
     r"""
@@ -830,6 +836,7 @@ def test_muliple():
 
     """
 
+
 def test_pinball():
     r"""
     >>> a = I('a')
@@ -945,6 +952,7 @@ def test_pinball():
     a
 
     """
+
 
 def test_explicit():
     """
@@ -1078,6 +1086,7 @@ def test_explicit():
     c
 
     """
+
 
 def test_mixed_explicit_and_explicit():
     """
@@ -1325,6 +1334,7 @@ def test_aq_inContextOf():
     0
     """
 
+
 def test_AqAlg():
     """
     >>> A=I('A')
@@ -1386,6 +1396,7 @@ def test_AqAlg():
 
     """
 
+
 def test_explicit_acquisition():
     """
     >>> from ExtensionClass import Base
@@ -1413,6 +1424,7 @@ def test_explicit_acquisition():
     A
 
     """
+
 
 def test_creating_wrappers_directly():
     """
@@ -1468,6 +1480,7 @@ def test_creating_wrappers_directly():
     TypeError: kwyword arguments not allowed
     """
 
+
 def test_cant_pickle_acquisition_wrappers_classic():
     """
     >>> import pickle
@@ -1515,6 +1528,7 @@ def test_cant_pickle_acquisition_wrappers_classic():
     TypeError: Can't pickle objects in acquisition wrappers.
     """
 
+
 def test_cant_pickle_acquisition_wrappers_newstyle():
     """
     >>> import pickle
@@ -1561,6 +1575,7 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
     ...
     TypeError: Can't pickle objects in acquisition wrappers.
     """
+
 
 def test_cant_persist_acquisition_wrappers_classic():
     """
@@ -1706,17 +1721,23 @@ def test_interfaces():
     True
     """
 
+
 def show(x):
     print showaq(x).strip()
+
 
 def showaq(m_self, indent=''):
     rval = ''
     obj = m_self
     base = getattr(obj, 'aq_base', obj)
-    try: id = base.id
-    except: id = str(base)
-    try: id = id()
-    except: pass
+    try:
+        id = base.id
+    except Exception:
+        id = str(base)
+    try:
+        id = id()
+    except Exception:
+        pass
 
     if hasattr(obj, 'aq_self'):
         if hasattr(obj.aq_self, 'aq_self'):
@@ -1732,7 +1753,6 @@ def showaq(m_self, indent=''):
     else:
         rval = rval + indent + id + "\n"
     return rval
-
 
 
 def test_Basic_gc():
@@ -1767,6 +1787,7 @@ def test_Basic_gc():
     >>> gc.set_threshold(*thresholds)
 
     """
+
 
 def test_Wrapper_gc():
     """Test to make sure that EC instances participate in GC
@@ -2004,11 +2025,14 @@ def test_proxying():
 
     """
 
+
 class Location(object):
     __parent__ = None
 
+
 class ECLocation(ExtensionClass.Base):
     __parent__ = None
+
 
 def test___parent__no_wrappers():
     """
@@ -2060,6 +2084,7 @@ def test___parent__no_wrappers():
       >>> Acquisition.aq_chain(x) == [x, y, z]
       True
     """
+
 
 def test_implicit_wrapper_as___parent__():
     """
@@ -2142,6 +2167,7 @@ def test_implicit_wrapper_as___parent__():
       AttributeError: __parent__
     """
 
+
 def test_explicit_wrapper_as___parent__():
     """
     Let's do this test yet another time, with an explicit wrapper:
@@ -2221,6 +2247,7 @@ def test_explicit_wrapper_as___parent__():
       AttributeError: __parent__
     """
 
+
 def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
     """Let's do this the other way around: The root and the
     intermediate parent is an object that doesn't support acquisition,
@@ -2285,6 +2312,7 @@ def test_implicit_wrapper_has_nonwrapper_as_aq_parent():
       3.145
     """
 
+
 def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
     """Let's do this the other way around: The root and the
     intermediate parent is an object that doesn't support acquisition,
@@ -2338,6 +2366,7 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
       >>> x.aq_chain == [x, y, z]
       True
     """
+
 
 def test___parent__aq_parent_circles():
     """
@@ -2396,23 +2425,25 @@ def test___parent__aq_parent_circles():
       RuntimeError: Recursion detected in acquisition wrapper
     """
 
+
 def test_unwrapped_implicit_acquirer_unwraps__parent__():
     """
     Set up an implicit acquirer with a parent:
-    
+
     >>> class Impl(Acquisition.Implicit):
     ...     pass
-    
+
     >>> y = Impl()
     >>> x = Impl()
     >>> x.__parent__ = y
-    
+
     Now if we retrieve the parent from the (unwrapped) instance,
     the parent should not be wrapped in the instance's acquisition chain.
-    
+
     >>> x.__parent__ is y
     True
     """
+
 
 def test__iter__after_AttributeError():
     """ See https://bugs.launchpad.net/zope2/+bug/1155760
@@ -2439,8 +2470,10 @@ from doctest import DocTestSuite, DocFileSuite
 class TestParent(unittest.TestCase):
 
     def test_parent_parent_circles(self):
+
         class Impl(Acquisition.Implicit):
             hello = 'world'
+
         class Impl2(Acquisition.Implicit):
             hello = 'world2'
             only = 'here'
@@ -2455,15 +2488,18 @@ class TestParent(unittest.TestCase):
         self.assertEqual(Acquisition.aq_acquire(x, 'only'), 'here')
 
         self.assertRaises(AttributeError, Acquisition.aq_acquire,
-            x, 'non_existant_attr')
+                          x, 'non_existant_attr')
         self.assertRaises(AttributeError, Acquisition.aq_acquire,
-            y, 'non_existant_attr')
+                          y, 'non_existant_attr')
 
     def test_parent_parent_parent_circles(self):
+
         class Impl(Acquisition.Implicit):
             hello = 'world'
+
         class Impl2(Acquisition.Implicit):
             hello = 'world'
+
         class Impl3(Acquisition.Implicit):
             hello = 'world2'
             only = 'here'
@@ -2497,10 +2533,13 @@ class TestParent(unittest.TestCase):
 class TestAcquire(unittest.TestCase):
 
     def setUp(self):
+
         class Impl(Acquisition.Implicit):
             pass
+
         class Expl(Acquisition.Explicit):
             pass
+
         a = Impl('a')
         a.y = 42
         a.b = Expl('b')
@@ -2534,7 +2573,7 @@ class TestAcquire(unittest.TestCase):
         class NotWrapped(object):
             pass
         child = NotWrapped()
-        parent = child.__parent__ = NotWrapped()
+        child.__parent__ = NotWrapped()
         self.assertEqual(self.acquire(child, 'nonesuch', default=4), 4)
 
     def test_unwrapped_falls_back_to_default(self):
@@ -2604,4 +2643,4 @@ def test_suite():
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
-        ))
+    ))

@@ -2637,10 +2637,21 @@ class TestUnicode(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestSuite((
+    import os.path
+    here = os.path.dirname(__file__)
+    root = os.path.join(here, os.pardir, os.pardir)
+    readme = os.path.relpath(os.path.join(root, 'README.rst'))
+
+    suites = [
         DocTestSuite(),
-        DocFileSuite('../../README.rst'),
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
-    ))
+    ]
+
+    # This file is only available in a source checkout, skip it
+    # when tests are run for an installed version.
+    if os.path.isfile(readme):
+        suites.append(DocFileSuite(readme))
+
+    return unittest.TestSuite(suites)

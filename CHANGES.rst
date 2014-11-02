@@ -1,10 +1,10 @@
 Changelog
 =========
 
-4.0.3 (unreleased)
+4.0.3 (2014-11-02)
 ------------------
 
-
+- Skip readme.rst tests when tests are run outside a source checkout.
 
 4.0.2 (2014-11-02)
 ------------------

@@ -24,7 +24,7 @@ with open('CHANGES.rst') as f:
 
 setup(
     name='Acquisition',
-    version='4.0.3',
+    version='4.0.4',
     url='http://pypi.python.org/pypi/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "

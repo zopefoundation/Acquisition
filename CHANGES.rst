@@ -1,9 +1,10 @@
 Changelog
 =========
 
-4.0.4 (unreleased)
-------------------
+4.1 (unreleased)
+----------------
 
+- Bump dependency on ``ExtensionClass`` to match current release.
 
 4.0.3 (2014-11-02)
 ------------------
@@ -13,7 +14,7 @@ Changelog
 4.0.2 (2014-11-02)
 ------------------
 
-- Include *.rst files in the release.
+- Include ``*.rst`` files in the release.
 
 4.0.1 (2014-10-30)
 ------------------

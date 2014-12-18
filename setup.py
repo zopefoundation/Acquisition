@@ -52,7 +52,7 @@ setup(
                            include_dirs=['include', 'src']),
                  ],
     install_requires=[
-        'ExtensionClass >= 4.0a1',
+        'ExtensionClass >= 4.1a1',
         'zope.interface',
     ],
     include_package_data=True,

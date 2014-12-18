@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.1 (unreleased)
+4.1 (2014-12-18)
 ----------------
 
 - Bump dependency on ``ExtensionClass`` to match current release.

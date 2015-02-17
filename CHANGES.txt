@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.9 (unreleased)
+2.13.9 (2015-02-17)
 -------------------
 
 - Tolerate Unicode attribute names (ASCII only).  LP #143358.

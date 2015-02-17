@@ -25,7 +25,7 @@ with open('CHANGES.rst') as f:
 setup(
     name='Acquisition',
     version='4.1',
-    url='http://pypi.python.org/pypi/Acquisition',
+    url='https://github.com/zopefoundation/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "
     "attributes from the containment hierarchy they're in.",

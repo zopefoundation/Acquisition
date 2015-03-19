@@ -31,7 +31,7 @@
 
     >>> class A(Acquisition.Implicit):
     ...   def report(self):
-    ...     print self.color
+    ...     print(self.color)
 
     >>> a = A()
     >>> c = C()
@@ -117,7 +117,7 @@
       automatically obtained from the environment.  Instead, the
       method 'aq_aquire' must be used, as in::
 
-        print c.a.aq_acquire('color')
+        print(c.a.aq_acquire('color'))
 
       To support explicit acquisition, an object should inherit
       from the mix-in class 'Acquisition.Explicit'.
@@ -170,7 +170,7 @@
           ...    __roles__ = Acquisition.Acquired
 
           >>> c.x = C()
-          >>> c.x.__roles__
+          >>> c.x.__roles__ # doctest: +IGNORE_EXCEPTION_DETAIL
           Traceback (most recent call last):
           ...
           AttributeError: __roles__
@@ -231,7 +231,7 @@
         >>> def find_nice(self, ancestor, name, object, extra):
         ...     return hasattr(object,'isNice') and object.isNice
 
-        >>> print a.b.c.aq_acquire('p', find_nice)
+        >>> print(a.b.c.aq_acquire('p', find_nice))
         spam(Nice) and I am nice!
 
       The filtered acquisition in the last line skips over the first
@@ -328,6 +328,26 @@
    http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz,
    OOPSLA '96 Proceedings, ACM SIG-PLAN, October, 1996
 """
+from __future__ import print_function
+import gc
+import unittest
+import sys
+from doctest import DocTestSuite, DocFileSuite
+
+if sys.version_info >= (3,):
+    PY3 = True
+    PY2 = False
+    def unicode(self):
+        # For test purposes, redirect the unicode
+        # to the type of the object, just like Py2 did
+        try:
+            return type(self).__unicode__(self)
+        except AttributeError as e:
+
+            return type(self).__str__(self)
+else:
+    PY2 = True
+    PY3 = False
 
 import ExtensionClass
 import Acquisition
@@ -558,7 +578,6 @@ def test_simple():
     True
     """
 
-
 def test__of__exception():
     """
     Wrapper_findattr did't check for an exception in a user defined
@@ -566,13 +585,10 @@ def test__of__exception():
     case the 'value' argument of the filter was NULL, which caused
     a segfault when being accessed.
 
-    >>> class UserError(Exception):
-    ...     pass
-    ...
     >>> class X(Acquisition.Implicit):
     ...     def __of__(self, parent):
     ...         if Acquisition.aq_base(parent) is not parent:
-    ...             raise UserError, 'ack'
+    ...             raise NotImplementedError('ack')
     ...         return X.inheritedAttribute('__of__')(self, parent)
     ...
     >>> a = I('a')
@@ -582,7 +598,7 @@ def test__of__exception():
     ...     lambda self, object, name, value, extra: repr(value))
     Traceback (most recent call last):
     ...
-    UserError: ack
+    NotImplementedError: ack
 
     """
 
@@ -1236,7 +1252,8 @@ def test_aq_inContextOf():
 
     >>> class A(Acquisition.Implicit):
     ...     def hi(self):
-    ...         print "%s()" % self.__class__.__name__, self.color
+    ...         print(self.__class__.__name__)
+    ...         print(self.color)
 
     >>> class Location(object):
     ...     __parent__ = None
@@ -1244,15 +1261,17 @@ def test_aq_inContextOf():
     >>> b=B()
     >>> b.a=A()
     >>> b.a.hi()
-    A() red
+    A
+    red
     >>> b.a.color='green'
     >>> b.a.hi()
-    A() green
+    A
+    green
     >>> try:
     ...     A().hi()
-    ...     raise 'Program error', 'spam'
+    ...     raise RuntimeError( 'Program error', 'spam')
     ... except AttributeError: pass
-    A()
+    A
 
        New test for wrapper comparisons.
 
@@ -1349,7 +1368,7 @@ def test_AqAlg():
     [A]
     >>> Acquisition.aq_chain(A, 1)
     [A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A, 1)))
     [A]
     >>> A.C
     C
@@ -1357,7 +1376,7 @@ def test_AqAlg():
     [C, A]
     >>> Acquisition.aq_chain(A.C, 1)
     [C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.C, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.C, 1)))
     [C, A]
 
     >>> A.C.D
@@ -1366,7 +1385,7 @@ def test_AqAlg():
     [D, C, A]
     >>> Acquisition.aq_chain(A.C.D, 1)
     [D, C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.C.D, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.C.D, 1)))
     [D, C, A]
 
     >>> A.B.C
@@ -1375,7 +1394,7 @@ def test_AqAlg():
     [C, B, A]
     >>> Acquisition.aq_chain(A.B.C, 1)
     [C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C, 1)))
     [C, A]
 
     >>> A.B.C.D
@@ -1384,7 +1403,7 @@ def test_AqAlg():
     [D, C, B, A]
     >>> Acquisition.aq_chain(A.B.C.D, 1)
     [D, C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C.D, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C.D, 1)))
     [D, C, A]
 
 
@@ -1407,19 +1426,22 @@ def test_explicit_acquisition():
 
     >>> class A(Acquisition.Explicit):
     ...     def hi(self):
-    ...         print self.__class__.__name__, self.acquire('color')
+    ...         print(self.__class__.__name__)
+    ...         print(self.acquire('color'))
 
     >>> b=B()
     >>> b.a=A()
     >>> b.a.hi()
-    A red
+    A
+    red
     >>> b.a.color='green'
     >>> b.a.hi()
-    A green
+    A
+    green
 
     >>> try:
     ...     A().hi()
-    ...     raise 'Program error', 'spam'
+    ...     raise RuntimeError('Program error', 'spam')
     ... except AttributeError: pass
     A
 
@@ -1442,7 +1464,7 @@ def test_creating_wrappers_directly():
     >>> w.color
     'red'
 
-    >>> w = ImplicitAcquisitionWrapper(a.b)
+    >>> w = ImplicitAcquisitionWrapper(a.b) # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: __init__() takes exactly 2 arguments (1 given)
@@ -1464,17 +1486,17 @@ def test_creating_wrappers_directly():
     Note that messing with the wrapper won't in any way affect the
     wrapped object:
 
-    >>> Acquisition.aq_base(w).__parent__
+    >>> Acquisition.aq_base(w).__parent__ # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     AttributeError: __parent__
 
-    >>> w = ImplicitAcquisitionWrapper()
+    >>> w = ImplicitAcquisitionWrapper() # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: __init__() takes exactly 2 arguments (0 given)
 
-    >>> w = ImplicitAcquisitionWrapper(obj=1)
+    >>> w = ImplicitAcquisitionWrapper(obj=1) # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: kwyword arguments not allowed
@@ -1579,7 +1601,10 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
 
 def test_cant_persist_acquisition_wrappers_classic():
     """
-    >>> import cPickle
+    >>> try:
+    ...      import cPickle
+    ... except ImportError:
+    ...      import pickle as cPickle
 
     >>> class X:
     ...     _p_oid = '1234'
@@ -1604,7 +1629,7 @@ def test_cant_persist_acquisition_wrappers_classic():
 
     Check custom pickler:
 
-    >>> from cStringIO import StringIO
+    >>> from io import BytesIO as StringIO
     >>> file = StringIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
@@ -1620,25 +1645,31 @@ def test_cant_persist_acquisition_wrappers_classic():
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):
+    ...     if not hasattr(obj, '_p_oid'): return None
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
     ...         return oid
     ...     return 'class_and_oid', klass
 
-    >>> pickler.inst_persistent_id = persistent_id
+    >>> try: pickler.inst_persistent_id = persistent_id
+    ... except AttributeError: pass
+    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
     >>> _ = pickler.dump(w)
     >>> state = file.getvalue()
-    >>> '1234' in state
+    >>> b'1234' in state
     True
-    >>> 'class_and_oid' in state
+    >>> b'class_and_oid' in state
     False
     """
 
 
 def test_cant_persist_acquisition_wrappers_newstyle():
     """
-    >>> import cPickle
+    >>> try:
+    ...      import cPickle
+    ... except ImportError:
+    ...      import pickle as cPickle
 
     >>> class X(object):
     ...     _p_oid = '1234'
@@ -1663,7 +1694,7 @@ def test_cant_persist_acquisition_wrappers_newstyle():
 
     Check custom pickler:
 
-    >>> from cStringIO import StringIO
+    >>> from io import BytesIO as StringIO
     >>> file = StringIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
@@ -1679,18 +1710,22 @@ def test_cant_persist_acquisition_wrappers_newstyle():
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):
+    ...     if not hasattr(obj, '_p_oid'): return None
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
     ...         return oid
     ...     return 'class_and_oid', klass
 
-    >>> pickler.inst_persistent_id = persistent_id
+
+    >>> try: pickler.inst_persistent_id = persistent_id
+    ... except AttributeError: pass
+    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
     >>> _ = pickler.dump(w)
     >>> state = file.getvalue()
-    >>> '1234' in state
+    >>> b'1234' in state
     True
-    >>> 'class_and_oid' in state
+    >>> b'class_and_oid' in state
     False
     """
 
@@ -1723,7 +1758,7 @@ def test_interfaces():
 
 
 def show(x):
-    print showaq(x).strip()
+    print(showaq(x).strip())
 
 
 def showaq(m_self, indent=''):
@@ -1754,69 +1789,68 @@ def showaq(m_self, indent=''):
         rval = rval + indent + id + "\n"
     return rval
 
+if hasattr(gc, 'get_threshold'):
+    #CPython implementation detail
+    def test_Basic_gc():
+        """Test to make sure that EC instances participate in GC
 
-def test_Basic_gc():
-    """Test to make sure that EC instances participate in GC
+        >>> from ExtensionClass import Base
+        >>> import gc
+        >>> thresholds = gc.get_threshold()
+        >>> gc.set_threshold(0)
 
-    >>> from ExtensionClass import Base
-    >>> import gc
-    >>> thresholds = gc.get_threshold()
-    >>> gc.set_threshold(0)
+        >>> for B in I, E:
+        ...     class C1(B):
+        ...         pass
+        ...
+        ...     class C2(Base):
+        ...         def __del__(self):
+        ...             print('removed')
+        ...
+        ...     a=C1('a')
+        ...     a.b = C1('a.b')
+        ...     a.b.a = a
+        ...     a.b.c = C2()
+        ...     ignore = gc.collect()
+        ...     del a
+        ...     removed = gc.collect()
+        ...     print(removed > 0)
+        removed
+        True
+        removed
+        True
 
-    >>> for B in I, E:
-    ...     class C1(B):
-    ...         pass
-    ...
-    ...     class C2(Base):
-    ...         def __del__(self):
-    ...             print 'removed'
-    ...
-    ...     a=C1('a')
-    ...     a.b = C1('a.b')
-    ...     a.b.a = a
-    ...     a.b.c = C2()
-    ...     ignore = gc.collect()
-    ...     del a
-    ...     removed = gc.collect()
-    ...     print removed > 0
-    removed
-    True
-    removed
-    True
+        >>> gc.set_threshold(*thresholds)
 
-    >>> gc.set_threshold(*thresholds)
+        """
+    def test_Wrapper_gc():
+        """Test to make sure that EC instances participate in GC
+
+        >>> import gc
+        >>> thresholds = gc.get_threshold()
+        >>> gc.set_threshold(0)
+
+        >>> for B in I, E:
+        ...     class C:
+        ...         def __del__(self):
+        ...             print('removed')
+        ...
+        ...     a=B('a')
+        ...     a.b = B('b')
+        ...     a.a_b = a.b # circ ref through wrapper
+        ...     a.b.c = C()
+        ...     ignored = gc.collect()
+        ...     del a
+        ...     removed = gc.collect()
+        ...     removed > 0
+        removed
+        True
+        removed
+        True
+
+        >>> gc.set_threshold(*thresholds)
 
     """
-
-
-def test_Wrapper_gc():
-    """Test to make sure that EC instances participate in GC
-
-    >>> import gc
-    >>> thresholds = gc.get_threshold()
-    >>> gc.set_threshold(0)
-
-    >>> for B in I, E:
-    ...     class C:
-    ...         def __del__(self):
-    ...             print 'removed'
-    ...
-    ...     a=B('a')
-    ...     a.b = B('b')
-    ...     a.a_b = a.b # circ ref through wrapper
-    ...     a.b.c = C()
-    ...     ignored = gc.collect()
-    ...     del a
-    ...     removed = gc.collect()
-    ...     removed > 0
-    removed
-    True
-    removed
-    True
-
-    >>> gc.set_threshold(*thresholds)
-
-"""
 
 
 def test_proxying():
@@ -1829,18 +1863,21 @@ def test_proxying():
 
     >>> class C(Acquisition.Implicit):
     ...     def __getitem__(self, key):
-    ...         print 'getitem', key
+    ...         if isinstance(key, slice):
+    ...             print('slicing...')
+    ...             return (key.start,key.stop)
+    ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
     ...         return key
     ...     def __contains__(self, key):
-    ...         print 'contains', repr(key)
+    ...         print('contains', repr(key))
     ...         return key == 5
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
-    ...         print 'slicing...'
+    ...         print('slicing...')
     ...         return (start, end)
 
     The naked class behaves like this:
@@ -1858,7 +1895,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1881,7 +1918,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1893,18 +1930,21 @@ def test_proxying():
 
     >>> class C(Acquisition.Explicit):
     ...     def __getitem__(self, key):
-    ...         print 'getitem', key
+    ...         if isinstance(key, slice):
+    ...             print('slicing...')
+    ...             return (key.start,key.stop)
+    ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
     ...         return key
     ...     def __contains__(self, key):
-    ...         print 'contains', repr(key)
+    ...         print('contains', repr(key))
     ...         return key == 5
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
-    ...         print 'slicing...'
+    ...         print('slicing...')
     ...         return (start, end)
 
     The naked class behaves like this:
@@ -1922,7 +1962,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1945,7 +1985,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1959,14 +1999,14 @@ def test_proxying():
     ...         return self.l[i]
 
     >>> c1 = C()
-    >>> type(iter(c1))
-    <type 'iterator'>
+    >>> type(iter(c1)) #doctest: +ELLIPSIS
+    <... '...iterator'>
     >>> list(c1)
     [1, 2, 3]
 
     >>> c2 = C().__of__(c1)
-    >>> type(iter(c2))
-    <type 'iterator'>
+    >>> type(iter(c2)) #doctest: +ELLIPSIS
+    <... '...iterator'>
     >>> list(c2)
     [1, 2, 3]
 
@@ -1975,7 +2015,7 @@ def test_proxying():
 
     >>> class C(Acquisition.Implicit):
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         for i in range(5):
     ...             yield i, self.aq_parent.name
     >>> c = C()
@@ -2007,10 +2047,10 @@ def test_proxying():
     >>> c = C()
     >>> i = Impl()
     >>> i.c = c
-    >>> list(i.c)
+    >>> list(i.c) #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
-    TypeError: iteration over non-sequence
+    TypeError: ...iter...
 
     >>> class C(Acquisition.Implicit):
     ...     def __iter__(self):
@@ -2018,10 +2058,10 @@ def test_proxying():
     >>> c = C()
     >>> i = Impl()
     >>> i.c = c
-    >>> list(i.c)
+    >>> list(i.c) #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
-    TypeError: iter() returned non-iterator of type 'list'
+    TypeError: iter() returned non-iterator...
 
     """
 
@@ -2463,8 +2503,6 @@ def test__iter__after_AttributeError():
     ...     raise
     """
 
-import unittest
-from doctest import DocTestSuite, DocFileSuite
 
 
 class TestParent(unittest.TestCase):

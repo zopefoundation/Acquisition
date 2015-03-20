@@ -348,6 +348,7 @@ if sys.version_info >= (3,):
         except AttributeError as e:
 
             return type(self).__str__(self)
+    long = int
 else:
     PY2 = True
     PY3 = False
@@ -2760,20 +2761,24 @@ class TestProxying(unittest.TestCase):
         def unary_acquired_func(self):
             return self.value
 
-        acquire_meths = {k: binary_acquired_func
-                         for k in self.__binary_numeric_methods__}
+        acquire_meths = {}
+        for k in self.__binary_numeric_methods__:
+            acquire_meths[k] = binary_acquired_func
+        for k in self.__unary_special_methods__:
+            acquire_meths[k] = unary_acquired_func
 
-        acquire_meths.update( {k: unary_acquired_func
-                               for k in self.__unary_special_methods__} )
         def make_converter(f):
             def converter(self,*args):
                 return f(self.value)
             return converter
-        acquire_meths.update( {k: make_converter(convert)
-                               for k, convert
-                               in self.__unary_conversion_methods__.items()})
+        for k, convert in self.__unary_conversion_methods__.items():
+            acquire_meths[k] = make_converter(convert)
 
         acquire_meths['__len__'] = lambda self: self.value
+
+        if PY3:
+            # Under Python 3, oct() and hex() call __index__ directly
+            acquire_meths['__index__'] = acquire_meths['__int__']
 
         if base_class == Acquisition.Explicit:
             acquire_meths['value'] = Acquisition.Acquired
@@ -2827,6 +2832,7 @@ class TestProxying(unittest.TestCase):
                 continue
             self.assertEqual(converter(base.value),
                              getattr(base.derived, meth)())
+
             self.assertEqual(converter(base.value),
                              converter(base.derived))
 
@@ -2992,6 +2998,7 @@ class TestProxying(unittest.TestCase):
 
             def __nonzero__(self):
                 return bool(self.value)
+            __bool__ = __nonzero__
 
         class WithLen(base_class):
             if base_class is Acquisition.Explicit:

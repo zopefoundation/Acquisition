@@ -450,10 +450,10 @@ class _Wrapper(ExtensionClass.Base):
             # a len?
             nonzero = getattr(type_aq_self, '__len__', None)
         if nonzero:
-            return _rebound_method(nonzero, self)()
+            return bool(nonzero(self))  # Py3 is strict about the return type
         # If nothing was defined, then it's true
         return True
-
+    __bool__ = __nonzero__
 
     def __unicode__(self):
         f = getattr(self.aq_self, '__unicode__',
@@ -541,9 +541,9 @@ class _Wrapper(ExtensionClass.Base):
         '__oct__',
         '__hex__',
         '__index__',
-        '__len__',
+        #'__len__',
 
-        # strings
+        # strings are special
         #'__repr__',
         #'__str__',
     ]
@@ -568,6 +568,17 @@ class _Wrapper(ExtensionClass.Base):
     del _name
 
     # Container protocol
+
+    def __len__(self):
+        # if len is missing, it should raise TypeError
+        # (AttributeError is acceptable under Py2, but Py3
+        # breaks list conversion if AttributeError is raised)
+        try:
+            l = getattr(type(self._obj), '__len__')
+        except AttributeError:
+            raise TypeError('object has no len()')
+        else:
+            return l(self)
 
     def __iter__(self):
         # For things that provide either __iter__ or just __getitem__,
@@ -598,7 +609,7 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         aq_contains = getattr(type(aq_self), '__contains__', None)
         if aq_contains:
-            return _rebound_method(aq_contains, self)(item)
+            return aq_contains(self, item)
         # Next, we should attempt to iterate like the interpreter; but the C code doesn't
         # do this, so we don't either.
         #return item in iter(self)

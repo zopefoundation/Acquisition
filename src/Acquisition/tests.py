@@ -2432,7 +2432,8 @@ def test___parent__aq_parent_circles():
 
       >>> x.__parent__.aq_base is y.aq_base
       True
-
+      >>> Acquisition.aq_parent(x) is y
+      True
       >>> x.__parent__.__parent__ is x
       True
 

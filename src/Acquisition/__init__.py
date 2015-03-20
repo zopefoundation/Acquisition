@@ -628,7 +628,9 @@ class _Wrapper(ExtensionClass.Base):
 
     def __call__(self, *args, **kwargs):
         try:
-            call = getattr(type(self._obj), '__call__')
+            # Note we look this up on the completely unwrapped
+            # object, so as not to get a class
+            call = getattr(self.aq_base, '__call__')
         except AttributeError:
             # A TypeError is what the interpreter raises;
             # AttributeError is allowed to percolate through the
@@ -656,6 +658,9 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
+            # workaround ExtensionClass bug #3
+            if name == '__parent__':
+                return object.__getattribute__(self, name)
             return ExtensionClass.Base.__getattribute__(self, name)
         except AttributeError:
             # the doctests have very specific error message
@@ -828,7 +833,7 @@ def aq_inContextOf(self, o, inner=True):
 
 if 'PURE_PYTHON' not in os.environ:  # pragma no cover
     try:
-        from _Acquisition import *
+        from ._Acquisition import *
     except ImportError:
         pass
 

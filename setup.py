@@ -68,7 +68,7 @@ setup(
     ],
     ext_modules=ext_modules,
     install_requires=[
-        'ExtensionClass >= 4.1a1',
+        'ExtensionClass >= 4.1.1',
         'zope.interface',
     ],
     include_package_data=True,

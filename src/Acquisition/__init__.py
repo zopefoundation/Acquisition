@@ -669,9 +669,6 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            # workaround ExtensionClass bug #3
-            if name == '__parent__':
-                return object.__getattribute__(self, name)
             return ExtensionClass.Base.__getattribute__(self, name)
         except AttributeError:
             # the doctests have very specific error message
@@ -679,13 +676,6 @@ class _Acquirer(ExtensionClass.Base):
             raise AttributeError(name)
 
     def __of__(self, context):
-        # Workaround ExtensionClass bug #3
-        try:
-            if not isinstance(self, _Wrapper) \
-               and self is object.__getattribute__(context, '__parent__'):
-                return self
-        except AttributeError:
-            pass
         return type(self)._Wrapper(self, context)
 
 

@@ -196,8 +196,6 @@ def _Wrapper_findattr(wrapper, name,
     if orig_object is None:
         orig_object = wrapper
 
-    # Trivial port of the C function
-
     # First, special names
     if name.startswith('aq') or name == '__parent__':
         # __parent__ is an alias of aq_parent
@@ -218,7 +216,7 @@ def _Wrapper_findattr(wrapper, name,
 
     # If we're doing a containment search, replace the wrapper with aq_inner
     if containment:
-        while wrapper._obj is not None and isinstance(wrapper._obj, _Wrapper):
+        while isinstance(wrapper._obj, _Wrapper):
             wrapper = wrapper._obj
 
     if search_self and wrapper._obj is not None:
@@ -731,24 +729,17 @@ def aq_parent(obj):
     if isinstance(obj, _Wrapper):
         return object.__getattribute__(obj, '_container')
     # if not a wrapper, deal with the __parent__
-    # XXX have to implement the mixed checking
     return getattr(obj, '__parent__', None)
 
 
 def aq_chain(obj, containment=False):
-    # This is a straight port of the C code,
-    # but it doesn't work for the containment branch...
-    # not that I really understand what that branch is supposed to do
-    def isWrapper(self):
-        return isinstance(self, _Wrapper)
-
     result = []
 
     while True:
-        if isWrapper(obj):
+        if isinstance(obj, _Wrapper):
             if obj._obj is not None:
                 if containment:
-                    while obj._obj is not None and isWrapper(obj._obj):
+                    while isinstance(obj._obj, _Wrapper):
                         obj = obj._obj
                 result.append(obj)
             if obj._container is not None:
@@ -796,10 +787,10 @@ def aq_inner(obj):
     if not isinstance(obj, _Wrapper):
         return obj
 
-    result = obj.aq_self
+    result = obj._obj
     while isinstance(result, _Wrapper):
         obj = result
-        result = result.aq_self
+        result = result._obj
     result = obj
     return result
 

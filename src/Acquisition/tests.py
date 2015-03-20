@@ -332,7 +332,10 @@ from __future__ import print_function
 import gc
 import unittest
 import sys
+import platform
+import operator
 from doctest import DocTestSuite, DocFileSuite
+
 
 if sys.version_info >= (3,):
     PY3 = True
@@ -348,6 +351,8 @@ if sys.version_info >= (3,):
 else:
     PY2 = True
     PY3 = False
+py_impl = getattr(platform, 'python_implementation', lambda: None)
+PYPY = py_impl() == 'PyPy'
 
 import ExtensionClass
 import Acquisition
@@ -1853,8 +1858,8 @@ if hasattr(gc, 'get_threshold'):
     """
 
 
-def test_proxying():
-    """Make sure that recent python slots are proxied.
+def test_container_proxying():
+    """Make sure that recent python container-related slots are proxied.
 
     >>> import sys
     >>> import Acquisition
@@ -2064,7 +2069,6 @@ def test_proxying():
     TypeError: iter() returned non-iterator...
 
     """
-
 
 class Location(object):
     __parent__ = None
@@ -2673,6 +2677,349 @@ class TestUnicode(unittest.TestCase):
         inner = A().__of__(outer)
         self.assertEqual(u'True', unicode(inner))
 
+class TestProxying(unittest.TestCase):
+
+    __binary_numeric_methods__ = [
+        '__add__',
+        '__sub__',
+        '__mul__',
+        # '__floordiv__',  # not implemented in C
+        '__mod__',
+        '__divmod__',
+        '__pow__',
+        '__lshift__',
+        '__rshift__',
+        '__and__',
+        '__xor__',
+        '__or__',
+        # division
+        '__truediv__',
+        '__div__',
+        # reflected
+        '__radd__',
+        '__rsub__',
+        '__rmul__',
+        '__rdiv__',
+        '__rtruediv__',
+        '__rfloordiv__',
+        '__rmod__',
+        '__rdivmod__',
+        '__rpow__',
+        '__rlshift__',
+        '__rrshift__',
+        '__rand__',
+        '__rxor__',
+        '__ror__',
+        # in place
+        '__iadd__',
+        '__isub__',
+        '__imul__',
+        '__idiv__',
+        '__itruediv__',
+        '__ifloordiv__',
+        '__imod__',
+        '__idivmod__',
+        '__ipow__',
+        '__ilshift__',
+        '__irshift__',
+        '__iand__',
+        '__ixor__',
+        '__ior__',
+        # conversion
+        # implementing it messes up all the arithmetic tests
+        #'__coerce__',
+    ]
+
+    __unary_special_methods__ = [
+        # arithmetic
+        '__neg__',
+        '__pos__',
+        '__abs__',
+        '__invert__',
+    ]
+
+    __unary_conversion_methods__ = {
+        # conversion
+        '__complex__': complex,
+        '__int__': int,
+        '__long__': long,
+        '__float__': float,
+        '__oct__': oct,
+        '__hex__': hex,
+        '__len__': lambda o: o if isinstance(o,int) else len(o),
+        #'__index__': operator.index, # not implemented in C
+    }
+
+
+    def _check_special_methods(self,base_class=Acquisition.Implicit):
+        "Check that special methods are proxied when called implicitly by the interpreter"
+
+        def binary_acquired_func(self, other):
+            return self.value
+        def unary_acquired_func(self):
+            return self.value
+
+        acquire_meths = {k: binary_acquired_func
+                         for k in self.__binary_numeric_methods__}
+
+        acquire_meths.update( {k: unary_acquired_func
+                               for k in self.__unary_special_methods__} )
+        def make_converter(f):
+            def converter(self,*args):
+                return f(self.value)
+            return converter
+        acquire_meths.update( {k: make_converter(convert)
+                               for k, convert
+                               in self.__unary_conversion_methods__.items()})
+
+        acquire_meths['__len__'] = lambda self: self.value
+
+        if base_class == Acquisition.Explicit:
+            acquire_meths['value'] = Acquisition.Acquired
+        AcquireValue = type('AcquireValue', (base_class,), acquire_meths)
+
+        class B(Acquisition.Implicit):
+            pass
+
+        base = B()
+        base.value = 42
+        base.derived = AcquireValue()
+
+        # one syntax check for the heck of it
+        self.assertEqual(base.value, base.derived + 1)
+        # divmod is not in the operator module
+        self.assertEqual(base.value, divmod(base.derived, 1))
+
+        _found_at_least_one_div = False
+
+        for meth in self.__binary_numeric_methods__:
+            # called on the instance
+            self.assertEqual(base.value,
+                             getattr(base.derived, meth)(-1))
+            # called on the type, as the interpreter does
+            # Note that the C version can only implement either __truediv__
+            # or __div__, not both
+            op = getattr(operator, meth, None)
+            if op is not None:
+                try:
+                    self.assertEqual(base.value,
+                                     op(base.derived, 1))
+                    if meth in ('__div__', '__truediv__'):
+                        _found_at_least_one_div = True
+                except TypeError:
+                    if meth in ('__div__', '__truediv__'):
+                        pass
+
+        self.assertTrue(_found_at_least_one_div, "Must implement at least one of __div__ and __truediv__")
+
+        # Unary methods
+        for meth in self.__unary_special_methods__:
+            self.assertEqual(base.value,
+                             getattr(base.derived, meth)())
+            op = getattr(operator, meth)
+            self.assertEqual(base.value,
+                             op(base.derived) )
+
+        # Conversion functions
+        for meth, converter in self.__unary_conversion_methods__.items():
+            if not converter:
+                continue
+            self.assertEqual(converter(base.value),
+                             getattr(base.derived, meth)())
+            self.assertEqual(converter(base.value),
+                             converter(base.derived))
+
+    def test_implicit_proxy_special_meths(self):
+        self._check_special_methods()
+
+    def test_explicit_proxy_special_meths(self):
+        self._check_special_methods(base_class=Acquisition.Explicit)
+
+    def _check_contains(self, base_class=Acquisition.Implicit):
+        # Contains has lots of fallback behaviour
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        # The simple case is if the object implements contains itself
+        class ReallyContains(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __contains__(self, item):
+                return self.value == item
+
+        base.derived = ReallyContains()
+
+        self.assertTrue(42 in base.derived)
+        self.assertFalse(24 in base.derived)
+
+
+        # Iterable objects are NOT iterated
+        # XXX: Is this a bug in the C code? Shouldn't it do
+        # what the interpreter does and fallback to iteration?
+        class IterContains(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __iter__(self):
+                return iter((42,))
+        base.derived = IterContains()
+
+        self.assertRaises(AttributeError, operator.contains, base.derived, 42)
+
+
+    def test_implicit_proxy_contains(self):
+        self._check_contains()
+
+    def test_explicit_proxy_contains(self):
+        self._check_contains(base_class=Acquisition.Explicit)
+
+    def _check_call(self, base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        class Callable(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __call__(self, arg, k=None):
+                return self.value, arg, k
+
+        base.derived = Callable()
+
+        self.assertEqual( base.derived(1, k=2),
+                          (42, 1, 2))
+
+        if not PYPY:
+            # XXX: This test causes certain versions
+            # of PyPy to segfault (at least 2.6.0-alpha1)
+            class NotCallable(base_class):
+                pass
+
+            base.derived = NotCallable()
+            try:
+                base.derived()
+                self.fail("Not callable")
+            except (TypeError,AttributeError):
+                pass
+
+    def test_implicit_proxy_call(self):
+        self._check_call()
+
+    def test_explicit_proxy_call(self):
+        self._check_call(base_class=Acquisition.Explicit)
+
+    def _check_hash(self,base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = B()
+        base.value.hash = 42
+
+        class NoAcquired(base_class):
+            def __hash__(self):
+                return 1
+
+        hashable = NoAcquired()
+        base.derived = hashable
+        self.assertEqual(1, hash(hashable))
+        self.assertEqual(1, hash(base.derived))
+
+        # cannot access acquired attributes during
+        # __hash__
+
+        class CannotAccessAcquiredAttributesAtHash(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __hash__(self):
+                return self.value.hash
+
+        hashable = CannotAccessAcquiredAttributesAtHash()
+        base.derived = hashable
+        self.assertRaises(AttributeError, hash, hashable)
+        self.assertRaises(AttributeError, hash, base.derived)
+
+    def test_implicit_proxy_hash(self):
+        self._check_hash()
+
+    def test_explicit_proxy_hash(self):
+        self._check_hash(base_class=Acquisition.Explicit)
+
+    def _check_comparison(self,base_class=Acquisition.Implicit):
+        # Comparison behaviour is complex; see notes in _Wrapper
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        rich_cmp_methods = ['__lt__', '__gt__', '__eq__',
+                            '__ne__', '__ge__', '__le__']
+        def _never_called(self, other):
+            raise RuntimeError("This should never be called")
+
+        class RichCmpNeverCalled(base_class):
+            for _name in rich_cmp_methods:
+                locals()[_name] = _never_called
+
+        base.derived = RichCmpNeverCalled()
+        base.derived2 = RichCmpNeverCalled()
+        # We can access all of the operators, but only because
+        # they are masked
+        for name in rich_cmp_methods:
+            getattr(operator, name)(base.derived, base.derived2)
+
+        self.assertFalse(base.derived2 == base.derived)
+        self.assertEquals(base.derived, base.derived)
+
+    def test_implicit_proxy_comporison(self):
+        self._check_comparison()
+
+    def test_explicit_proxy_comporison(self):
+        self._check_comparison(base_class=Acquisition.Explicit)
+
+    def _check_bool(self, base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        class WithBool(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __nonzero__(self):
+                return bool(self.value)
+
+        class WithLen(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __len__(self):
+                return self.value
+
+        class WithNothing(base_class):
+            pass
+
+        base.wbool = WithBool()
+        base.wlen = WithLen()
+        base.wnothing = WithNothing()
+
+        self.assertEqual(bool(base.wbool), True)
+        self.assertEqual(bool(base.wlen), True)
+        self.assertEqual(bool(base.wnothing), True)
+
+        base.value = 0
+        self.assertFalse(base.wbool)
+        self.assertFalse(base.wlen)
+
+    def test_implicit_proxy_bool(self):
+        self._check_bool()
+
+    def test_explicit_proxy_bool(self):
+        self._check_bool(base_class=Acquisition.Explicit)
+
 
 def test_suite():
     import os.path
@@ -2685,6 +3032,7 @@ def test_suite():
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
+        unittest.makeSuite(TestProxying),
     ]
 
     # This file is only available in a source checkout, skip it

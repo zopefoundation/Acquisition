@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 # pylint:disable=W0212,R0911,R0912
 
 import os
+import operator
 import sys
 import types
 
@@ -12,8 +13,6 @@ from zope.interface import classImplements
 
 from .interfaces import IAcquirer
 from .interfaces import IAcquisitionWrapper
-from ._proxy import PyProxyBase
-
 
 class Acquired(object):
     "Marker for explicit acquisition"
@@ -212,7 +211,9 @@ def _Wrapper_findattr(wrapper, name,
             if predicate:
                 return result if _apply_filter(predicate, wrapper, orig_name, result, predicate_extra, orig_object) else None
             return result
-    elif name in ('__reduce__', '__reduce_ex__', '__getstate__', '__of__'):
+    elif name in ('__reduce__', '__reduce_ex__', '__getstate__',
+                  '__of__', '__cmp__', '__eq__', '__ne__', '__lt__',
+                  '__le__', '__gt__', '__ge__'):
         return object.__getattribute__(wrapper, orig_name)
 
     # If we're doing a containment search, replace the wrapper with aq_inner
@@ -282,17 +283,18 @@ def _Wrapper_findattr(wrapper, name,
 _NOT_GIVEN = object()  # marker
 
 
-class _Wrapper(PyProxyBase):
-    __slots__ = ('_container',)
+class _Wrapper(ExtensionClass.Base):
+    __slots__ = ('_obj','_container',)
     _IS_IMPLICIT = None
 
     def __new__(cls, obj, container):
-        inst = PyProxyBase.__new__(cls, obj)
+        inst = super(_Wrapper,cls).__new__(cls)
+        inst._obj = obj
         inst._container = container
         return inst
 
     def __init__(self, obj, container):
-        PyProxyBase.__init__(self, obj)
+        super(_Wrapper,self).__init__()
         self._obj = obj
         self._container = container
 
@@ -382,8 +384,76 @@ class _Wrapper(PyProxyBase):
     def __getnewargs__(self):
         return ()
 
-    # Methods looked up by the type of self._obj
-    # NOTE: This is probably incomplete
+    # Equality and comparisons
+
+    def __hash__(self):
+        # The C implementation doesn't pass the wrapper
+        # to any __hash__ that the object implements,
+        # so it can't access derived attributes.
+        # (If that changes, just add this to __unary_special_methods__
+        # and remove this method)
+        return hash(self._obj)
+
+    # The C implementation forces all comparisons through the
+    # __cmp__ method, if it's implemented. If it's not implemented,
+    # then comparisons are based strictly on the memory addresses
+    # of the underlying object (aq_base). We could mostly emulate this behaviour
+    # on Python 2, but on Python 3 __cmp__ is gone, so users won't
+    # have an expectation to write it.
+    # Because users have never had an expectation that the rich comparison
+    # methods would be called on their wrapped objects (and so would not be
+    # accessing acquired attributes there), we can't/don't want to start
+    # proxying to them?
+    # For the moment, we settle for an emulation of the C behaviour:
+    # define __cmp__ the same way, and redirect the rich comparison operators
+    # to it. (Note that these attributes are also hardcoded in getattribute)
+    def __cmp__(self, other):
+        aq_self = self._obj
+        if hasattr(type(aq_self), '__cmp__'):
+            return _rebound_method(type(aq_self), self)(other)
+
+        my_base = aq_base(self)
+        other_base = aq_base(other)
+        if my_base is other_base:
+            return 0
+        return -1 if id(my_base) < id(other_base) else 1
+
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+
+    # Special methods looked up by the type of self._obj,
+    # but which must have the wrapper as self when called
+
+    def __nonzero__(self):
+        aq_self = self._obj
+        type_aq_self = type(aq_self)
+        nonzero = getattr(type_aq_self, '__nonzero__', None)
+        if nonzero is None:
+            # Py3 bool?
+            nonzero = getattr(type_aq_self, '__bool__', None)
+        if nonzero is None:
+            # a len?
+            nonzero = getattr(type_aq_self, '__len__', None)
+        if nonzero:
+            return _rebound_method(nonzero, self)()
+        # If nothing was defined, then it's true
+        return True
+
 
     def __unicode__(self):
         f = getattr(self.aq_self, '__unicode__',
@@ -397,6 +467,107 @@ class _Wrapper(PyProxyBase):
     def __str__(self):
         aq_self = self._obj
         return type(aq_self).__str__(aq_self)
+
+    __binary_special_methods__ = [
+        # general numeric
+        '__add__',
+        '__sub__',
+        '__mul__',
+        '__floordiv__',  # not implemented in C
+        '__mod__',
+        '__divmod__',
+        '__pow__',
+        '__lshift__',
+        '__rshift__',
+        '__and__',
+        '__xor__',
+        '__or__',
+
+        # division; only one of these will be used at any one time
+        '__truediv__',
+        '__div__',
+
+        # reflected numeric
+        '__radd__',
+        '__rsub__',
+        '__rmul__',
+        '__rdiv__',
+        '__rtruediv__',
+        '__rfloordiv__',
+        '__rmod__',
+        '__rdivmod__',
+        '__rpow__',
+        '__rlshift__',
+        '__rrshift__',
+        '__rand__',
+        '__rxor__',
+        '__ror__',
+
+        # in place numeric
+        '__iadd__',
+        '__isub__',
+        '__imul__',
+        '__idiv__',
+        '__itruediv__',
+        '__ifloordiv__',
+        '__imod__',
+        '__idivmod__',
+        '__ipow__',
+        '__ilshift__',
+        '__irshift__',
+        '__iand__',
+        '__ixor__',
+        '__ior__',
+
+        # conversion
+        '__coerce__',
+
+        # container
+        '__delitem__',
+    ]
+
+    __unary_special_methods__ = [
+        # arithmetic
+        '__neg__',
+        '__pos__',
+        '__abs__',
+        '__invert__',
+
+        # conversion
+        '__complex__',
+        '__int__',
+        '__long__',
+        '__float__',
+        '__oct__',
+        '__hex__',
+        '__index__',
+        '__len__',
+
+        # strings
+        #'__repr__',
+        #'__str__',
+    ]
+
+    for _name in __binary_special_methods__:
+        def _make_op(_name):
+            def op(self, other):
+                aq_self = self._obj
+                return getattr(type(aq_self), _name)(self, other)
+            return op
+        locals()[_name] = _make_op(_name)
+
+    for _name in __unary_special_methods__:
+        def _make_op(_name):
+            def op(self):
+                aq_self = self._obj
+                return getattr(type(aq_self), _name)(self)
+            return op
+        locals()[_name] = _make_op(_name)
+
+    del _make_op
+    del _name
+
+    # Container protocol
 
     def __iter__(self):
         # For things that provide either __iter__ or just __getitem__,
@@ -421,6 +592,50 @@ class _Wrapper(PyProxyBase):
 
         return iter(self._obj)
 
+    def __contains__(self, item):
+        # First, if the type of the object defines __contains__ then
+        # use it
+        aq_self = self._obj
+        aq_contains = getattr(type(aq_self), '__contains__', None)
+        if aq_contains:
+            return _rebound_method(aq_contains, self)(item)
+        # Next, we should attempt to iterate like the interpreter; but the C code doesn't
+        # do this, so we don't either.
+        #return item in iter(self)
+        raise AttributeError('__contains__')
+
+    def __setitem__(self, key, value):
+        aq_self = self._obj
+        _rebound_method(getattr(type(aq_self), '__setitem__'), self)(key, value)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            if isinstance(self._obj, (list, tuple)):
+                return self._obj[key]
+            start, stop = key.start, key.stop
+            if start is None:
+                start = 0
+            if start < 0:
+                start += len(self._obj)
+            if stop is None:
+                stop = getattr(sys, 'maxint', None) # PY2
+            elif stop < 0:
+                stop += len(self._obj)
+            if hasattr(operator, 'getslice'): # PY2
+                return operator.getslice(self._obj, start, stop)
+            return self._obj[start:stop]
+        return self._obj[key]
+
+    def __call__(self, *args, **kwargs):
+        try:
+            call = getattr(type(self._obj), '__call__')
+        except AttributeError:
+            # A TypeError is what the interpreter raises;
+            # AttributeError is allowed to percolate through the
+            # C proxy
+            raise TypeError('object is not callable')
+        else:
+            return _rebound_method(call, self)(*args, **kwargs)
 
 class ImplicitAcquisitionWrapper(_Wrapper):
     _IS_IMPLICIT = True

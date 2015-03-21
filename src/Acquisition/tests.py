@@ -354,6 +354,10 @@ else:
     PY3 = False
 py_impl = getattr(platform, 'python_implementation', lambda: None)
 PYPY = py_impl() == 'PyPy'
+if not hasattr(gc, 'get_threshold'):
+    # PyPy
+    gc.get_threshold = lambda: ()
+    gc.set_threshold = lambda *x: None
 
 import ExtensionClass
 import Acquisition
@@ -1795,66 +1799,68 @@ def showaq(m_self, indent=''):
         rval = rval + indent + id + "\n"
     return rval
 
-if hasattr(gc, 'get_threshold'):
-    #CPython implementation detail
-    def test_Basic_gc():
-        """Test to make sure that EC instances participate in GC
+def test_Basic_gc():
+    """Test to make sure that EC instances participate in GC.
+    Note that PyPy always reports 0 collected objects even
+    though we can see its finalizers run.
 
-        >>> from ExtensionClass import Base
-        >>> import gc
-        >>> thresholds = gc.get_threshold()
-        >>> gc.set_threshold(0)
+    >>> from ExtensionClass import Base
+    >>> import gc
+    >>> thresholds = gc.get_threshold()
+    >>> gc.set_threshold(0)
 
-        >>> for B in I, E:
-        ...     class C1(B):
-        ...         pass
-        ...
-        ...     class C2(Base):
-        ...         def __del__(self):
-        ...             print('removed')
-        ...
-        ...     a=C1('a')
-        ...     a.b = C1('a.b')
-        ...     a.b.a = a
-        ...     a.b.c = C2()
-        ...     ignore = gc.collect()
-        ...     del a
-        ...     removed = gc.collect()
-        ...     print(removed > 0)
-        removed
-        True
-        removed
-        True
+    >>> for B in I, E:
+    ...     class C1(B):
+    ...         pass
+    ...
+    ...     class C2(Base):
+    ...         def __del__(self):
+    ...             print('removed')
+    ...
+    ...     a=C1('a')
+    ...     a.b = C1('a.b')
+    ...     a.b.a = a
+    ...     a.b.c = C2()
+    ...     ignore = gc.collect()
+    ...     del a
+    ...     removed = gc.collect()
+    ...     print(removed > 0 or PYPY)
+    removed
+    True
+    removed
+    True
 
-        >>> gc.set_threshold(*thresholds)
+    >>> gc.set_threshold(*thresholds)
 
-        """
-    def test_Wrapper_gc():
-        """Test to make sure that EC instances participate in GC
+    """
+def test_Wrapper_gc():
+    """Test to make sure that EC instances participate in GC.
+    Note that PyPy always reports 0 collected objects even
+    though we can see its finalizers run.
 
-        >>> import gc
-        >>> thresholds = gc.get_threshold()
-        >>> gc.set_threshold(0)
+    >>> import gc
+    >>> thresholds = gc.get_threshold()
+    >>> gc.set_threshold(0)
 
-        >>> for B in I, E:
-        ...     class C:
-        ...         def __del__(self):
-        ...             print('removed')
-        ...
-        ...     a=B('a')
-        ...     a.b = B('b')
-        ...     a.a_b = a.b # circ ref through wrapper
-        ...     a.b.c = C()
-        ...     ignored = gc.collect()
-        ...     del a
-        ...     removed = gc.collect()
-        ...     removed > 0
-        removed
-        True
-        removed
-        True
+    >>> for B in I, E:
+    ...     class C:
+    ...         def __del__(self):
+    ...             print('removed')
+    ...
+    ...     a=B('a')
+    ...     a.b = B('b')
+    ...     a.a_b = a.b # circ ref through wrapper
+    ...     a.b.c = C()
+    ...     ignored = gc.collect()
+    ...     del a
+    ...     removed = gc.collect()
+    ...     removed > 0 or PYPY
+    removed
+    True
+    removed
+    True
 
-        >>> gc.set_threshold(*thresholds)
+    >>> gc.set_threshold(*thresholds)
 
     """
 

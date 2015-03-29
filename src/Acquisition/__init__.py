@@ -29,8 +29,9 @@ def _has__of__(obj):
     """Check whether an object has an __of__ method for returning itself
     in the context of a container."""
     # It is necessary to check both the type (or we get into cycles)
-    # as well as the presence of the method (or mixins of Base
-    # post-class-creation as done somewhere in Zope) can fail.
+    # as well as the presence of the method (or mixins of Base pre- or
+    # post-class-creation as done in, e.g.,
+    # zopefoundation/Persistence) can fail.
     return isinstance(obj, ExtensionClass.Base) and hasattr(type(obj), '__of__')
 
 

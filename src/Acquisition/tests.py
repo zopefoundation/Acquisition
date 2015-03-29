@@ -1775,8 +1775,8 @@ if PY2:
 
     def test_mixin_post_class_definition():
         """
-        Code in Zope mixes in ExtensionClass.Base to existing
-        classes after they've been defined.
+        Mixing in Base after class definition doesn't break anything,
+        but also doesn't result in any wrappers.
 
         >>> from ExtensionClass import Base
         >>> class Plain(object):
@@ -1787,7 +1787,7 @@ if PY2:
         >>> isinstance(Plain(), Base)
         True
 
-        Even after they do this, when we request such an object
+        Even after mixing in that base, when we request such an object
         from an implicit acquiring base, it doesn't come out wrapped:
 
         >>> from Acquisition import Implicit
@@ -1800,13 +1800,57 @@ if PY2:
         True
 
         This is because after the mixin, even though Plain is-a Base,
-        it doesn't provide the `__of__` method used for wrapping
-        (that only gets added at class definition time, or in C code):
+        it's still not an Explicit/Implicit acquirer and provides
+        neither the `__of__` nor `__get__` methods necessary
+        (`__get__` is added as a consequence of `__of__` at class creation time):
 
+        >>> hasattr(Plain, '__get__')
+        False
         >>> hasattr(Plain, '__of__')
         False
 
         """
+
+def test_mixin_base():
+    """
+    We can mix-in Base as part of multiple inheritance.
+
+    >>> from ExtensionClass import Base
+    >>> class MyBase(object):
+    ...    pass
+    >>> class MixedIn(Base,MyBase):
+    ...     pass
+    >>> MixedIn.__bases__ == (Base,MyBase)
+    True
+    >>> isinstance(MixedIn(), Base)
+    True
+
+    Because it's not an acquiring object and doesn't provide `__of__`
+    or `__get__`, when accessed from implicit contexts it doesn't come
+    out wrapped:
+
+    >>> from Acquisition import Implicit
+    >>> class I(Implicit):
+    ...     pass
+    >>> root = I()
+    >>> root.a = I()
+    >>> root.a.b = MixedIn()
+    >>> type(root.a.b) is MixedIn
+    True
+
+    This is because after the mixin, even though Plain is-a Base,
+    it doesn't provide the `__of__` method used for wrapping, and so
+    the class definition code that would add the `__get__` method also
+    doesn't run:
+
+    >>> hasattr(MixedIn, '__of__')
+    False
+    >>> hasattr(MixedIn, '__get__')
+    False
+
+    """
+
+
 
 def show(x):
     print(showaq(x).strip())

@@ -1766,6 +1766,47 @@ def test_interfaces():
     True
     """
 
+if PY2:
+    # Assigning to __bases__ is difficult under Python 3.
+    # In this example, you get:
+    #   "TypeError: __bases__ assignment: 'Base' deallocator differs from 'object'"
+    # I don't know what the workaround is; the old one of using a dummy
+    # superclass no longer works. See http://bugs.python.org/issue672115
+
+    def test_mixin_post_class_definition():
+        """
+        Code in Zope mixes in ExtensionClass.Base to existing
+        classes after they've been defined.
+
+        >>> from ExtensionClass import Base
+        >>> class Plain(object):
+        ...     pass
+        >>> Plain.__bases__ == (object,)
+        True
+        >>> Plain.__bases__ = (Base,)
+        >>> isinstance(Plain(), Base)
+        True
+
+        Even after they do this, when we request such an object
+        from an implicit acquiring base, it doesn't come out wrapped:
+
+        >>> from Acquisition import Implicit
+        >>> class I(Implicit):
+        ...     pass
+        >>> root = I()
+        >>> root.a = I()
+        >>> root.a.b = Plain()
+        >>> type(root.a.b) is Plain
+        True
+
+        This is because after the mixin, even though Plain is-a Base,
+        it doesn't provide the `__of__` method used for wrapping
+        (that only gets added at class definition time, or in C code):
+
+        >>> hasattr(Plain, '__of__')
+        False
+
+        """
 
 def show(x):
     print(showaq(x).strip())

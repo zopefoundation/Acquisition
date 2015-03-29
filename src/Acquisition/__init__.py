@@ -28,9 +28,10 @@ _NOT_FOUND = object()  # marker
 def _has__of__(obj):
     """Check whether an object has an __of__ method for returning itself
     in the context of a container."""
-    # Note specifically this is a type check, not duck typing, or
-    # we get into cycles
-    return isinstance(obj, ExtensionClass.Base)
+    # It is necessary to check both the type (or we get into cycles)
+    # as well as the presence of the method (or mixins of Base
+    # post-class-creation as done somewhere in Zope) can fail.
+    return isinstance(obj, ExtensionClass.Base) and hasattr(type(obj), '__of__')
 
 
 def _apply_filter(predicate, inst, name, result, extra, orig):

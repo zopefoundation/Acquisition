@@ -1639,8 +1639,8 @@ def test_cant_persist_acquisition_wrappers_classic():
 
     Check custom pickler:
 
-    >>> from io import BytesIO as StringIO
-    >>> file = StringIO()
+    >>> from io import BytesIO
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> pickler.dump(w)
@@ -1651,7 +1651,7 @@ def test_cant_persist_acquisition_wrappers_classic():
     Check custom pickler with a persistent_id method matching the semantics
     in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = StringIO()
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):
@@ -1704,8 +1704,8 @@ def test_cant_persist_acquisition_wrappers_newstyle():
 
     Check custom pickler:
 
-    >>> from io import BytesIO as StringIO
-    >>> file = StringIO()
+    >>> from io import BytesIO
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> pickler.dump(w)
@@ -1716,7 +1716,7 @@ def test_cant_persist_acquisition_wrappers_newstyle():
     Check custom pickler with a persistent_id method matching the semantics
     in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = StringIO()
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):

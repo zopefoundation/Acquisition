@@ -14,6 +14,8 @@
 """Setup for the Acquisition distribution
 """
 import os
+import platform
+import sys
 from setuptools import setup, find_packages, Extension
 
 with open('README.rst') as f:
@@ -22,9 +24,24 @@ with open('README.rst') as f:
 with open('CHANGES.rst') as f:
     CHANGES = f.read()
 
+# PyPy won't build the extension.
+py_impl = getattr(platform, 'python_implementation', lambda: None)
+is_pypy = py_impl() == 'PyPy'
+is_pure = 'PURE_PYTHON' in os.environ
+py3k = sys.version_info >= (3, )
+if is_pypy or is_pure or py3k:
+    ext_modules = []
+else:
+    ext_modules=[Extension("Acquisition._Acquisition",
+                           [os.path.join('src', 'Acquisition',
+                                         '_Acquisition.c')],
+                           include_dirs=['include', 'src']),
+                 ]
+
+
 setup(
     name='Acquisition',
-    version='4.1',
+    version='4.2.dev0',
     url='https://github.com/zopefoundation/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "
@@ -41,18 +58,17 @@ setup(
         "License :: OSI Approved :: Zope Public License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2 :: Only",
+        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
     ],
-    ext_modules=[Extension("Acquisition._Acquisition",
-                           [os.path.join('src', 'Acquisition',
-                                         '_Acquisition.c')],
-                           include_dirs=['include', 'src']),
-                 ],
+    ext_modules=ext_modules,
     install_requires=[
-        'ExtensionClass >= 4.1a1',
+        'ExtensionClass >= 4.1.1',
         'zope.interface',
     ],
     include_package_data=True,

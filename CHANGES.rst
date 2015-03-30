@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.2 (unreleased)
+----------------
+
+- Add support for PyPy and Python 3.
+
 4.1 (2014-12-18)
 ----------------
 
@@ -62,7 +67,7 @@ Changelog
 
 - Add ``aq_explicit`` to ``IAcquisitionWrapper``.
 
-- Fixed bug: ``unicode(wrapped)`` was not calling a ``__unicode__`` 
+- Fixed bug: ``unicode(wrapped)`` was not calling a ``__unicode__``
   method on wrapped objects.
 
 2.13.5 (2010-09-29)
@@ -133,7 +138,7 @@ Changelog
 2.12.2 (2009-08-02)
 -------------------
 
-- Fixed 64-bit compatibility issues for Python 2.5.x / 2.6.x.  See 
+- Fixed 64-bit compatibility issues for Python 2.5.x / 2.6.x.  See
   http://www.python.org/dev/peps/pep-0353/ for details.
 
 2.12.1 (2009-04-15)

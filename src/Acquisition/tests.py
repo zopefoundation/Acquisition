@@ -31,7 +31,7 @@
 
     >>> class A(Acquisition.Implicit):
     ...   def report(self):
-    ...     print self.color
+    ...     print(self.color)
 
     >>> a = A()
     >>> c = C()
@@ -117,7 +117,7 @@
       automatically obtained from the environment.  Instead, the
       method 'aq_aquire' must be used, as in::
 
-        print c.a.aq_acquire('color')
+        print(c.a.aq_acquire('color'))
 
       To support explicit acquisition, an object should inherit
       from the mix-in class 'Acquisition.Explicit'.
@@ -170,7 +170,7 @@
           ...    __roles__ = Acquisition.Acquired
 
           >>> c.x = C()
-          >>> c.x.__roles__
+          >>> c.x.__roles__ # doctest: +IGNORE_EXCEPTION_DETAIL
           Traceback (most recent call last):
           ...
           AttributeError: __roles__
@@ -231,7 +231,7 @@
         >>> def find_nice(self, ancestor, name, object, extra):
         ...     return hasattr(object,'isNice') and object.isNice
 
-        >>> print a.b.c.aq_acquire('p', find_nice)
+        >>> print(a.b.c.aq_acquire('p', find_nice))
         spam(Nice) and I am nice!
 
       The filtered acquisition in the last line skips over the first
@@ -328,6 +328,36 @@
    http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz,
    OOPSLA '96 Proceedings, ACM SIG-PLAN, October, 1996
 """
+from __future__ import print_function
+import gc
+import unittest
+import sys
+import platform
+import operator
+from doctest import DocTestSuite, DocFileSuite
+
+
+if sys.version_info >= (3,):
+    PY3 = True
+    PY2 = False
+    def unicode(self):
+        # For test purposes, redirect the unicode
+        # to the type of the object, just like Py2 did
+        try:
+            return type(self).__unicode__(self)
+        except AttributeError as e:
+
+            return type(self).__str__(self)
+    long = int
+else:
+    PY2 = True
+    PY3 = False
+py_impl = getattr(platform, 'python_implementation', lambda: None)
+PYPY = py_impl() == 'PyPy'
+if not hasattr(gc, 'get_threshold'):
+    # PyPy
+    gc.get_threshold = lambda: ()
+    gc.set_threshold = lambda *x: None
 
 import ExtensionClass
 import Acquisition
@@ -558,7 +588,6 @@ def test_simple():
     True
     """
 
-
 def test__of__exception():
     """
     Wrapper_findattr did't check for an exception in a user defined
@@ -566,13 +595,10 @@ def test__of__exception():
     case the 'value' argument of the filter was NULL, which caused
     a segfault when being accessed.
 
-    >>> class UserError(Exception):
-    ...     pass
-    ...
     >>> class X(Acquisition.Implicit):
     ...     def __of__(self, parent):
     ...         if Acquisition.aq_base(parent) is not parent:
-    ...             raise UserError, 'ack'
+    ...             raise NotImplementedError('ack')
     ...         return X.inheritedAttribute('__of__')(self, parent)
     ...
     >>> a = I('a')
@@ -582,7 +608,7 @@ def test__of__exception():
     ...     lambda self, object, name, value, extra: repr(value))
     Traceback (most recent call last):
     ...
-    UserError: ack
+    NotImplementedError: ack
 
     """
 
@@ -1236,7 +1262,8 @@ def test_aq_inContextOf():
 
     >>> class A(Acquisition.Implicit):
     ...     def hi(self):
-    ...         print "%s()" % self.__class__.__name__, self.color
+    ...         print(self.__class__.__name__)
+    ...         print(self.color)
 
     >>> class Location(object):
     ...     __parent__ = None
@@ -1244,15 +1271,17 @@ def test_aq_inContextOf():
     >>> b=B()
     >>> b.a=A()
     >>> b.a.hi()
-    A() red
+    A
+    red
     >>> b.a.color='green'
     >>> b.a.hi()
-    A() green
+    A
+    green
     >>> try:
     ...     A().hi()
-    ...     raise 'Program error', 'spam'
+    ...     raise RuntimeError( 'Program error', 'spam')
     ... except AttributeError: pass
-    A()
+    A
 
        New test for wrapper comparisons.
 
@@ -1349,7 +1378,7 @@ def test_AqAlg():
     [A]
     >>> Acquisition.aq_chain(A, 1)
     [A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A, 1)))
     [A]
     >>> A.C
     C
@@ -1357,7 +1386,7 @@ def test_AqAlg():
     [C, A]
     >>> Acquisition.aq_chain(A.C, 1)
     [C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.C, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.C, 1)))
     [C, A]
 
     >>> A.C.D
@@ -1366,7 +1395,7 @@ def test_AqAlg():
     [D, C, A]
     >>> Acquisition.aq_chain(A.C.D, 1)
     [D, C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.C.D, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.C.D, 1)))
     [D, C, A]
 
     >>> A.B.C
@@ -1375,7 +1404,7 @@ def test_AqAlg():
     [C, B, A]
     >>> Acquisition.aq_chain(A.B.C, 1)
     [C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C, 1)))
     [C, A]
 
     >>> A.B.C.D
@@ -1384,7 +1413,7 @@ def test_AqAlg():
     [D, C, B, A]
     >>> Acquisition.aq_chain(A.B.C.D, 1)
     [D, C, A]
-    >>> map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C.D, 1))
+    >>> list(map(Acquisition.aq_base, Acquisition.aq_chain(A.B.C.D, 1)))
     [D, C, A]
 
 
@@ -1407,19 +1436,22 @@ def test_explicit_acquisition():
 
     >>> class A(Acquisition.Explicit):
     ...     def hi(self):
-    ...         print self.__class__.__name__, self.acquire('color')
+    ...         print(self.__class__.__name__)
+    ...         print(self.acquire('color'))
 
     >>> b=B()
     >>> b.a=A()
     >>> b.a.hi()
-    A red
+    A
+    red
     >>> b.a.color='green'
     >>> b.a.hi()
-    A green
+    A
+    green
 
     >>> try:
     ...     A().hi()
-    ...     raise 'Program error', 'spam'
+    ...     raise RuntimeError('Program error', 'spam')
     ... except AttributeError: pass
     A
 
@@ -1442,7 +1474,7 @@ def test_creating_wrappers_directly():
     >>> w.color
     'red'
 
-    >>> w = ImplicitAcquisitionWrapper(a.b)
+    >>> w = ImplicitAcquisitionWrapper(a.b) # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: __init__() takes exactly 2 arguments (1 given)
@@ -1464,17 +1496,17 @@ def test_creating_wrappers_directly():
     Note that messing with the wrapper won't in any way affect the
     wrapped object:
 
-    >>> Acquisition.aq_base(w).__parent__
+    >>> Acquisition.aq_base(w).__parent__ # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     AttributeError: __parent__
 
-    >>> w = ImplicitAcquisitionWrapper()
+    >>> w = ImplicitAcquisitionWrapper() # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: __init__() takes exactly 2 arguments (0 given)
 
-    >>> w = ImplicitAcquisitionWrapper(obj=1)
+    >>> w = ImplicitAcquisitionWrapper(obj=1) # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     TypeError: kwyword arguments not allowed
@@ -1579,7 +1611,10 @@ def test_cant_pickle_acquisition_wrappers_newstyle():
 
 def test_cant_persist_acquisition_wrappers_classic():
     """
-    >>> import cPickle
+    >>> try:
+    ...      import cPickle
+    ... except ImportError:
+    ...      import pickle as cPickle
 
     >>> class X:
     ...     _p_oid = '1234'
@@ -1604,8 +1639,8 @@ def test_cant_persist_acquisition_wrappers_classic():
 
     Check custom pickler:
 
-    >>> from cStringIO import StringIO
-    >>> file = StringIO()
+    >>> from io import BytesIO
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> pickler.dump(w)
@@ -1616,29 +1651,35 @@ def test_cant_persist_acquisition_wrappers_classic():
     Check custom pickler with a persistent_id method matching the semantics
     in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = StringIO()
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):
+    ...     if not hasattr(obj, '_p_oid'): return None
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
     ...         return oid
     ...     return 'class_and_oid', klass
 
-    >>> pickler.inst_persistent_id = persistent_id
+    >>> try: pickler.inst_persistent_id = persistent_id
+    ... except AttributeError: pass
+    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
     >>> _ = pickler.dump(w)
     >>> state = file.getvalue()
-    >>> '1234' in state
+    >>> b'1234' in state
     True
-    >>> 'class_and_oid' in state
+    >>> b'class_and_oid' in state
     False
     """
 
 
 def test_cant_persist_acquisition_wrappers_newstyle():
     """
-    >>> import cPickle
+    >>> try:
+    ...      import cPickle
+    ... except ImportError:
+    ...      import pickle as cPickle
 
     >>> class X(object):
     ...     _p_oid = '1234'
@@ -1663,8 +1704,8 @@ def test_cant_persist_acquisition_wrappers_newstyle():
 
     Check custom pickler:
 
-    >>> from cStringIO import StringIO
-    >>> file = StringIO()
+    >>> from io import BytesIO
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> pickler.dump(w)
@@ -1675,22 +1716,26 @@ def test_cant_persist_acquisition_wrappers_newstyle():
     Check custom pickler with a persistent_id method matching the semantics
     in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = StringIO()
+    >>> file = BytesIO()
     >>> pickler = cPickle.Pickler(file, 1)
 
     >>> def persistent_id(obj):
+    ...     if not hasattr(obj, '_p_oid'): return None
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
     ...         return oid
     ...     return 'class_and_oid', klass
 
-    >>> pickler.inst_persistent_id = persistent_id
+
+    >>> try: pickler.inst_persistent_id = persistent_id
+    ... except AttributeError: pass
+    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
     >>> _ = pickler.dump(w)
     >>> state = file.getvalue()
-    >>> '1234' in state
+    >>> b'1234' in state
     True
-    >>> 'class_and_oid' in state
+    >>> b'class_and_oid' in state
     False
     """
 
@@ -1721,9 +1766,94 @@ def test_interfaces():
     True
     """
 
+if PY2:
+    # Assigning to __bases__ is difficult under Python 3.
+    # In this example, you get:
+    #   "TypeError: __bases__ assignment: 'Base' deallocator differs from 'object'"
+    # I don't know what the workaround is; the old one of using a dummy
+    # superclass no longer works. See http://bugs.python.org/issue672115
+
+    def test_mixin_post_class_definition():
+        """
+        Mixing in Base after class definition doesn't break anything,
+        but also doesn't result in any wrappers.
+
+        >>> from ExtensionClass import Base
+        >>> class Plain(object):
+        ...     pass
+        >>> Plain.__bases__ == (object,)
+        True
+        >>> Plain.__bases__ = (Base,)
+        >>> isinstance(Plain(), Base)
+        True
+
+        Even after mixing in that base, when we request such an object
+        from an implicit acquiring base, it doesn't come out wrapped:
+
+        >>> from Acquisition import Implicit
+        >>> class I(Implicit):
+        ...     pass
+        >>> root = I()
+        >>> root.a = I()
+        >>> root.a.b = Plain()
+        >>> type(root.a.b) is Plain
+        True
+
+        This is because after the mixin, even though Plain is-a Base,
+        it's still not an Explicit/Implicit acquirer and provides
+        neither the `__of__` nor `__get__` methods necessary
+        (`__get__` is added as a consequence of `__of__` at class creation time):
+
+        >>> hasattr(Plain, '__get__')
+        False
+        >>> hasattr(Plain, '__of__')
+        False
+
+        """
+
+def test_mixin_base():
+    """
+    We can mix-in Base as part of multiple inheritance.
+
+    >>> from ExtensionClass import Base
+    >>> class MyBase(object):
+    ...    pass
+    >>> class MixedIn(Base,MyBase):
+    ...     pass
+    >>> MixedIn.__bases__ == (Base,MyBase)
+    True
+    >>> isinstance(MixedIn(), Base)
+    True
+
+    Because it's not an acquiring object and doesn't provide `__of__`
+    or `__get__`, when accessed from implicit contexts it doesn't come
+    out wrapped:
+
+    >>> from Acquisition import Implicit
+    >>> class I(Implicit):
+    ...     pass
+    >>> root = I()
+    >>> root.a = I()
+    >>> root.a.b = MixedIn()
+    >>> type(root.a.b) is MixedIn
+    True
+
+    This is because after the mixin, even though Plain is-a Base,
+    it doesn't provide the `__of__` method used for wrapping, and so
+    the class definition code that would add the `__get__` method also
+    doesn't run:
+
+    >>> hasattr(MixedIn, '__of__')
+    False
+    >>> hasattr(MixedIn, '__get__')
+    False
+
+    """
+
+
 
 def show(x):
-    print showaq(x).strip()
+    print(showaq(x).strip())
 
 
 def showaq(m_self, indent=''):
@@ -1754,9 +1884,10 @@ def showaq(m_self, indent=''):
         rval = rval + indent + id + "\n"
     return rval
 
-
 def test_Basic_gc():
-    """Test to make sure that EC instances participate in GC
+    """Test to make sure that EC instances participate in GC.
+    Note that PyPy always reports 0 collected objects even
+    though we can see its finalizers run.
 
     >>> from ExtensionClass import Base
     >>> import gc
@@ -1769,7 +1900,7 @@ def test_Basic_gc():
     ...
     ...     class C2(Base):
     ...         def __del__(self):
-    ...             print 'removed'
+    ...             print('removed')
     ...
     ...     a=C1('a')
     ...     a.b = C1('a.b')
@@ -1778,7 +1909,37 @@ def test_Basic_gc():
     ...     ignore = gc.collect()
     ...     del a
     ...     removed = gc.collect()
-    ...     print removed > 0
+    ...     print(removed > 0 or PYPY)
+    removed
+    True
+    removed
+    True
+
+    >>> gc.set_threshold(*thresholds)
+
+    """
+def test_Wrapper_gc():
+    """Test to make sure that EC instances participate in GC.
+    Note that PyPy always reports 0 collected objects even
+    though we can see its finalizers run.
+
+    >>> import gc
+    >>> thresholds = gc.get_threshold()
+    >>> gc.set_threshold(0)
+
+    >>> for B in I, E:
+    ...     class C:
+    ...         def __del__(self):
+    ...             print('removed')
+    ...
+    ...     a=B('a')
+    ...     a.b = B('b')
+    ...     a.a_b = a.b # circ ref through wrapper
+    ...     a.b.c = C()
+    ...     ignored = gc.collect()
+    ...     del a
+    ...     removed = gc.collect()
+    ...     removed > 0 or PYPY
     removed
     True
     removed
@@ -1789,38 +1950,8 @@ def test_Basic_gc():
     """
 
 
-def test_Wrapper_gc():
-    """Test to make sure that EC instances participate in GC
-
-    >>> import gc
-    >>> thresholds = gc.get_threshold()
-    >>> gc.set_threshold(0)
-
-    >>> for B in I, E:
-    ...     class C:
-    ...         def __del__(self):
-    ...             print 'removed'
-    ...
-    ...     a=B('a')
-    ...     a.b = B('b')
-    ...     a.a_b = a.b # circ ref through wrapper
-    ...     a.b.c = C()
-    ...     ignored = gc.collect()
-    ...     del a
-    ...     removed = gc.collect()
-    ...     removed > 0
-    removed
-    True
-    removed
-    True
-
-    >>> gc.set_threshold(*thresholds)
-
-"""
-
-
-def test_proxying():
-    """Make sure that recent python slots are proxied.
+def test_container_proxying():
+    """Make sure that recent python container-related slots are proxied.
 
     >>> import sys
     >>> import Acquisition
@@ -1829,18 +1960,21 @@ def test_proxying():
 
     >>> class C(Acquisition.Implicit):
     ...     def __getitem__(self, key):
-    ...         print 'getitem', key
+    ...         if isinstance(key, slice):
+    ...             print('slicing...')
+    ...             return (key.start,key.stop)
+    ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
     ...         return key
     ...     def __contains__(self, key):
-    ...         print 'contains', repr(key)
+    ...         print('contains', repr(key))
     ...         return key == 5
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
-    ...         print 'slicing...'
+    ...         print('slicing...')
     ...         return (start, end)
 
     The naked class behaves like this:
@@ -1858,7 +1992,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1881,7 +2015,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1893,18 +2027,21 @@ def test_proxying():
 
     >>> class C(Acquisition.Explicit):
     ...     def __getitem__(self, key):
-    ...         print 'getitem', key
+    ...         if isinstance(key, slice):
+    ...             print('slicing...')
+    ...             return (key.start,key.stop)
+    ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
     ...         return key
     ...     def __contains__(self, key):
-    ...         print 'contains', repr(key)
+    ...         print('contains', repr(key))
     ...         return key == 5
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
-    ...         print 'slicing...'
+    ...         print('slicing...')
     ...         return (start, end)
 
     The naked class behaves like this:
@@ -1922,7 +2059,7 @@ def test_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1945,7 +2082,7 @@ def test_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
     slicing...
     True
 
@@ -1959,14 +2096,14 @@ def test_proxying():
     ...         return self.l[i]
 
     >>> c1 = C()
-    >>> type(iter(c1))
-    <type 'iterator'>
+    >>> type(iter(c1)) #doctest: +ELLIPSIS
+    <... '...iterator'>
     >>> list(c1)
     [1, 2, 3]
 
     >>> c2 = C().__of__(c1)
-    >>> type(iter(c2))
-    <type 'iterator'>
+    >>> type(iter(c2)) #doctest: +ELLIPSIS
+    <... '...iterator'>
     >>> list(c2)
     [1, 2, 3]
 
@@ -1975,7 +2112,7 @@ def test_proxying():
 
     >>> class C(Acquisition.Implicit):
     ...     def __iter__(self):
-    ...         print 'iterating...'
+    ...         print('iterating...')
     ...         for i in range(5):
     ...             yield i, self.aq_parent.name
     >>> c = C()
@@ -2007,10 +2144,10 @@ def test_proxying():
     >>> c = C()
     >>> i = Impl()
     >>> i.c = c
-    >>> list(i.c)
+    >>> list(i.c) #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
-    TypeError: iteration over non-sequence
+    TypeError: ...iter...
 
     >>> class C(Acquisition.Implicit):
     ...     def __iter__(self):
@@ -2018,13 +2155,12 @@ def test_proxying():
     >>> c = C()
     >>> i = Impl()
     >>> i.c = c
-    >>> list(i.c)
+    >>> list(i.c) #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
-    TypeError: iter() returned non-iterator of type 'list'
+    TypeError: iter() returned non-iterator...
 
     """
-
 
 class Location(object):
     __parent__ = None
@@ -2388,7 +2524,8 @@ def test___parent__aq_parent_circles():
 
       >>> x.__parent__.aq_base is y.aq_base
       True
-
+      >>> Acquisition.aq_parent(x) is y
+      True
       >>> x.__parent__.__parent__ is x
       True
 
@@ -2463,8 +2600,6 @@ def test__iter__after_AttributeError():
     ...     raise
     """
 
-import unittest
-from doctest import DocTestSuite, DocFileSuite
 
 
 class TestParent(unittest.TestCase):
@@ -2635,6 +2770,355 @@ class TestUnicode(unittest.TestCase):
         inner = A().__of__(outer)
         self.assertEqual(u'True', unicode(inner))
 
+class TestProxying(unittest.TestCase):
+
+    __binary_numeric_methods__ = [
+        '__add__',
+        '__sub__',
+        '__mul__',
+        # '__floordiv__',  # not implemented in C
+        '__mod__',
+        '__divmod__',
+        '__pow__',
+        '__lshift__',
+        '__rshift__',
+        '__and__',
+        '__xor__',
+        '__or__',
+        # division
+        '__truediv__',
+        '__div__',
+        # reflected
+        '__radd__',
+        '__rsub__',
+        '__rmul__',
+        '__rdiv__',
+        '__rtruediv__',
+        '__rfloordiv__',
+        '__rmod__',
+        '__rdivmod__',
+        '__rpow__',
+        '__rlshift__',
+        '__rrshift__',
+        '__rand__',
+        '__rxor__',
+        '__ror__',
+        # in place
+        '__iadd__',
+        '__isub__',
+        '__imul__',
+        '__idiv__',
+        '__itruediv__',
+        '__ifloordiv__',
+        '__imod__',
+        '__idivmod__',
+        '__ipow__',
+        '__ilshift__',
+        '__irshift__',
+        '__iand__',
+        '__ixor__',
+        '__ior__',
+        # conversion
+        # implementing it messes up all the arithmetic tests
+        #'__coerce__',
+    ]
+
+    __unary_special_methods__ = [
+        # arithmetic
+        '__neg__',
+        '__pos__',
+        '__abs__',
+        '__invert__',
+    ]
+
+    __unary_conversion_methods__ = {
+        # conversion
+        '__complex__': complex,
+        '__int__': int,
+        '__long__': long,
+        '__float__': float,
+        '__oct__': oct,
+        '__hex__': hex,
+        '__len__': lambda o: o if isinstance(o,int) else len(o),
+        #'__index__': operator.index, # not implemented in C
+    }
+
+
+    def _check_special_methods(self,base_class=Acquisition.Implicit):
+        "Check that special methods are proxied when called implicitly by the interpreter"
+
+        def binary_acquired_func(self, other):
+            return self.value
+        def unary_acquired_func(self):
+            return self.value
+
+        acquire_meths = {}
+        for k in self.__binary_numeric_methods__:
+            acquire_meths[k] = binary_acquired_func
+        for k in self.__unary_special_methods__:
+            acquire_meths[k] = unary_acquired_func
+
+        def make_converter(f):
+            def converter(self,*args):
+                return f(self.value)
+            return converter
+        for k, convert in self.__unary_conversion_methods__.items():
+            acquire_meths[k] = make_converter(convert)
+
+        acquire_meths['__len__'] = lambda self: self.value
+
+        if PY3:
+            # Under Python 3, oct() and hex() call __index__ directly
+            acquire_meths['__index__'] = acquire_meths['__int__']
+
+        if base_class == Acquisition.Explicit:
+            acquire_meths['value'] = Acquisition.Acquired
+        AcquireValue = type('AcquireValue', (base_class,), acquire_meths)
+
+        class B(Acquisition.Implicit):
+            pass
+
+        base = B()
+        base.value = 42
+        base.derived = AcquireValue()
+
+        # one syntax check for the heck of it
+        self.assertEqual(base.value, base.derived + 1)
+        # divmod is not in the operator module
+        self.assertEqual(base.value, divmod(base.derived, 1))
+
+        _found_at_least_one_div = False
+
+        for meth in self.__binary_numeric_methods__:
+            # called on the instance
+            self.assertEqual(base.value,
+                             getattr(base.derived, meth)(-1))
+            # called on the type, as the interpreter does
+            # Note that the C version can only implement either __truediv__
+            # or __div__, not both
+            op = getattr(operator, meth, None)
+            if op is not None:
+                try:
+                    self.assertEqual(base.value,
+                                     op(base.derived, 1))
+                    if meth in ('__div__', '__truediv__'):
+                        _found_at_least_one_div = True
+                except TypeError:
+                    if meth in ('__div__', '__truediv__'):
+                        pass
+
+        self.assertTrue(_found_at_least_one_div, "Must implement at least one of __div__ and __truediv__")
+
+        # Unary methods
+        for meth in self.__unary_special_methods__:
+            self.assertEqual(base.value,
+                             getattr(base.derived, meth)())
+            op = getattr(operator, meth)
+            self.assertEqual(base.value,
+                             op(base.derived) )
+
+        # Conversion functions
+        for meth, converter in self.__unary_conversion_methods__.items():
+            if not converter:
+                continue
+            self.assertEqual(converter(base.value),
+                             getattr(base.derived, meth)())
+
+            self.assertEqual(converter(base.value),
+                             converter(base.derived))
+
+    def test_implicit_proxy_special_meths(self):
+        self._check_special_methods()
+
+    def test_explicit_proxy_special_meths(self):
+        self._check_special_methods(base_class=Acquisition.Explicit)
+
+    def _check_contains(self, base_class=Acquisition.Implicit):
+        # Contains has lots of fallback behaviour
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        # The simple case is if the object implements contains itself
+        class ReallyContains(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __contains__(self, item):
+                return self.value == item
+
+        base.derived = ReallyContains()
+
+        self.assertTrue(42 in base.derived)
+        self.assertFalse(24 in base.derived)
+
+
+        # Iterable objects are NOT iterated
+        # XXX: Is this a bug in the C code? Shouldn't it do
+        # what the interpreter does and fallback to iteration?
+        class IterContains(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __iter__(self):
+                return iter((42,))
+        base.derived = IterContains()
+
+        self.assertRaises(AttributeError, operator.contains, base.derived, 42)
+
+
+    def test_implicit_proxy_contains(self):
+        self._check_contains()
+
+    def test_explicit_proxy_contains(self):
+        self._check_contains(base_class=Acquisition.Explicit)
+
+    def _check_call(self, base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        class Callable(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __call__(self, arg, k=None):
+                return self.value, arg, k
+
+        base.derived = Callable()
+
+        self.assertEqual( base.derived(1, k=2),
+                          (42, 1, 2))
+
+        if not PYPY:
+            # XXX: This test causes certain versions
+            # of PyPy to segfault (at least 2.6.0-alpha1)
+            class NotCallable(base_class):
+                pass
+
+            base.derived = NotCallable()
+            try:
+                base.derived()
+                self.fail("Not callable")
+            except (TypeError,AttributeError):
+                pass
+
+    def test_implicit_proxy_call(self):
+        self._check_call()
+
+    def test_explicit_proxy_call(self):
+        self._check_call(base_class=Acquisition.Explicit)
+
+    def _check_hash(self,base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = B()
+        base.value.hash = 42
+
+        class NoAcquired(base_class):
+            def __hash__(self):
+                return 1
+
+        hashable = NoAcquired()
+        base.derived = hashable
+        self.assertEqual(1, hash(hashable))
+        self.assertEqual(1, hash(base.derived))
+
+        # cannot access acquired attributes during
+        # __hash__
+
+        class CannotAccessAcquiredAttributesAtHash(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+            def __hash__(self):
+                return self.value.hash
+
+        hashable = CannotAccessAcquiredAttributesAtHash()
+        base.derived = hashable
+        self.assertRaises(AttributeError, hash, hashable)
+        self.assertRaises(AttributeError, hash, base.derived)
+
+    def test_implicit_proxy_hash(self):
+        self._check_hash()
+
+    def test_explicit_proxy_hash(self):
+        self._check_hash(base_class=Acquisition.Explicit)
+
+    def _check_comparison(self,base_class=Acquisition.Implicit):
+        # Comparison behaviour is complex; see notes in _Wrapper
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        rich_cmp_methods = ['__lt__', '__gt__', '__eq__',
+                            '__ne__', '__ge__', '__le__']
+        def _never_called(self, other):
+            raise RuntimeError("This should never be called")
+
+        class RichCmpNeverCalled(base_class):
+            for _name in rich_cmp_methods:
+                locals()[_name] = _never_called
+
+        base.derived = RichCmpNeverCalled()
+        base.derived2 = RichCmpNeverCalled()
+        # We can access all of the operators, but only because
+        # they are masked
+        for name in rich_cmp_methods:
+            getattr(operator, name)(base.derived, base.derived2)
+
+        self.assertFalse(base.derived2 == base.derived)
+        self.assertEquals(base.derived, base.derived)
+
+    def test_implicit_proxy_comporison(self):
+        self._check_comparison()
+
+    def test_explicit_proxy_comporison(self):
+        self._check_comparison(base_class=Acquisition.Explicit)
+
+    def _check_bool(self, base_class=Acquisition.Implicit):
+        class B(Acquisition.Implicit):
+            pass
+        base = B()
+        base.value = 42
+
+        class WithBool(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __nonzero__(self):
+                return bool(self.value)
+            __bool__ = __nonzero__
+
+        class WithLen(base_class):
+            if base_class is Acquisition.Explicit:
+                value = Acquisition.Acquired
+
+            def __len__(self):
+                return self.value
+
+        class WithNothing(base_class):
+            pass
+
+        base.wbool = WithBool()
+        base.wlen = WithLen()
+        base.wnothing = WithNothing()
+
+        self.assertEqual(bool(base.wbool), True)
+        self.assertEqual(bool(base.wlen), True)
+        self.assertEqual(bool(base.wnothing), True)
+
+        base.value = 0
+        self.assertFalse(base.wbool)
+        self.assertFalse(base.wlen)
+
+    def test_implicit_proxy_bool(self):
+        self._check_bool()
+
+    def test_explicit_proxy_bool(self):
+        self._check_bool(base_class=Acquisition.Explicit)
+
 
 def test_suite():
     import os.path
@@ -2647,6 +3131,7 @@ def test_suite():
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
+        unittest.makeSuite(TestProxying),
     ]
 
     # This file is only available in a source checkout, skip it

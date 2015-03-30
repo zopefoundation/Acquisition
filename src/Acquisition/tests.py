@@ -1659,6 +1659,7 @@ def test_cant_persist_acquisition_wrappers_classic():
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
+    ...         assert klass.__getnewargs__(obj) == () # Coverage, make sure it can be called
     ...         return oid
     ...     return 'class_and_oid', klass
 
@@ -2570,6 +2571,36 @@ def test___parent__aq_parent_circles():
       RuntimeError: Recursion detected in acquisition wrapper
     """
 
+if hasattr(Acquisition.ImplicitAcquisitionWrapper, '_obj'):
+    def test_python_impl_cycle():
+        """
+        An extra safety belt, specific to the Python implementation
+        because it's not clear how one could arrive in this situation
+        naturally.
+
+        >>> class Impl(Acquisition.Implicit):
+        ...    pass
+        >>> root = Impl()
+        >>> root.child = Impl()
+        >>> child_wrapper = root.child
+
+        Now set up the python specific boo-boo:
+
+        >>> child_wrapper._obj = child_wrapper
+
+        Now nothing works:
+
+        >>> child_wrapper.non_existant_attr
+        Traceback (most recent call last):
+        ...
+        RuntimeError: Recursion detected in acquisition wrapper
+
+        >>> Acquisition.aq_acquire(child_wrapper, 'non_existant_attr')
+        Traceback (most recent call last):
+        ...
+        RuntimeError: Recursion detected in acquisition wrapper
+
+        """
 
 def test_unwrapped_implicit_acquirer_unwraps__parent__():
     """
@@ -2807,6 +2838,110 @@ def test_getitem_setitem_implemented():
     >>> root.child[1]
     {'a': 'b'}
     """
+
+def test_wrapped_objects_are_unwrapped_on_set():
+    """
+    A wrapper is not passed to the base object during `setattr`.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...   pass
+
+    Given two different wrappers:
+
+    >>> root = Impl()
+    >>> child = Impl()
+    >>> child2 = Impl()
+    >>> root.child = child
+    >>> root.child2 = child
+
+    If we pass one to the other as an attribute:
+
+    >>> root.child.child2 = root.child2
+
+    By the time it gets there, it's not wrapped:
+
+    >>> type(child.__dict__['child2']) is Impl
+    True
+    """
+
+def test_wrapper_calls_of_on_non_wrapper():
+    """
+    The ExtensionClass protocol is respected even for non-Acquisition
+    objects.
+
+    >>> class MyBase(ExtensionClass.Base):
+    ...     def __of__(self, other):
+    ...        print("Of called")
+    ...        return 42
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+
+    If we have a wrapper around an object that is an extension class,
+    but not an Acquisition wrapper:
+
+    >>> root = Impl()
+    >>> wrapper = Acquisition.ImplicitAcquisitionWrapper(MyBase(), root)
+
+    And access that object itself through a wrapper:
+
+    >>> root.child = Impl()
+    >>> root.child.wrapper = wrapper
+
+    The `__of__` protocol is respected implicitly:
+
+    >>> root.child.wrapper
+    Of called
+    42
+
+    Here it is explicitly:
+
+    >>> wrapper.__of__(root.child)
+    Of called
+    42
+
+    """
+
+def test_aq_inContextOf_odd_cases():
+    """
+    The aq_inContextOf function still works in some
+    artificial cases.
+
+    >>> from Acquisition import aq_inContextOf, aq_inner
+
+    >>> root = object()
+    >>> wrapper_around_none = Acquisition.ImplicitAcquisitionWrapper(None,None)
+    >>> aq_inContextOf(wrapper_around_none, root)
+    0
+
+    If we don't ask for inner objects, the same thing happens in this case:
+
+    >>> aq_inContextOf(wrapper_around_none, root, False)
+    0
+
+    Somewhat surprisingly, the `aq_inner` of this wrapper is itself a wrapper:
+
+    >>> aq_inner(wrapper_around_none) is None
+    False
+
+    If we manipulate the Python implementation to make this no longer true,
+    nothing breaks:
+
+    >>> setattr(wrapper_around_none, '_obj', None) if hasattr(wrapper_around_none, '_obj') else None
+    >>> aq_inContextOf(wrapper_around_none, root)
+    0
+    >>> wrapper_around_none
+    None
+
+    Following parent pointers in weird circumstances works too:
+
+    >>> class WithParent(object):
+    ...    __parent__ = None
+    >>> aq_inContextOf(WithParent(), root)
+    0
+
+    """
+
 
 class TestParent(unittest.TestCase):
 

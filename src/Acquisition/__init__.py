@@ -348,6 +348,8 @@ class _Wrapper(ExtensionClass.Base):
         while isinstance(wrapper._obj, _Wrapper) \
               and (wrapper._obj._container is wrapper._container._obj):
             # Since we mutate the wrapper as we walk up, we must copy
+            # XXX: This comes from the C implementation. Do we really need to
+            # copy?
             wrapper = type(wrapper)(wrapper._obj, wrapper._container)
             wrapper._obj = wrapper._obj._obj
         return wrapper
@@ -463,11 +465,15 @@ class _Wrapper(ExtensionClass.Base):
 
     def __repr__(self):
         aq_self = self._obj
-        return type(aq_self).__repr__(aq_self)
+        try:
+            return _rebound_method(aq_self.__repr__, self)()
+        except (AttributeError,TypeError):
+            return repr(aq_self)
 
     def __str__(self):
         aq_self = self._obj
-        return type(aq_self).__str__(aq_self)
+        f = getattr(type(aq_self), '__str__', object.__str__)
+        return _rebound_method(f, self)()
 
     __binary_special_methods__ = [
         # general numeric
@@ -767,7 +773,7 @@ def aq_chain(obj, containment=False):
 def aq_base(obj):
     result = obj
     while isinstance(result, _Wrapper):
-        result = result.aq_self
+        result = result._obj
     return result
 
 
@@ -819,7 +825,9 @@ def aq_inContextOf(self, o, inner=True):
 
         if inner:
             self = aq_inner(next)
-            if self is None:
+            if self is None: # pragma: no cover
+                # This branch is normally impossible to hit,
+                # it just mirrors a check in C
                 break
         else:
             self = next

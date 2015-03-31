@@ -2942,6 +2942,66 @@ def test_aq_inContextOf_odd_cases():
 
     """
 
+def test_search_repeated_objects():
+    """
+    If an acquisition wrapper object is wrapping another wrapper, and
+    also has another wrapper as its parent, and both of *those*
+    wrappers have the same object (one as its direct object, one as
+    its parent), then acquisition proceeds as normal: we don't get
+    into any cycles or fail to acquire expected attributes. In fact,
+    we actually can optimize out a level of the search in that case.
+
+
+    This is a bit of a convoluted scenario to set up when the code is
+    written out all in one place, but it may occur organically when
+    spread across a project.
+
+    We begin with some simple setup, importing the objects we'll use
+    and setting up the object that we'll repeat. This particular test
+    is specific to the Python implementation, so we're using low-level
+    functions from that module:
+
+    >>> from Acquisition import _Wrapper as Wrapper
+    >>> from Acquisition import _Wrapper_acquire
+    >>> from Acquisition import aq_acquire
+
+    >>> class Repeated(object):
+    ...    hello = "world"
+    ...    def __repr__(self):
+    ...        return 'repeated'
+    >>> repeated = Repeated()
+
+    Now the tricky part, creating the repeating pattern. To rephrase
+    the opening sentence, we need a wrapper whose object and parent
+    (container) are themselves both wrappers, and the object's parent is
+    the same object as the wrapper's parent's object. That might be a
+    bit more clear in code:
+
+    >>> wrappers_object = Wrapper('a', repeated)
+    >>> wrappers_parent = Wrapper(repeated, 'b')
+    >>> wrapper = Wrapper(wrappers_object, wrappers_parent)
+    >>> wrapper._obj._container is wrapper._container._obj
+    True
+
+    Using the low-level function on the wrapper fails to find the
+    desired attribute. This is because of the optimization that cuts
+    out a level of the search (it is assumed that the higher level
+    `_Wrapper_findattr` function is driving the search and will take
+    the appropriate steps):
+
+    >>> _Wrapper_acquire(wrapper, 'hello') #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    AttributeError: ...
+
+
+    In fact, if we go through the public interface of the high-level
+    functions, we do find the attribute as expected:
+
+    >>> aq_acquire(wrapper, 'hello')
+    'world'
+    """
+
 
 class TestParent(unittest.TestCase):
 

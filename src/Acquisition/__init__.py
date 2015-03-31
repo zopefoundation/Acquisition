@@ -192,6 +192,7 @@ def _Wrapper_findattr(wrapper, name,
     :param bool containment: Use the innermost wrapper (`aq_inner`) for looking up
         the attribute.
     """
+
     orig_name = name
     if orig_object is None:
         orig_object = wrapper
@@ -474,8 +475,8 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__str__, self)()
-        except (AttributeError,TypeError):
-            return object.__str__(self)
+        except (AttributeError,TypeError): # pragma: no cover (Hits under Py3)
+            return str(aq_self)
 
     __binary_special_methods__ = [
         # general numeric

@@ -44,7 +44,7 @@ if sys.version_info < (3,):
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
-else:
+else: # pragma: no cover (python 2 is currently our reference)
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
@@ -166,9 +166,7 @@ def _Wrapper_acquire(wrapper, name,
         if result is not Acquired:
             if predicate:
                 if _apply_filter(predicate, wrapper._container, name, result, predicate_extra, orig_object):
-                    if _has__of__(result):
-                        result = result.__of__(wrapper)
-                    return result
+                    return result.__of__(wrapper) if _has__of__(result) else result
                 else:
                     raise AttributeError(name)
             else:
@@ -176,7 +174,7 @@ def _Wrapper_acquire(wrapper, name,
                     result = result.__of__(wrapper)
                 return result
 
-    raise AttributeError(name)
+    raise AttributeError(name) # pragma: no cover (this line cannot be reached)
 
 
 def _Wrapper_findattr(wrapper, name,
@@ -194,6 +192,7 @@ def _Wrapper_findattr(wrapper, name,
     :param bool containment: Use the innermost wrapper (`aq_inner`) for looking up
         the attribute.
     """
+
     orig_name = name
     if orig_object is None:
         orig_object = wrapper
@@ -209,7 +208,10 @@ def _Wrapper_findattr(wrapper, name,
         result = _Wrapper_findspecial(wrapper, name)
         if result is not _NOT_FOUND:
             if predicate:
-                return result if _apply_filter(predicate, wrapper, orig_name, result, predicate_extra, orig_object) else None
+                if _apply_filter(predicate, wrapper, orig_name, result, predicate_extra, orig_object):
+                    return result
+                else:
+                    raise AttributeError(orig_name)
             return result
     elif name in ('__reduce__', '__reduce_ex__', '__getstate__',
                   '__of__', '__cmp__', '__eq__', '__ne__', '__lt__',
@@ -347,6 +349,8 @@ class _Wrapper(ExtensionClass.Base):
         while isinstance(wrapper._obj, _Wrapper) \
               and (wrapper._obj._container is wrapper._container._obj):
             # Since we mutate the wrapper as we walk up, we must copy
+            # XXX: This comes from the C implementation. Do we really need to
+            # copy?
             wrapper = type(wrapper)(wrapper._obj, wrapper._container)
             wrapper._obj = wrapper._obj._obj
         return wrapper
@@ -410,7 +414,7 @@ class _Wrapper(ExtensionClass.Base):
     def __cmp__(self, other):
         aq_self = self._obj
         if hasattr(type(aq_self), '__cmp__'):
-            return _rebound_method(type(aq_self), self)(other)
+            return _rebound_method(aq_self.__cmp__, self)(other)
 
         my_base = aq_base(self)
         other_base = aq_base(other)
@@ -462,11 +466,17 @@ class _Wrapper(ExtensionClass.Base):
 
     def __repr__(self):
         aq_self = self._obj
-        return type(aq_self).__repr__(aq_self)
+        try:
+            return _rebound_method(aq_self.__repr__, self)()
+        except (AttributeError,TypeError):
+            return repr(aq_self)
 
     def __str__(self):
         aq_self = self._obj
-        return type(aq_self).__str__(aq_self)
+        try:
+            return _rebound_method(aq_self.__str__, self)()
+        except (AttributeError,TypeError): # pragma: no cover (Hits under Py3)
+            return str(aq_self)
 
     __binary_special_methods__ = [
         # general numeric
@@ -617,32 +627,37 @@ class _Wrapper(ExtensionClass.Base):
 
     def __setitem__(self, key, value):
         aq_self = self._obj
-        _rebound_method(getattr(type(aq_self), '__setitem__'), self)(key, value)
+        try:
+            setter = type(aq_self).__setitem__
+        except AttributeError:
+            raise AttributeError("__setitem__") # doctests care about the name
+        else:
+            setter(self, key, value)
 
     def __getitem__(self, key):
-        if isinstance(key, slice):
-            if isinstance(self._obj, (list, tuple)):
-                return self._obj[key]
-            start, stop = key.start, key.stop
-            if start is None:
-                start = 0
-            if start < 0:
-                start += len(self._obj)
-            if stop is None:
-                stop = getattr(sys, 'maxint', None) # PY2
-            elif stop < 0:
-                stop += len(self._obj)
-            if hasattr(operator, 'getslice'): # PY2
-                return operator.getslice(self._obj, start, stop)
-            return self._obj[start:stop]
-        return self._obj[key]
+        if isinstance(key, slice) and hasattr(operator, 'getslice'):
+            # Only on Python 2
+            # XXX: This is probably not proxying correctly, but the existing
+            # tests pass with this behaviour
+            return operator.getslice(self._obj,
+                                     key.start if key.start is not None else 0,
+                                     key.stop if key.stop is not None else sys.maxint)
+
+        aq_self = self._obj
+        try:
+            getter = type(aq_self).__getitem__
+        except AttributeError:
+            raise AttributeError("__getitem__") # doctests care about the name
+        else:
+            return getter(self, key)
+
 
     def __call__(self, *args, **kwargs):
         try:
             # Note we look this up on the completely unwrapped
             # object, so as not to get a class
             call = getattr(self.aq_base, '__call__')
-        except AttributeError:
+        except AttributeError: # pragma: no cover
             # A TypeError is what the interpreter raises;
             # AttributeError is allowed to percolate through the
             # C proxy
@@ -761,7 +776,7 @@ def aq_chain(obj, containment=False):
 def aq_base(obj):
     result = obj
     while isinstance(result, _Wrapper):
-        result = result.aq_self
+        result = result._obj
     return result
 
 
@@ -813,7 +828,9 @@ def aq_inContextOf(self, o, inner=True):
 
         if inner:
             self = aq_inner(next)
-            if self is None:
+            if self is None: # pragma: no cover
+                # This branch is normally impossible to hit,
+                # it just mirrors a check in C
                 break
         else:
             self = next
@@ -825,7 +842,7 @@ def aq_inContextOf(self, o, inner=True):
     return 0
 
 
-if 'PURE_PYTHON' not in os.environ:  # pragma no cover
+if 'PURE_PYTHON' not in os.environ:  # pragma: no cover
     try:
         from ._Acquisition import *
     except ImportError:

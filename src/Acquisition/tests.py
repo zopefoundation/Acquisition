@@ -1659,6 +1659,7 @@ def test_cant_persist_acquisition_wrappers_classic():
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
+    ...         assert klass.__getnewargs__(obj) == () # Coverage, make sure it can be called
     ...         return oid
     ...     return 'class_and_oid', klass
 
@@ -1766,8 +1767,16 @@ def test_interfaces():
     True
     """
 
-if PY2:
-    # Assigning to __bases__ is difficult under Python 3.
+try:
+    class Plain(object):
+        pass
+    Plain.__bases__ = (ExtensionClass.Base,)
+except TypeError:
+    # Not supported
+    pass
+else:
+    # Assigning to __bases__ is difficult under some versions of python.
+    # PyPy usually lets it, but CPython (3 esp) may not.
     # In this example, you get:
     #   "TypeError: __bases__ assignment: 'Base' deallocator differs from 'object'"
     # I don't know what the workaround is; the old one of using a dummy
@@ -2562,6 +2571,36 @@ def test___parent__aq_parent_circles():
       RuntimeError: Recursion detected in acquisition wrapper
     """
 
+if hasattr(Acquisition.ImplicitAcquisitionWrapper, '_obj'):
+    def test_python_impl_cycle():
+        """
+        An extra safety belt, specific to the Python implementation
+        because it's not clear how one could arrive in this situation
+        naturally.
+
+        >>> class Impl(Acquisition.Implicit):
+        ...    pass
+        >>> root = Impl()
+        >>> root.child = Impl()
+        >>> child_wrapper = root.child
+
+        Now set up the python specific boo-boo:
+
+        >>> child_wrapper._obj = child_wrapper
+
+        Now nothing works:
+
+        >>> child_wrapper.non_existant_attr
+        Traceback (most recent call last):
+        ...
+        RuntimeError: Recursion detected in acquisition wrapper
+
+        >>> Acquisition.aq_acquire(child_wrapper, 'non_existant_attr')
+        Traceback (most recent call last):
+        ...
+        RuntimeError: Recursion detected in acquisition wrapper
+
+        """
 
 def test_unwrapped_implicit_acquirer_unwraps__parent__():
     """
@@ -2600,6 +2639,368 @@ def test__iter__after_AttributeError():
     ...     raise
     """
 
+def test_special_names():
+    """
+    This test captures some aq_special names that are not otherwise
+    tested for.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+
+    >>> root = Impl()
+    >>> root.child = Impl()
+
+    First, the 'aq_explicit' name returns an explicit wrapper
+    instead of an explicit wrapper:
+
+    >>> ex_wrapper = root.child.aq_explicit
+    >>> type(ex_wrapper) #doctest: +ELLIPSIS
+    <... 'Acquisition.ExplicitAcquisitionWrapper'>
+
+    If we ask an explicit wrapper to be explicit, we get back
+    the same object:
+
+    >>> ex_wrapper.aq_explicit is ex_wrapper.aq_explicit
+    True
+
+    These special names can also be filtered:
+
+    >>> Acquisition.aq_acquire(root.child, 'aq_explicit',
+    ...    lambda searched, parent, name, ob, extra: None,
+    ...    default=None) is None
+    True
+    >>> Acquisition.aq_acquire(root.child, 'aq_explicit',
+    ...    lambda searched, parent, name, ob, extra: True,
+    ...    default=None) is None
+    False
+
+
+    Last, a value that can be used for testing that you have a wrapper:
+
+    >>> root.child.aq_uncle
+    'Bob'
+
+    """
+
+def test_deleting_parent_attrs():
+    """
+    We can detach a wrapper object from its chain by deleting its
+    parent.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+
+    >>> root = Impl()
+    >>> root.a = 42
+    >>> root.child = Impl()
+
+    Initially, a wrapped object has the parent we expect:
+
+    >>> child_wrapper = root.child
+    >>> child_wrapper.aq_parent is child_wrapper.__parent__ is root
+    True
+
+    Even though we acquired the 'a' attribute, we can't delete it:
+
+    >>> child_wrapper.a
+    42
+    >>> del child_wrapper.a #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    AttributeError: ...
+
+    Now if we delete it (as many times as we want)
+    we lose access to the parent and acquired attributes:
+
+    >>> del child_wrapper.__parent__
+    >>> del child_wrapper.aq_parent
+
+    >>> child_wrapper.aq_parent is child_wrapper.__parent__ is None
+    True
+    >>> hasattr(child_wrapper, 'a')
+    False
+
+    """
+
+def test__cmp__is_called_on_wrapped_object():
+    """
+    If we define an object that implements `__cmp__`:
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     def __cmp__(self,other):
+    ...         return self.a
+
+    Then it gets called when a wrapper is compared (we call it
+    directly to avoid any Python2/3 issues):
+
+    >>> root = Impl()
+    >>> root.a = 42
+    >>> root.child = Impl()
+    >>> root.child.a
+    42
+
+    >>> root.child.__cmp__(None)
+    42
+
+    """
+
+def test_wrapped_methods_have_correct_self():
+    """
+    Getting a method from a wrapper returns an object that uses the
+    wrapper as its `__self__`, no matter how many layers deep we go;
+    this makes acquisition work in that code.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...    def method(self):
+    ...        return self.a
+
+    >>> root = Impl()
+    >>> root.a = 42
+    >>> root.child = Impl()
+    >>> root.child.child = Impl()
+
+    We explicitly construct a wrapper to bypass some of the optimizations
+    that remove redundant wrappers and thus get more full code coverage:
+
+    >>> child_wrapper = Acquisition.ImplicitAcquisitionWrapper(root.child.child, root.child)
+
+    >>> method = child_wrapper.method
+    >>> method.__self__ is child_wrapper
+    True
+    >>> method()
+    42
+    """
+
+
+def test_cannot_set_attributes_on_empty_wrappers():
+    """
+    If a wrapper is around None, no attributes can be set on it:
+
+    >>> wrapper = Acquisition.ImplicitAcquisitionWrapper(None,None)
+    >>> wrapper.a = 42 #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    AttributeError: ...
+
+    Likewise, we can't really get any attributes on such an empty wrapper
+
+    >>> wrapper.a #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    AttributeError: ...
+
+    """
+
+def test_getitem_setitem_not_implemented():
+    """
+    If a wrapper wraps something that doesn't implement get/setitem,
+    those failures propagate up.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+    >>> root = Impl()
+    >>> root.child = Impl()
+
+    We can't set anything:
+
+    >>> root.child['key'] = 42
+    Traceback (most recent call last):
+        ...
+    AttributeError: __setitem__
+
+    We can't get anything:
+
+    >>> root.child['key']
+    Traceback (most recent call last):
+        ...
+    AttributeError: __getitem__
+    """
+
+def test_getitem_setitem_implemented():
+    """
+    The wrapper delegates to get/set item.
+
+    >>> class Root(Acquisition.Implicit):
+    ...   pass
+    >>> class Impl(Acquisition.Implicit):
+    ...   def __getitem__(self, i):
+    ...        return self.a
+    ...   def __setitem__(self, key, value):
+    ...        self.a[key] = value
+
+    >>> root = Root()
+    >>> root.a = dict()
+    >>> root.child = Impl()
+
+    >>> root.child[1]
+    {}
+    >>> root.child['a'] = 'b'
+    >>> root.child[1]
+    {'a': 'b'}
+    """
+
+def test_wrapped_objects_are_unwrapped_on_set():
+    """
+    A wrapper is not passed to the base object during `setattr`.
+
+    >>> class Impl(Acquisition.Implicit):
+    ...   pass
+
+    Given two different wrappers:
+
+    >>> root = Impl()
+    >>> child = Impl()
+    >>> child2 = Impl()
+    >>> root.child = child
+    >>> root.child2 = child
+
+    If we pass one to the other as an attribute:
+
+    >>> root.child.child2 = root.child2
+
+    By the time it gets there, it's not wrapped:
+
+    >>> type(child.__dict__['child2']) is Impl
+    True
+    """
+
+def test_wrapper_calls_of_on_non_wrapper():
+    """
+    The ExtensionClass protocol is respected even for non-Acquisition
+    objects.
+
+    >>> class MyBase(ExtensionClass.Base):
+    ...     def __of__(self, other):
+    ...        print("Of called")
+    ...        return 42
+
+    >>> class Impl(Acquisition.Implicit):
+    ...     pass
+
+    If we have a wrapper around an object that is an extension class,
+    but not an Acquisition wrapper:
+
+    >>> root = Impl()
+    >>> wrapper = Acquisition.ImplicitAcquisitionWrapper(MyBase(), root)
+
+    And access that object itself through a wrapper:
+
+    >>> root.child = Impl()
+    >>> root.child.wrapper = wrapper
+
+    The `__of__` protocol is respected implicitly:
+
+    >>> root.child.wrapper
+    Of called
+    42
+
+    Here it is explicitly:
+
+    >>> wrapper.__of__(root.child)
+    Of called
+    42
+
+    """
+
+def test_aq_inContextOf_odd_cases():
+    """
+    The aq_inContextOf function still works in some
+    artificial cases.
+
+    >>> from Acquisition import aq_inContextOf, aq_inner
+
+    >>> root = object()
+    >>> wrapper_around_none = Acquisition.ImplicitAcquisitionWrapper(None,None)
+    >>> aq_inContextOf(wrapper_around_none, root)
+    0
+
+    If we don't ask for inner objects, the same thing happens in this case:
+
+    >>> aq_inContextOf(wrapper_around_none, root, False)
+    0
+
+    Somewhat surprisingly, the `aq_inner` of this wrapper is itself a wrapper:
+
+    >>> aq_inner(wrapper_around_none) is None
+    False
+
+    If we manipulate the Python implementation to make this no longer true,
+    nothing breaks:
+
+    >>> setattr(wrapper_around_none, '_obj', None) if hasattr(wrapper_around_none, '_obj') else None
+    >>> aq_inContextOf(wrapper_around_none, root)
+    0
+    >>> wrapper_around_none
+    None
+
+    Following parent pointers in weird circumstances works too:
+
+    >>> class WithParent(object):
+    ...    __parent__ = None
+    >>> aq_inContextOf(WithParent(), root)
+    0
+
+    """
+
+def test_search_repeated_objects():
+    """
+    If an acquisition wrapper object is wrapping another wrapper, and
+    also has another wrapper as its parent, and both of *those*
+    wrappers have the same object (one as its direct object, one as
+    its parent), then acquisition proceeds as normal: we don't get
+    into any cycles or fail to acquire expected attributes. In fact,
+    we actually can optimize out a level of the search in that case.
+
+
+    This is a bit of a convoluted scenario to set up when the code is
+    written out all in one place, but it may occur organically when
+    spread across a project.
+
+    We begin with some simple setup, importing the objects we'll use
+    and setting up the object that we'll repeat. This particular test
+    is specific to the Python implementation, so we're using low-level
+    functions from that module:
+
+    >>> from Acquisition import _Wrapper as Wrapper
+    >>> from Acquisition import _Wrapper_acquire
+    >>> from Acquisition import aq_acquire
+
+    >>> class Repeated(object):
+    ...    hello = "world"
+    ...    def __repr__(self):
+    ...        return 'repeated'
+    >>> repeated = Repeated()
+
+    Now the tricky part, creating the repeating pattern. To rephrase
+    the opening sentence, we need a wrapper whose object and parent
+    (container) are themselves both wrappers, and the object's parent is
+    the same object as the wrapper's parent's object. That might be a
+    bit more clear in code:
+
+    >>> wrappers_object = Wrapper('a', repeated)
+    >>> wrappers_parent = Wrapper(repeated, 'b')
+    >>> wrapper = Wrapper(wrappers_object, wrappers_parent)
+    >>> wrapper._obj._container is wrapper._container._obj
+    True
+
+    Using the low-level function on the wrapper fails to find the
+    desired attribute. This is because of the optimization that cuts
+    out a level of the search (it is assumed that the higher level
+    `_Wrapper_findattr` function is driving the search and will take
+    the appropriate steps):
+
+    >>> _Wrapper_acquire(wrapper, 'hello') #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    AttributeError: ...
+
+
+    In fact, if we go through the public interface of the high-level
+    functions, we do find the attribute as expected:
+
+    >>> aq_acquire(wrapper, 'hello')
+    'world'
+    """
 
 
 class TestParent(unittest.TestCase):

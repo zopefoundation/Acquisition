@@ -336,6 +336,9 @@ import platform
 import operator
 from doctest import DocTestSuite, DocFileSuite
 
+import ExtensionClass
+import Acquisition
+
 
 if sys.version_info >= (3,):
     PY3 = True
@@ -359,9 +362,10 @@ if not hasattr(gc, 'get_threshold'):
     gc.get_threshold = lambda: ()
     gc.set_threshold = lambda *x: None
 
-import ExtensionClass
-import Acquisition
-
+AQ_PARENT = unicode('aq_parent')
+UNICODE_WAS_CALLED = unicode('unicode was called')
+STR_WAS_CALLED = unicode('str was called')
+TRUE = unicode('True')
 
 class I(Acquisition.Implicit):
 
@@ -3117,7 +3121,7 @@ class TestAcquire(unittest.TestCase):
 
     def test_w_unicode_attr_name(self):
         # See https://bugs.launchpad.net/acquisition/+bug/143358
-        found = self.acquire(self.a.b.c, u'aq_parent')
+        found = self.acquire(self.a.b.c, AQ_PARENT)
         self.assertTrue(found.aq_self is self.a.b.aq_self)
 
 
@@ -3126,17 +3130,17 @@ class TestUnicode(unittest.TestCase):
     def test_implicit_aq_unicode_should_be_called(self):
         class A(Acquisition.Implicit):
             def __unicode__(self):
-                return u'unicode was called'
+                return UNICODE_WAS_CALLED
         wrapped = A().__of__(A())
-        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(UNICODE_WAS_CALLED, unicode(wrapped))
         self.assertEqual(str(wrapped), repr(wrapped))
 
     def test_explicit_aq_unicode_should_be_called(self):
         class A(Acquisition.Explicit):
             def __unicode__(self):
-                return u'unicode was called'
+                return UNICODE_WAS_CALLED
         wrapped = A().__of__(A())
-        self.assertEqual(u'unicode was called', unicode(wrapped))
+        self.assertEqual(UNICODE_WAS_CALLED, unicode(wrapped))
         self.assertEqual(str(wrapped), repr(wrapped))
 
     def test_implicit_should_fall_back_to_str(self):
@@ -3144,7 +3148,7 @@ class TestUnicode(unittest.TestCase):
             def __str__(self):
                 return 'str was called'
         wrapped = A().__of__(A())
-        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual(STR_WAS_CALLED, unicode(wrapped))
         self.assertEqual('str was called', str(wrapped))
 
     def test_explicit_should_fall_back_to_str(self):
@@ -3152,7 +3156,7 @@ class TestUnicode(unittest.TestCase):
             def __str__(self):
                 return 'str was called'
         wrapped = A().__of__(A())
-        self.assertEqual(u'str was called', unicode(wrapped))
+        self.assertEqual(STR_WAS_CALLED, unicode(wrapped))
         self.assertEqual('str was called', str(wrapped))
 
     def test_str_fallback_should_be_called_with_wrapped_self(self):
@@ -3161,7 +3165,7 @@ class TestUnicode(unittest.TestCase):
                 return str(self.aq_parent == outer)
         outer = A()
         inner = A().__of__(outer)
-        self.assertEqual(u'True', unicode(inner))
+        self.assertEqual(TRUE, unicode(inner))
 
     def test_unicode_should_be_called_with_wrapped_self(self):
         class A(Acquisition.Implicit):
@@ -3169,7 +3173,7 @@ class TestUnicode(unittest.TestCase):
                 return str(self.aq_parent == outer)
         outer = A()
         inner = A().__of__(outer)
-        self.assertEqual(u'True', unicode(inner))
+        self.assertEqual(TRUE, unicode(inner))
 
 class TestProxying(unittest.TestCase):
 

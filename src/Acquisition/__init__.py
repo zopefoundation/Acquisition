@@ -472,8 +472,10 @@ class _Wrapper(ExtensionClass.Base):
 
     def __str__(self):
         aq_self = self._obj
-        f = getattr(type(aq_self), '__str__', object.__str__)
-        return _rebound_method(f, self)()
+        try:
+            return _rebound_method(aq_self.__str__, self)()
+        except (AttributeError,TypeError):
+            return object.__str__(self)
 
     __binary_special_methods__ = [
         # general numeric

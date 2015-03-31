@@ -4,7 +4,7 @@ Changelog
 4.2 (unreleased)
 ----------------
 
-- Add support for PyPy and Python 3.
+- Add support for PyPy, PyPy3, and Python 3.2, 3.3, and 3.4.
 
 4.1 (2014-12-18)
 ----------------

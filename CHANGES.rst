@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.2 (unreleased)
+4.2 (2015-04-04)
 ----------------
 
 - Add support for PyPy, PyPy3, and Python 3.2, 3.3, and 3.4.

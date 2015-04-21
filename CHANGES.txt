@@ -4,7 +4,9 @@ Changelog
 2.13.10 (unreleased)
 --------------------
 
-- TBD
+- Correct several dangling pointer uses in the C extension,
+  potentially fixing a few interpreter crashes. See
+  https://github.com/zopefoundation/Acquisition/issues/5.
 
 2.13.9 (2015-02-17)
 -------------------

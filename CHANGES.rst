@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.2.1 (unreleased)
+4.2.1 (2015-04-23)
 ------------------
 
 - Correct several dangling pointer uses in the C extension,

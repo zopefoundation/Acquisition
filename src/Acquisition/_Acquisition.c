@@ -453,6 +453,11 @@ Wrapper_acquire(Wrapper *self, PyObject *oname,
 		int explicit, int containment);
 
 static PyObject *
+Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
+		PyObject *filter, PyObject *extra, PyObject *orig,
+		int sob, int sco, int explicit, int containment);
+
+static PyObject *
 Wrapper_findattr(Wrapper *self, PyObject *oname,
 		PyObject *filter, PyObject *extra, PyObject *orig,
 		int sob, int sco, int explicit, int containment)
@@ -474,16 +479,48 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
     attribute.
 */
 {
-  PyObject *r, *v, *tb, *tmp;
+  PyObject *tmp=NULL;
+  PyObject *result;
   char *name="";
 
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  if (PyUnicode_Check(oname)) {
+  else if (PyUnicode_Check(oname)) {
     tmp=PyUnicode_AsASCIIString(oname);
     if (tmp==NULL) return NULL;
     name=PyString_AS_STRING(tmp);
-    Py_DECREF(tmp);
   }
+
+  result = Wrapper_findattr_name(self, name, oname, filter, extra, orig,
+                                 sob, sco, explicit, containment);
+
+  Py_XDECREF(tmp);
+
+  return result;
+
+}
+
+static PyObject *
+Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
+		PyObject *filter, PyObject *extra, PyObject *orig,
+		int sob, int sco, int explicit, int containment)
+/*
+ Exactly the same as Wrapper_findattr, except that the incoming
+ Python name string/unicode object has already been decoded
+ into a C string. This helper function lets us more easily manage
+ the lifetime of any temporary allocations.
+
+ This function uses Wrapper_acquire, which only takes the original
+ oname value, not the decoded value. That function can call back into
+ this one (via Wrapper_findattr). Although that may lead to a few
+ temporary allocations as we walk through the containment hierarchy,
+ it is correct: This function may modify its internal view of the
+ `name` value, and if that were propagated up the hierarchy
+ the incorrect name may be looked up.
+*/
+{
+
+  PyObject *r, *v, *tb;
+
   if ((*name=='a' && name[1]=='q' && name[2]=='_') ||
       (strcmp(name, "__parent__")==0))
     {
@@ -732,62 +769,73 @@ Wrapper_getattro(Wrapper *self, PyObject *oname)
 static PyObject *
 Xaq_getattro(Wrapper *self, PyObject *oname)
 {
-  PyObject *tmp;
+  PyObject *tmp=NULL;
+  PyObject *result;
   char *name="";
 
   /* Special case backward-compatible acquire method. */
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  if (PyUnicode_Check(oname)) {
+  else if (PyUnicode_Check(oname)) {
     tmp=PyUnicode_AsASCIIString(oname);
     if (tmp==NULL) return NULL;
     name=PyString_AS_STRING(tmp);
-    Py_DECREF(tmp);
   }
-  if (*name=='a' && name[1]=='c' && strcmp(name+2,"quire")==0)
-    return Py_FindAttr(OBJECT(self),oname);
 
-  if (self->obj || self->container)
-    return Wrapper_findattr(self, oname, NULL, NULL, NULL, 1, 0, 0, 0);
+  if (*name=='a' && name[1]=='c' && strcmp(name+2,"quire")==0)
+    result = Py_FindAttr(OBJECT(self),oname);
+
+  else if (self->obj || self->container)
+    result = Wrapper_findattr(self, oname, NULL, NULL, NULL, 1, 0, 0, 0);
 
   /* Maybe we are getting initialized? */
-  return Py_FindAttr(OBJECT(self),oname);
+  else result = Py_FindAttr(OBJECT(self),oname);
+
+  Py_XDECREF(tmp);
+
+  return result;
 }
 
 static int
 Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
 {
-  PyObject *tmp;
+  PyObject *tmp=NULL;
   char *name="";
+  int result;
 
   /* Allow assignment to parent, to change context. */
   if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  if (PyUnicode_Check(oname)) {
+  else if (PyUnicode_Check(oname)) {
     tmp=PyUnicode_AsASCIIString(oname);
     if (tmp==NULL) return -1;
     name=PyString_AS_STRING(tmp);
-    Py_DECREF(tmp);
   }
   if ((*name=='a' && name[1]=='q' && name[2]=='_' 
        && strcmp(name+3,"parent")==0) || (strcmp(name, "__parent__")==0))
     {
       Py_XINCREF(v);
       ASSIGN(self->container, v);
-      return 0;
+      result = 0;
     }
 
-  if (self->obj)
+  else if (self->obj)
     {
       /* Unwrap passed in wrappers! */
       while (v && isWrapper(v))
 	v=WRAPPER(v)->obj;
 
-      if (v) return PyObject_SetAttr(self->obj, oname, v);
-      else   return PyObject_DelAttr(self->obj, oname);
+      if (v) result = PyObject_SetAttr(self->obj, oname, v);
+      else   result = PyObject_DelAttr(self->obj, oname);
     }
-
+  else
+    {
   PyErr_SetString(PyExc_AttributeError, 
 		  "Attempt to set attribute on empty acquisition wrapper");
-  return -1;
+      result = -1;
+    }
+
+  Py_XDECREF(tmp);
+
+  return result;
 }
 
 static int

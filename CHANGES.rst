@@ -4,7 +4,9 @@ Changelog
 4.2.1 (unreleased)
 ------------------
 
-- TBD
+- Correct several dangling pointer uses in the C extension,
+  potentially fixing a few interpreter crashes. See
+  https://github.com/zopefoundation/Acquisition/issues/5.
 
 4.2 (2015-04-04)
 ----------------

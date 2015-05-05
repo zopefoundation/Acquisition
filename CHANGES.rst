@@ -4,7 +4,9 @@ Changelog
 4.2.2 (unreleased)
 ------------------
 
-- TBD
+- Make the pure-Python Acquirer objects cooperatively use the
+  superclass ``__getattribute__`` method, like the C implementation.
+  See https://github.com/zopefoundation/Acquisition/issues/7.
 
 4.2.1 (2015-04-23)
 ------------------

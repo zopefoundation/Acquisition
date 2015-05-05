@@ -44,12 +44,21 @@ if sys.version_info < (3,):
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
+    exec("""def _reraise(tp, value, tb=None):
+    raise tp, value, tb
+""")
 else: # pragma: no cover (python 2 is currently our reference)
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.__func__, wrapper)
         return method
+    def _reraise(tp, value, tb=None):
+        if value is None:
+            value = tp()
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -684,11 +693,12 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return ExtensionClass.Base.__getattribute__(self, name)
+            return super(_Acquirer,self).__getattribute__(name)
         except AttributeError:
             # the doctests have very specific error message
-            # requirements
-            raise AttributeError(name)
+            # requirements (but at least we can preserve the traceback)
+            t, v, tb = sys.exc_info()
+            _reraise(AttributeError, AttributeError(name), tb)
 
     def __of__(self, context):
         return type(self)._Wrapper(self, context)

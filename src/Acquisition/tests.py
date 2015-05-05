@@ -3124,6 +3124,30 @@ class TestAcquire(unittest.TestCase):
         found = self.acquire(self.a.b.c, AQ_PARENT)
         self.assertTrue(found.aq_self is self.a.b.aq_self)
 
+class TestCooperativeBase(unittest.TestCase):
+
+    def _make_acquirer(self, kind):
+        from ExtensionClass import Base
+
+        class ExtendsBase(Base):
+            def __getattribute__(self, name):
+                if name == 'magic':
+                    return 42
+                return super(ExtendsBase,self).__getattribute__(name)
+
+        class Acquirer(kind, ExtendsBase):
+            pass
+
+        return Acquirer()
+
+    def _check___getattribute___is_cooperative(self, acquirer):
+        self.assertEqual(getattr(acquirer, 'magic'), 42)
+
+    def test_implicit___getattribute__is_cooperative(self):
+        self._check___getattribute___is_cooperative(self._make_acquirer(Acquisition.Implicit))
+
+    def test_explicit___getattribute__is_cooperative(self):
+        self._check___getattribute___is_cooperative(self._make_acquirer(Acquisition.Explicit))
 
 class TestUnicode(unittest.TestCase):
 
@@ -3537,6 +3561,7 @@ def test_suite():
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),
         unittest.makeSuite(TestProxying),
+        unittest.makeSuite(TestCooperativeBase),
     ]
 
     # This file is only available in a source checkout, skip it

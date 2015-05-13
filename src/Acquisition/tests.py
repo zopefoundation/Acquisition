@@ -3149,6 +3149,101 @@ class TestCooperativeBase(unittest.TestCase):
     def test_explicit___getattribute__is_cooperative(self):
         self._check___getattribute___is_cooperative(self._make_acquirer(Acquisition.Explicit))
 
+if 'Acquisition._Acquisition' not in sys.modules:
+    # Implicitly wrapping an object that uses object.__getattribute__
+    # in its implementation of __getattribute__ doesn't break.
+    # This can arise with the `persistent` library or other
+    # "base" classes.
+
+    # The C implementation doesn't directly support this; however,
+    # it is used heavily in the Python implementation of Persistent.
+
+    class TestImplicitWrappingGetattribute(unittest.TestCase):
+
+        def test_object_getattribute_in_rebound_method_with_slots(self):
+
+            class Persistent(object):
+                __slots__ = ('__flags')
+                def __init__(self):
+                    self.__flags = 42
+
+                def get_flags(self):
+                    return object.__getattribute__(self, '_Persistent__flags')
+
+            wrapped = Persistent()
+            wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
+
+            self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
+
+            # Changing it is not reflected in the wrapper's dict (this is an
+            # implementation detail)
+            wrapper._Persistent__flags = -1
+            self.assertEqual(wrapped.get_flags(), -1)
+            self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
+
+            wrapper_dict = object.__getattribute__(wrapper, '__dict__')
+            self.assertFalse('_Persistent__flags' in wrapper_dict)
+
+        def test_type_with_slots_reused(self):
+
+            class Persistent(object):
+                __slots__ = ('__flags')
+                def __init__(self):
+                    self.__flags = 42
+
+                def get_flags(self):
+                    return object.__getattribute__(self, '_Persistent__flags')
+
+            wrapped = Persistent()
+            wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
+            wrapper2 = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
+
+            self.assertTrue( type(wrapper) is type(wrapper2))
+
+        def test_object_getattribute_in_rebound_method_with_dict(self):
+
+            class Persistent(object):
+                def __init__(self):
+                    self.__flags = 42
+
+                def get_flags(self):
+                    return object.__getattribute__(self, '_Persistent__flags')
+
+            wrapped = Persistent()
+            wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
+
+            self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
+
+            # Changing it is also reflected in both dicts (this is an
+            # implementation detail)
+            wrapper._Persistent__flags = -1
+            self.assertEqual(wrapped.get_flags(), -1)
+            self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
+
+            wrapper_dict = object.__getattribute__(wrapper, '__dict__')
+            self.assertTrue('_Persistent__flags' in wrapper_dict)
+
+
+        def test_object_getattribute_in_rebound_method_with_slots_and_dict(self):
+
+            class Persistent(object):
+                __slots__ = ('__flags', '__dict__')
+                def __init__(self):
+                    self.__flags = 42
+                    self.__oid = 'oid'
+
+                def get_flags(self):
+                    return object.__getattribute__(self, '_Persistent__flags')
+
+                def get_oid(self):
+                    return object.__getattribute__(self, '_Persistent__oid')
+
+            wrapped = Persistent()
+            wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
+
+            self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
+            self.assertEqual(wrapped.get_oid(), wrapper.get_oid())
+
 class TestUnicode(unittest.TestCase):
 
     def test_implicit_aq_unicode_should_be_called(self):

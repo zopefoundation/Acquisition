@@ -2,10 +2,12 @@ from __future__ import absolute_import, print_function
 
 # pylint:disable=W0212,R0911,R0912
 
+
 import os
 import operator
 import sys
 import types
+import weakref
 
 import ExtensionClass
 
@@ -39,6 +41,8 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 if sys.version_info < (3,):
+    import copy_reg
+
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
@@ -48,6 +52,8 @@ if sys.version_info < (3,):
     raise tp, value, tb
 """)
 else: # pragma: no cover (python 2 is currently our reference)
+    import copyreg as copy_reg
+
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
@@ -292,16 +298,58 @@ def _Wrapper_findattr(wrapper, name,
 
 
 _NOT_GIVEN = object()  # marker
+_OGA = object.__getattribute__
 
+# Map from object types with slots to their generated, derived
+# types
+_wrapper_subclass_cache = weakref.WeakKeyDictionary()
+
+def _make_wrapper_subclass_if_needed(cls, obj, container):
+    # If the type of an object to be wrapped has __slots__, then we
+    # must create a wrapper subclass that has descriptors for those
+    # same slots. In this way, its methods that use object.__getattribute__
+    # directly will continue to work, even when given an instance of _Wrapper
+    if getattr(cls, '_DERIVED', False):
+        return None
+    type_obj = type(obj)
+    wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
+    if wrapper_subclass is _NOT_GIVEN:
+        slotnames = copy_reg._slotnames(type_obj)
+        if slotnames and not getattr(cls, '_DERIVED', False) and not isinstance(obj, _Wrapper):
+            new_type_dict = {'_DERIVED': True}
+            def _make_property(slotname):
+                 return property(lambda s: getattr(s._obj, slotname),
+                                 lambda s, v: setattr(s._obj, slotname, v),
+                                 lambda s: delattr(s._obj, slotname))
+            for slotname in slotnames:
+                new_type_dict[slotname] = _make_property(slotname)
+            new_type = type(cls.__name__ + '_' + type_obj.__name__,
+                            (cls,),
+                            new_type_dict)
+        else:
+            new_type = None
+        wrapper_subclass = _wrapper_subclass_cache[type_obj] = new_type
+
+    return wrapper_subclass
 
 class _Wrapper(ExtensionClass.Base):
-    __slots__ = ('_obj','_container',)
+    __slots__ = ('_obj','_container', '__dict__')
     _IS_IMPLICIT = None
 
     def __new__(cls, obj, container):
-        inst = super(_Wrapper,cls).__new__(cls)
+        wrapper_subclass = _make_wrapper_subclass_if_needed(cls, obj, container)
+        if wrapper_subclass:
+            inst = wrapper_subclass(obj, container)
+        else:
+            inst = super(_Wrapper,cls).__new__(cls)
         inst._obj = obj
         inst._container = container
+        if hasattr(obj, '__dict__') and not isinstance(obj, _Wrapper):
+            # Make our __dict__ refer to the same dict
+            # as the other object, so that if it has methods that
+            # use `object.__getattribute__` they still work. Note that because we have
+            # slots, we won't interfere with the contents of that dict
+            object.__setattr__(inst, '__dict__', obj.__dict__)
         return inst
 
     def __init__(self, obj, container):
@@ -334,11 +382,11 @@ class _Wrapper(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         if name in ('_obj', '_container'):
-            return object.__getattribute__(self, name)
-        if self._obj is not None or self._container is not None:
+            return _OGA(self, name)
+        if _OGA(self, '_obj') is not None or _OGA(self, '_container') is not None:
             return _Wrapper_findattr(self, name, None, None, None,
                                      True, type(self)._IS_IMPLICIT, False, False)
-        return object.__getattribute__(self, name)
+        return _OGA(self, name)
 
     def __of__(self, parent):
         # Based on __of__ in the C code;

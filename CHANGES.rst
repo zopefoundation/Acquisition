@@ -8,6 +8,12 @@ Changelog
   superclass ``__getattribute__`` method, like the C implementation.
   See https://github.com/zopefoundation/Acquisition/issues/7.
 
+- The pure-Python implicit acquisition wrapper allows wrapped objects
+  to use ``object.__getattribute__(self, name)``. This differs from
+  the C implementation, but is important for compatibility with the
+  pure-Python versions of libraries like ``persistent``. See
+  https://github.com/zopefoundation/Acquisition/issues/9.
+
 4.2.1 (2015-04-23)
 ------------------
 

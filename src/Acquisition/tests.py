@@ -3163,7 +3163,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
         def test_object_getattribute_in_rebound_method_with_slots(self):
 
             class Persistent(object):
-                __slots__ = ('__flags')
+                __slots__ = ('__flags',)
                 def __init__(self):
                     self.__flags = 42
 
@@ -3187,7 +3187,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
         def test_type_with_slots_reused(self):
 
             class Persistent(object):
-                __slots__ = ('__flags')
+                __slots__ = ('__flags',)
                 def __init__(self):
                     self.__flags = 42
 

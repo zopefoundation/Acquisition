@@ -301,7 +301,7 @@ _NOT_GIVEN = object()  # marker
 _OGA = object.__getattribute__
 
 # Map from object types with slots to their generated, derived
-# types
+# types (or None if no derived type is needed)
 _wrapper_subclass_cache = weakref.WeakKeyDictionary()
 
 def _make_wrapper_subclass_if_needed(cls, obj, container):
@@ -309,14 +309,14 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
     # must create a wrapper subclass that has descriptors for those
     # same slots. In this way, its methods that use object.__getattribute__
     # directly will continue to work, even when given an instance of _Wrapper
-    if getattr(cls, '_DERIVED', False):
+    if getattr(cls, '_Wrapper__DERIVED', False):
         return None
     type_obj = type(obj)
     wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
     if wrapper_subclass is _NOT_GIVEN:
         slotnames = copy_reg._slotnames(type_obj)
-        if slotnames and not getattr(cls, '_DERIVED', False) and not isinstance(obj, _Wrapper):
-            new_type_dict = {'_DERIVED': True}
+        if slotnames and not isinstance(obj, _Wrapper):
+            new_type_dict = {'_Wrapper__DERIVED': True}
             def _make_property(slotname):
                  return property(lambda s: getattr(s._obj, slotname),
                                  lambda s, v: setattr(s._obj, slotname, v),
@@ -741,12 +741,15 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return super(_Acquirer,self).__getattribute__(name)
+            return super(_Acquirer, self).__getattribute__(name)
         except AttributeError:
             # the doctests have very specific error message
             # requirements (but at least we can preserve the traceback)
-            t, v, tb = sys.exc_info()
-            _reraise(AttributeError, AttributeError(name), tb)
+            _, _, tb = sys.exc_info()
+            try:
+                _reraise(AttributeError, AttributeError(name), tb)
+            finally:
+                del tb
 
     def __of__(self, context):
         return type(self)._Wrapper(self, context)

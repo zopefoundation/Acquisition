@@ -2,10 +2,12 @@ from __future__ import absolute_import, print_function
 
 # pylint:disable=W0212,R0911,R0912
 
+
 import os
 import operator
 import sys
 import types
+import weakref
 
 import ExtensionClass
 
@@ -39,17 +41,30 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 if sys.version_info < (3,):
+    import copy_reg
+
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
+    exec("""def _reraise(tp, value, tb=None):
+    raise tp, value, tb
+""")
 else: # pragma: no cover (python 2 is currently our reference)
+    import copyreg as copy_reg
+
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.__func__, wrapper)
         return method
+    def _reraise(tp, value, tb=None):
+        if value is None:
+            value = tp()
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -283,16 +298,58 @@ def _Wrapper_findattr(wrapper, name,
 
 
 _NOT_GIVEN = object()  # marker
+_OGA = object.__getattribute__
 
+# Map from object types with slots to their generated, derived
+# types (or None if no derived type is needed)
+_wrapper_subclass_cache = weakref.WeakKeyDictionary()
+
+def _make_wrapper_subclass_if_needed(cls, obj, container):
+    # If the type of an object to be wrapped has __slots__, then we
+    # must create a wrapper subclass that has descriptors for those
+    # same slots. In this way, its methods that use object.__getattribute__
+    # directly will continue to work, even when given an instance of _Wrapper
+    if getattr(cls, '_Wrapper__DERIVED', False):
+        return None
+    type_obj = type(obj)
+    wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
+    if wrapper_subclass is _NOT_GIVEN:
+        slotnames = copy_reg._slotnames(type_obj)
+        if slotnames and not isinstance(obj, _Wrapper):
+            new_type_dict = {'_Wrapper__DERIVED': True}
+            def _make_property(slotname):
+                 return property(lambda s: getattr(s._obj, slotname),
+                                 lambda s, v: setattr(s._obj, slotname, v),
+                                 lambda s: delattr(s._obj, slotname))
+            for slotname in slotnames:
+                new_type_dict[slotname] = _make_property(slotname)
+            new_type = type(cls.__name__ + '_' + type_obj.__name__,
+                            (cls,),
+                            new_type_dict)
+        else:
+            new_type = None
+        wrapper_subclass = _wrapper_subclass_cache[type_obj] = new_type
+
+    return wrapper_subclass
 
 class _Wrapper(ExtensionClass.Base):
-    __slots__ = ('_obj','_container',)
+    __slots__ = ('_obj','_container', '__dict__')
     _IS_IMPLICIT = None
 
     def __new__(cls, obj, container):
-        inst = super(_Wrapper,cls).__new__(cls)
+        wrapper_subclass = _make_wrapper_subclass_if_needed(cls, obj, container)
+        if wrapper_subclass:
+            inst = wrapper_subclass(obj, container)
+        else:
+            inst = super(_Wrapper,cls).__new__(cls)
         inst._obj = obj
         inst._container = container
+        if hasattr(obj, '__dict__') and not isinstance(obj, _Wrapper):
+            # Make our __dict__ refer to the same dict
+            # as the other object, so that if it has methods that
+            # use `object.__getattribute__` they still work. Note that because we have
+            # slots, we won't interfere with the contents of that dict
+            object.__setattr__(inst, '__dict__', obj.__dict__)
         return inst
 
     def __init__(self, obj, container):
@@ -325,11 +382,11 @@ class _Wrapper(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         if name in ('_obj', '_container'):
-            return object.__getattribute__(self, name)
-        if self._obj is not None or self._container is not None:
+            return _OGA(self, name)
+        if _OGA(self, '_obj') is not None or _OGA(self, '_container') is not None:
             return _Wrapper_findattr(self, name, None, None, None,
                                      True, type(self)._IS_IMPLICIT, False, False)
-        return object.__getattribute__(self, name)
+        return _OGA(self, name)
 
     def __of__(self, parent):
         # Based on __of__ in the C code;
@@ -684,11 +741,15 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return ExtensionClass.Base.__getattribute__(self, name)
+            return super(_Acquirer, self).__getattribute__(name)
         except AttributeError:
             # the doctests have very specific error message
-            # requirements
-            raise AttributeError(name)
+            # requirements (but at least we can preserve the traceback)
+            _, _, tb = sys.exc_info()
+            try:
+                _reraise(AttributeError, AttributeError(name), tb)
+            finally:
+                del tb
 
     def __of__(self, context):
         return type(self)._Wrapper(self, context)

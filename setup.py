@@ -41,7 +41,7 @@ else:
 
 setup(
     name='Acquisition',
-    version='4.2.2.dev0',
+    version='4.2.2',
     url='https://github.com/zopefoundation/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "

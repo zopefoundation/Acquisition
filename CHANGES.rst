@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.2.2 (unreleased)
+4.2.2 (2015-05-19)
 ------------------
 
 - Make the pure-Python Acquirer objects cooperatively use the

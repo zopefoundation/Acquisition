@@ -73,6 +73,17 @@ Changelog
 - Prevent wrappers to be created while accessing `__parent__` on types derived
   from Explicit or Implicit base classes.
 
+2.13.9 (2015-02-17)
+-------------------
+
+- Tolerate Unicode attribute names (ASCII only).  LP #143358.
+
+- Make module-level ``aq_acquire`` API respect the ``default`` parameter.
+  LP #1387363.
+
+- Don't raise an attribute error for ``__iter__`` if the fallback to
+  ``__getitem__`` succeeds.  LP #1155760.
+
 2.13.8 (2011-06-11)
 -------------------
 

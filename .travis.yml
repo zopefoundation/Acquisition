@@ -9,8 +9,9 @@ python:
     - pypy
     - pypy3
 install:
-    - python bootstrap.py
-    - bin/buildout
+    - pip install zc.buildout
+    - buildout bootstrap
+    - buildout
 script:
     - bin/test -v1
 notifications:

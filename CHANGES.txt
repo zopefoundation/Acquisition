@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.13.10 (unreleased)
+2.13.10 (2016-09-05)
 --------------------
 
 - Correct several dangling pointer uses in the C extension,

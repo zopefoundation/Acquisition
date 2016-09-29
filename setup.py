@@ -41,7 +41,7 @@ else:
 
 setup(
     name='Acquisition',
-    version='4.2.3.dev0',
+    version='4.3.0.dev0',
     url='https://github.com/zopefoundation/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "
@@ -59,12 +59,11 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],

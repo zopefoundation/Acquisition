@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = AccessControl
+
+[report]
+precision = 2
+omit = */tests.py

@@ -6,7 +6,7 @@ Changelog
 
 - Drop support for Python 2.6 and 3.2.
 
-- Claim support for Python 3.5.
+- Add support for Python 3.5.
 
 4.2.2 (2015-05-19)
 ------------------

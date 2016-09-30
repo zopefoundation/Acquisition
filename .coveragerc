@@ -1,7 +1,7 @@
 [run]
 branch = True
-source = AccessControl
+source = Acquisition
 
 [report]
 precision = 2
-omit = */tests.py
+show_missing = True

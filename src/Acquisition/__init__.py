@@ -16,6 +16,7 @@ from zope.interface import classImplements
 from .interfaces import IAcquirer
 from .interfaces import IAcquisitionWrapper
 
+
 class Acquired(object):
     "Marker for explicit acquisition"
 
@@ -34,11 +35,13 @@ def _has__of__(obj):
     # as well as the presence of the method (or mixins of Base pre- or
     # post-class-creation as done in, e.g.,
     # zopefoundation/Persistence) can fail.
-    return isinstance(obj, ExtensionClass.Base) and hasattr(type(obj), '__of__')
+    return (isinstance(obj, ExtensionClass.Base) and
+            hasattr(type(obj), '__of__'))
 
 
 def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
+
 
 if sys.version_info < (3,):
     import copy_reg
@@ -51,7 +54,7 @@ if sys.version_info < (3,):
     exec("""def _reraise(tp, value, tb=None):
     raise tp, value, tb
 """)
-else: # pragma: no cover (python 2 is currently our reference)
+else:  # pragma: no cover (python 2 is currently our reference)
     import copyreg as copy_reg
 
     def _rebound_method(method, wrapper):
@@ -59,6 +62,7 @@ else: # pragma: no cover (python 2 is currently our reference)
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.__func__, wrapper)
         return method
+
     def _reraise(tp, value, tb=None):
         if value is None:
             value = tp()
@@ -89,7 +93,8 @@ def _Wrapper_findspecial(wrapper, name):
         result = wrapper._obj
     elif name == 'explicit':
         if type(wrapper)._IS_IMPLICIT:
-            result = ExplicitAcquisitionWrapper(wrapper._obj, wrapper._container)
+            result = ExplicitAcquisitionWrapper(
+                wrapper._obj, wrapper._container)
         else:
             result = wrapper
     elif name == 'acquire':
@@ -115,8 +120,8 @@ def _Wrapper_acquire(wrapper, name,
     """
     Attempt to acquire the `name` from the parent of the wrapper.
 
-    :raises AttributeError: If the wrapper has no parent or the attribute cannot
-        be found.
+    :raises AttributeError: If the wrapper has no parent or the
+        attribute cannot be found.
     """
 
     if wrapper._container is None:
@@ -141,13 +146,15 @@ def _Wrapper_acquire(wrapper, name,
             search_parent = False
             containment = True
         result = _Wrapper_findattr(wrapper._container, name,
-                                   predicate=predicate, predicate_extra=predicate_extra,
+                                   predicate=predicate,
+                                   predicate_extra=predicate_extra,
                                    orig_object=orig_object,
                                    search_self=search_self,
                                    search_parent=search_parent,
-                                   explicit=explicit, containment=containment)
-        # XXX: Why does this branch of the C code check __of__, but the next one
-        # doesn't?
+                                   explicit=explicit,
+                                   containment=containment)
+        # XXX: Why does this branch of the C code check __of__,
+        # but the next one doesn't?
         if _has__of__(result):
             result = result.__of__(wrapper)
         return result
@@ -167,21 +174,26 @@ def _Wrapper_acquire(wrapper, name,
             # XXX: C code just does parent._obj, assumes its a wrapper
             search_parent = False
 
-        wrapper._container = ImplicitAcquisitionWrapper(wrapper._container, parent)
+        wrapper._container = ImplicitAcquisitionWrapper(
+            wrapper._container, parent)
         return _Wrapper_findattr(wrapper._container, name,
-                                 predicate=predicate, predicate_extra=predicate_extra,
+                                 predicate=predicate,
+                                 predicate_extra=predicate_extra,
                                  orig_object=orig_object,
                                  search_self=search_self,
                                  search_parent=search_parent,
-                                 explicit=explicit, containment=containment)
+                                 explicit=explicit,
+                                 containment=containment)
     else:
         # The container is the end of the acquisition chain; if we
         # can't look up the attributes here, we can't look it up at all
         result = getattr(wrapper._container, name)
         if result is not Acquired:
             if predicate:
-                if _apply_filter(predicate, wrapper._container, name, result, predicate_extra, orig_object):
-                    return result.__of__(wrapper) if _has__of__(result) else result
+                if _apply_filter(predicate, wrapper._container, name,
+                                 result, predicate_extra, orig_object):
+                    return (result.__of__(wrapper)
+                            if _has__of__(result) else result)
                 else:
                     raise AttributeError(name)
             else:
@@ -189,7 +201,8 @@ def _Wrapper_acquire(wrapper, name,
                     result = result.__of__(wrapper)
                 return result
 
-    raise AttributeError(name) # pragma: no cover (this line cannot be reached)
+    # this line cannot be reached
+    raise AttributeError(name)  # pragma: no cover
 
 
 def _Wrapper_findattr(wrapper, name,
@@ -204,8 +217,8 @@ def _Wrapper_findattr(wrapper, name,
     :param bool search_parent: Search `wrapper.aq_parent` for the attribute.
     :param bool explicit: Explicitly acquire the attribute from the parent
         (should be assumed with implicit wrapper)
-    :param bool containment: Use the innermost wrapper (`aq_inner`) for looking up
-        the attribute.
+    :param bool containment: Use the innermost wrapper (`aq_inner`)
+        for looking up the attribute.
     """
 
     orig_name = name
@@ -223,7 +236,8 @@ def _Wrapper_findattr(wrapper, name,
         result = _Wrapper_findspecial(wrapper, name)
         if result is not _NOT_FOUND:
             if predicate:
-                if _apply_filter(predicate, wrapper, orig_name, result, predicate_extra, orig_object):
+                if _apply_filter(predicate, wrapper, orig_name,
+                                 result, predicate_extra, orig_object):
                     return result
                 else:
                     raise AttributeError(orig_name)
@@ -244,11 +258,13 @@ def _Wrapper_findattr(wrapper, name,
                 raise RuntimeError("Recursion detected in acquisition wrapper")
             try:
                 result = _Wrapper_findattr(wrapper._obj, orig_name,
-                                           predicate=predicate, predicate_extra=predicate_extra,
+                                           predicate=predicate,
+                                           predicate_extra=predicate_extra,
                                            orig_object=orig_object,
                                            search_self=True,
-                                           search_parent=explicit or isinstance(wrapper._obj, ImplicitAcquisitionWrapper),
-                                           explicit=explicit, containment=containment)
+                                           search_parent=explicit or isinstance(wrapper._obj, ImplicitAcquisitionWrapper),  # NOQA
+                                           explicit=explicit,
+                                           containment=containment)
                 if isinstance(result, types.MethodType):
                     result = _rebound_method(result, wrapper)
                 elif _has__of__(result):
@@ -258,8 +274,8 @@ def _Wrapper_findattr(wrapper, name,
                 pass
 
         # deal with mixed __parent__ / aq_parent circles
-        elif (isinstance(wrapper._container, _Wrapper)
-              and wrapper._container._container is wrapper):
+        elif (isinstance(wrapper._container, _Wrapper) and
+              wrapper._container._container is wrapper):
             raise RuntimeError("Recursion detected in acquisition wrapper")
         else:
             # normal attribute lookup
@@ -270,7 +286,8 @@ def _Wrapper_findattr(wrapper, name,
             else:
                 if result is Acquired:
                     return _Wrapper_acquire(wrapper, orig_name,
-                                            predicate=predicate, predicate_extra=predicate_extra,
+                                            predicate=predicate,
+                                            predicate_extra=predicate_extra,
                                             orig_object=orig_object,
                                             explicit=True,
                                             containment=containment)
@@ -281,7 +298,8 @@ def _Wrapper_findattr(wrapper, name,
                     result = result.__of__(wrapper)
 
                 if predicate:
-                    if _apply_filter(predicate, wrapper, orig_name, result, predicate_extra, orig_object):
+                    if _apply_filter(predicate, wrapper, orig_name,
+                                     result, predicate_extra, orig_object):
                         return result
                 else:
                     return result
@@ -289,7 +307,8 @@ def _Wrapper_findattr(wrapper, name,
     # lookup has failed, acquire from the parent
     if search_parent and (not name.startswith('_') or explicit):
         return _Wrapper_acquire(wrapper, orig_name,
-                                predicate=predicate, predicate_extra=predicate_extra,
+                                predicate=predicate,
+                                predicate_extra=predicate_extra,
                                 orig_object=orig_object,
                                 explicit=explicit,
                                 containment=containment)
@@ -304,6 +323,7 @@ _OGA = object.__getattribute__
 # types (or None if no derived type is needed)
 _wrapper_subclass_cache = weakref.WeakKeyDictionary()
 
+
 def _make_wrapper_subclass_if_needed(cls, obj, container):
     # If the type of an object to be wrapped has __slots__, then we
     # must create a wrapper subclass that has descriptors for those
@@ -317,10 +337,11 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
         slotnames = copy_reg._slotnames(type_obj)
         if slotnames and not isinstance(obj, _Wrapper):
             new_type_dict = {'_Wrapper__DERIVED': True}
+
             def _make_property(slotname):
-                 return property(lambda s: getattr(s._obj, slotname),
-                                 lambda s, v: setattr(s._obj, slotname, v),
-                                 lambda s: delattr(s._obj, slotname))
+                return property(lambda s: getattr(s._obj, slotname),
+                                lambda s, v: setattr(s._obj, slotname, v),
+                                lambda s: delattr(s._obj, slotname))
             for slotname in slotnames:
                 new_type_dict[slotname] = _make_property(slotname)
             new_type = type(cls.__name__ + '_' + type_obj.__name__,
@@ -332,28 +353,29 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
 
     return wrapper_subclass
 
+
 class _Wrapper(ExtensionClass.Base):
-    __slots__ = ('_obj','_container', '__dict__')
+    __slots__ = ('_obj', '_container', '__dict__')
     _IS_IMPLICIT = None
 
     def __new__(cls, obj, container):
-        wrapper_subclass = _make_wrapper_subclass_if_needed(cls, obj, container)
+        wrapper_subclass = _make_wrapper_subclass_if_needed(cls, obj, container)  # NOQA
         if wrapper_subclass:
             inst = wrapper_subclass(obj, container)
         else:
-            inst = super(_Wrapper,cls).__new__(cls)
+            inst = super(_Wrapper, cls).__new__(cls)
         inst._obj = obj
         inst._container = container
         if hasattr(obj, '__dict__') and not isinstance(obj, _Wrapper):
-            # Make our __dict__ refer to the same dict
-            # as the other object, so that if it has methods that
-            # use `object.__getattribute__` they still work. Note that because we have
-            # slots, we won't interfere with the contents of that dict
+            # Make our __dict__ refer to the same dict as the other object,
+            # so that if it has methods that use `object.__getattribute__`
+            # they still work. Note that because we have slots,
+            # we won't interfere with the contents of that dict.
             object.__setattr__(inst, '__dict__', obj.__dict__)
         return inst
 
     def __init__(self, obj, container):
-        super(_Wrapper,self).__init__()
+        super(_Wrapper, self).__init__()
         self._obj = obj
         self._container = container
 
@@ -361,13 +383,15 @@ class _Wrapper(ExtensionClass.Base):
         if name == '__parent__' or name == 'aq_parent':
             object.__setattr__(self, '_container', value)
             return
-        if name == '_obj' or name == '_container':  # should only happen at init time
+        if name == '_obj' or name == '_container':
+            # should only happen at init time
             object.__setattr__(self, name, value)
             return
 
         # If we are wrapping something, unwrap passed in wrappers
         if self._obj is None:
-            raise AttributeError("Attempt to set attribute on empty acquisition wrapper")
+            raise AttributeError(
+                'Attempt to set attribute on empty acquisition wrapper')
 
         while value is not None and isinstance(value, _Wrapper):
             value = value._obj
@@ -383,28 +407,30 @@ class _Wrapper(ExtensionClass.Base):
     def __getattribute__(self, name):
         if name in ('_obj', '_container'):
             return _OGA(self, name)
-        if _OGA(self, '_obj') is not None or _OGA(self, '_container') is not None:
-            return _Wrapper_findattr(self, name, None, None, None,
-                                     True, type(self)._IS_IMPLICIT, False, False)
+        if (_OGA(self, '_obj') is not None or
+                _OGA(self, '_container') is not None):
+            return _Wrapper_findattr(self, name, None, None, None, True,
+                                     type(self)._IS_IMPLICIT, False, False)
         return _OGA(self, name)
 
     def __of__(self, parent):
         # Based on __of__ in the C code;
         # simplify a layer of wrapping.
 
-        # We have to call the raw __of__ method or we recurse on
-        # our own lookup (the C code does not have this issue, it can use
-        # the wrapped __of__ method because it gets here via the descriptor code
-        # path)...
+        # We have to call the raw __of__ method or we recurse on our
+        # own lookup (the C code does not have this issue, it can use
+        # the wrapped __of__ method because it gets here via the
+        # descriptor code path)...
         wrapper = self._obj.__of__(parent)
-        if not isinstance(wrapper, _Wrapper) or not isinstance(wrapper._container, _Wrapper):
+        if (not isinstance(wrapper, _Wrapper) or
+                not isinstance(wrapper._container, _Wrapper)):
             return wrapper
         # but the returned wrapper should be based on this object's
         # wrapping chain
         wrapper._obj = self
 
-        while isinstance(wrapper._obj, _Wrapper) \
-              and (wrapper._obj._container is wrapper._container._obj):
+        while (isinstance(wrapper._obj, _Wrapper) and
+               (wrapper._obj._container is wrapper._container._obj)):
             # Since we mutate the wrapper as we walk up, we must copy
             # XXX: This comes from the C implementation. Do we really need to
             # copy?
@@ -419,10 +445,11 @@ class _Wrapper(ExtensionClass.Base):
                    containment=False):
         try:
             return _Wrapper_findattr(self, name,
-                                     predicate=filter, predicate_extra=extra,
+                                     predicate=filter,
+                                     predicate_extra=extra,
                                      orig_object=self,
                                      search_self=True,
-                                     search_parent=explicit or type(self)._IS_IMPLICIT,
+                                     search_parent=explicit or type(self)._IS_IMPLICIT,  # NOQA
                                      explicit=explicit,
                                      containment=containment)
         except AttributeError:
@@ -458,9 +485,9 @@ class _Wrapper(ExtensionClass.Base):
     # The C implementation forces all comparisons through the
     # __cmp__ method, if it's implemented. If it's not implemented,
     # then comparisons are based strictly on the memory addresses
-    # of the underlying object (aq_base). We could mostly emulate this behaviour
-    # on Python 2, but on Python 3 __cmp__ is gone, so users won't
-    # have an expectation to write it.
+    # of the underlying object (aq_base). We could mostly emulate
+    # this behaviour on Python 2, but on Python 3 __cmp__ is gone,
+    # so users won't have an expectation to write it.
     # Because users have never had an expectation that the rich comparison
     # methods would be called on their wrapped objects (and so would not be
     # accessing acquired attributes there), we can't/don't want to start
@@ -525,14 +552,14 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__repr__, self)()
-        except (AttributeError,TypeError):
+        except (AttributeError, TypeError):
             return repr(aq_self)
 
     def __str__(self):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__str__, self)()
-        except (AttributeError,TypeError): # pragma: no cover (Hits under Py3)
+        except (AttributeError, TypeError):  # pragma: no cover (Only Py3)
             return str(aq_self)
 
     __binary_special_methods__ = [
@@ -608,11 +635,11 @@ class _Wrapper(ExtensionClass.Base):
         '__oct__',
         '__hex__',
         '__index__',
-        #'__len__',
+        # '__len__',
 
         # strings are special
-        #'__repr__',
-        #'__str__',
+        # '__repr__',
+        # '__str__',
     ]
 
     for _name in __binary_special_methods__:
@@ -655,7 +682,8 @@ class _Wrapper(ExtensionClass.Base):
         if hasattr(self._obj, '__getitem__'):
             # Unfortunately we cannot simply call iter(self._obj)
             # and rebind im_self like we do above: the Python runtime
-            # complains (TypeError: 'sequenceiterator' expected, got 'Wrapper' instead)
+            # complains:
+            # (TypeError: 'sequenceiterator' expected, got 'Wrapper' instead)
 
             class WrapperIter(object):
                 __slots__ = ('_wrapper',)
@@ -677,9 +705,9 @@ class _Wrapper(ExtensionClass.Base):
         aq_contains = getattr(type(aq_self), '__contains__', None)
         if aq_contains:
             return aq_contains(self, item)
-        # Next, we should attempt to iterate like the interpreter; but the C code doesn't
-        # do this, so we don't either.
-        #return item in iter(self)
+        # Next, we should attempt to iterate like the interpreter;
+        # but the C code doesn't do this, so we don't either.
+        # return item in iter(self)
         raise AttributeError('__contains__')
 
     def __setitem__(self, key, value):
@@ -687,7 +715,7 @@ class _Wrapper(ExtensionClass.Base):
         try:
             setter = type(aq_self).__setitem__
         except AttributeError:
-            raise AttributeError("__setitem__") # doctests care about the name
+            raise AttributeError("__setitem__")  # doctests care about the name
         else:
             setter(self, key, value)
 
@@ -696,31 +724,32 @@ class _Wrapper(ExtensionClass.Base):
             # Only on Python 2
             # XXX: This is probably not proxying correctly, but the existing
             # tests pass with this behaviour
-            return operator.getslice(self._obj,
-                                     key.start if key.start is not None else 0,
-                                     key.stop if key.stop is not None else sys.maxint)
+            return operator.getslice(
+                self._obj,
+                key.start if key.start is not None else 0,
+                key.stop if key.stop is not None else sys.maxint)
 
         aq_self = self._obj
         try:
             getter = type(aq_self).__getitem__
         except AttributeError:
-            raise AttributeError("__getitem__") # doctests care about the name
+            raise AttributeError("__getitem__")  # doctests care about the name
         else:
             return getter(self, key)
-
 
     def __call__(self, *args, **kwargs):
         try:
             # Note we look this up on the completely unwrapped
             # object, so as not to get a class
             call = getattr(self.aq_base, '__call__')
-        except AttributeError: # pragma: no cover
+        except AttributeError:  # pragma: no cover
             # A TypeError is what the interpreter raises;
             # AttributeError is allowed to percolate through the
             # C proxy
             raise TypeError('object is not callable')
         else:
             return _rebound_method(call, self)(*args, **kwargs)
+
 
 class ImplicitAcquisitionWrapper(_Wrapper):
     _IS_IMPLICIT = True
@@ -757,11 +786,15 @@ class _Acquirer(ExtensionClass.Base):
 
 class Implicit(_Acquirer):
     _Wrapper = ImplicitAcquisitionWrapper
+
+
 ImplicitAcquisitionWrapper._Wrapper = ImplicitAcquisitionWrapper
 
 
 class Explicit(_Acquirer):
     _Wrapper = ExplicitAcquisitionWrapper
+
+
 ExplicitAcquisitionWrapper._Wrapper = ExplicitAcquisitionWrapper
 
 ###
@@ -889,7 +922,7 @@ def aq_inContextOf(self, o, inner=True):
 
         if inner:
             self = aq_inner(next)
-            if self is None: # pragma: no cover
+            if self is None:  # pragma: no cover
                 # This branch is normally impossible to hit,
                 # it just mirrors a check in C
                 break
@@ -905,7 +938,7 @@ def aq_inContextOf(self, o, inner=True):
 
 if 'PURE_PYTHON' not in os.environ:  # pragma: no cover
     try:
-        from ._Acquisition import *
+        from ._Acquisition import *  # NOQA
     except ImportError:
         pass
 

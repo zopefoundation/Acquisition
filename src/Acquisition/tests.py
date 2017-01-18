@@ -170,10 +170,12 @@
           ...    __roles__ = Acquisition.Acquired
 
           >>> c.x = C()
-          >>> c.x.__roles__ # doctest: +IGNORE_EXCEPTION_DETAIL
-          Traceback (most recent call last):
-          ...
-          AttributeError: __roles__
+          >>> try:
+          ...     c.x.__roles__
+          ... except AttributeError:
+          ...     pass
+          ... else:
+          ...     raise AssertionError('AttributeError not raised.')
 
           >>> c.x = I()
           >>> c.x.__roles__
@@ -343,6 +345,7 @@ import Acquisition
 if sys.version_info >= (3,):
     PY3 = True
     PY2 = False
+
     def unicode(self):
         # For test purposes, redirect the unicode
         # to the type of the object, just like Py2 did
@@ -366,6 +369,7 @@ AQ_PARENT = unicode('aq_parent')
 UNICODE_WAS_CALLED = unicode('unicode was called')
 STR_WAS_CALLED = unicode('str was called')
 TRUE = unicode('True')
+
 
 class I(Acquisition.Implicit):
 
@@ -591,6 +595,7 @@ def test_simple():
     >>> a.b.c.__parent__ == a.b
     True
     """
+
 
 def test__of__exception():
     """
@@ -1462,59 +1467,47 @@ def test_explicit_acquisition():
     """
 
 
-def test_creating_wrappers_directly():
-    """
-    >>> from ExtensionClass import Base
-    >>> from Acquisition import ImplicitAcquisitionWrapper
+class TestCreatingWrappers(unittest.TestCase):
 
-    >>> class B(Base):
-    ...     pass
+    def test_creating_wrappers_directly(self):
+        from ExtensionClass import Base
+        from Acquisition import ImplicitAcquisitionWrapper
 
+        class B(Base):
+            pass
 
-    >>> a = B()
-    >>> a.color = 'red'
-    >>> a.b = B()
-    >>> w = ImplicitAcquisitionWrapper(a.b, a)
-    >>> w.color
-    'red'
+        a = B()
+        a.color = 'red'
+        a.b = B()
+        w = ImplicitAcquisitionWrapper(a.b, a)
+        self.assertEqual(w.color, 'red')
 
-    >>> w = ImplicitAcquisitionWrapper(a.b) # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-    ...
-    TypeError: __init__() takes exactly 2 arguments (1 given)
+        with self.assertRaises(TypeError):
+            ImplicitAcquisitionWrapper(a.b)
 
-    We can reassign aq_parent / __parent__ on a wrapper:
+        # We can reassign aq_parent / __parent__ on a wrapper:
 
-    >>> x = B()
-    >>> x.color = 'green'
-    >>> w.aq_parent = x
-    >>> w.color
-    'green'
+        x = B()
+        x.color = 'green'
+        w.aq_parent = x
+        self.assertEqual(w.color, 'green')
 
-    >>> y = B()
-    >>> y.color = 'blue'
-    >>> w.__parent__ = y
-    >>> w.color
-    'blue'
+        y = B()
+        y.color = 'blue'
+        w.__parent__ = y
+        self.assertEqual(w.color, 'blue')
 
-    Note that messing with the wrapper won't in any way affect the
-    wrapped object:
+        # Note that messing with the wrapper won't in any way affect the
+        # wrapped object:
 
-    >>> Acquisition.aq_base(w).__parent__ # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-    ...
-    AttributeError: __parent__
+        with self.assertRaises(AttributeError):
+            Acquisition.aq_base(w).__parent__
 
-    >>> w = ImplicitAcquisitionWrapper() # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-    ...
-    TypeError: __init__() takes exactly 2 arguments (0 given)
+        with self.assertRaises(TypeError):
+            ImplicitAcquisitionWrapper()
 
-    >>> w = ImplicitAcquisitionWrapper(obj=1) # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-    ...
-    TypeError: kwyword arguments not allowed
-    """
+        with self.assertRaises(TypeError):
+            ImplicitAcquisitionWrapper(obj=1)
 
 
 def test_cant_pickle_acquisition_wrappers_classic():
@@ -1663,7 +1656,8 @@ def test_cant_persist_acquisition_wrappers_classic():
     ...     klass = type(obj)
     ...     oid = obj._p_oid
     ...     if hasattr(klass, '__getnewargs__'):
-    ...         assert klass.__getnewargs__(obj) == () # Coverage, make sure it can be called
+    ...         # Coverage, make sure it can be called
+    ...         assert klass.__getnewargs__(obj) == ()
     ...         return oid
     ...     return 'class_and_oid', klass
 
@@ -1771,6 +1765,7 @@ def test_interfaces():
     True
     """
 
+
 try:
     class Plain(object):
         pass
@@ -1782,7 +1777,8 @@ else:
     # Assigning to __bases__ is difficult under some versions of python.
     # PyPy usually lets it, but CPython (3 esp) may not.
     # In this example, you get:
-    #   "TypeError: __bases__ assignment: 'Base' deallocator differs from 'object'"
+    #   "TypeError: __bases__ assignment:
+    #   'Base' deallocator differs from 'object'"
     # I don't know what the workaround is; the old one of using a dummy
     # superclass no longer works. See http://bugs.python.org/issue672115
 
@@ -1814,8 +1810,9 @@ else:
 
         This is because after the mixin, even though Plain is-a Base,
         it's still not an Explicit/Implicit acquirer and provides
-        neither the `__of__` nor `__get__` methods necessary
-        (`__get__` is added as a consequence of `__of__` at class creation time):
+        neither the `__of__` nor `__get__` methods necessary.
+        `__get__` is added as a consequence of
+        `__of__` at class creation time):
 
         >>> hasattr(Plain, '__get__')
         False
@@ -1823,6 +1820,7 @@ else:
         False
 
         """
+
 
 def test_mixin_base():
     """
@@ -1864,7 +1862,6 @@ def test_mixin_base():
     """
 
 
-
 def show(x):
     print(showaq(x).strip())
 
@@ -1896,6 +1893,7 @@ def showaq(m_self, indent=''):
     else:
         rval = rval + indent + id + "\n"
     return rval
+
 
 def test_Basic_gc():
     """Test to make sure that EC instances participate in GC.
@@ -1931,6 +1929,8 @@ def test_Basic_gc():
     >>> gc.set_threshold(*thresholds)
 
     """
+
+
 def test_Wrapper_gc():
     """Test to make sure that EC instances participate in GC.
     Note that PyPy always reports 0 collected objects even
@@ -2174,6 +2174,7 @@ def test_container_proxying():
     TypeError: iter() returned non-iterator...
 
     """
+
 
 class Location(object):
     __parent__ = None
@@ -2575,6 +2576,7 @@ def test___parent__aq_parent_circles():
       RuntimeError: Recursion detected in acquisition wrapper
     """
 
+
 if hasattr(Acquisition.ImplicitAcquisitionWrapper, '_obj'):
     def test_python_impl_cycle():
         """
@@ -2605,6 +2607,7 @@ if hasattr(Acquisition.ImplicitAcquisitionWrapper, '_obj'):
         RuntimeError: Recursion detected in acquisition wrapper
 
         """
+
 
 def test_unwrapped_implicit_acquirer_unwraps__parent__():
     """
@@ -2642,6 +2645,7 @@ def test__iter__after_AttributeError():
     ... except AttributeError:
     ...     raise
     """
+
 
 def test_special_names():
     """
@@ -2686,6 +2690,7 @@ def test_special_names():
 
     """
 
+
 def test_deleting_parent_attrs():
     """
     We can detach a wrapper object from its chain by deleting its
@@ -2726,6 +2731,7 @@ def test_deleting_parent_attrs():
 
     """
 
+
 def test__cmp__is_called_on_wrapped_object():
     """
     If we define an object that implements `__cmp__`:
@@ -2748,6 +2754,7 @@ def test__cmp__is_called_on_wrapped_object():
 
     """
 
+
 def test_wrapped_methods_have_correct_self():
     """
     Getting a method from a wrapper returns an object that uses the
@@ -2766,7 +2773,8 @@ def test_wrapped_methods_have_correct_self():
     We explicitly construct a wrapper to bypass some of the optimizations
     that remove redundant wrappers and thus get more full code coverage:
 
-    >>> child_wrapper = Acquisition.ImplicitAcquisitionWrapper(root.child.child, root.child)
+    >>> child_wrapper = Acquisition.ImplicitAcquisitionWrapper(
+    ...     root.child.child, root.child)
 
     >>> method = child_wrapper.method
     >>> method.__self__ is child_wrapper
@@ -2795,6 +2803,7 @@ def test_cannot_set_attributes_on_empty_wrappers():
 
     """
 
+
 def test_getitem_setitem_not_implemented():
     """
     If a wrapper wraps something that doesn't implement get/setitem,
@@ -2820,6 +2829,7 @@ def test_getitem_setitem_not_implemented():
     AttributeError: __getitem__
     """
 
+
 def test_getitem_setitem_implemented():
     """
     The wrapper delegates to get/set item.
@@ -2842,6 +2852,7 @@ def test_getitem_setitem_implemented():
     >>> root.child[1]
     {'a': 'b'}
     """
+
 
 def test_wrapped_objects_are_unwrapped_on_set():
     """
@@ -2867,6 +2878,7 @@ def test_wrapped_objects_are_unwrapped_on_set():
     >>> type(child.__dict__['child2']) is Impl
     True
     """
+
 
 def test_wrapper_calls_of_on_non_wrapper():
     """
@@ -2906,6 +2918,7 @@ def test_wrapper_calls_of_on_non_wrapper():
 
     """
 
+
 def test_aq_inContextOf_odd_cases():
     """
     The aq_inContextOf function still works in some
@@ -2931,7 +2944,9 @@ def test_aq_inContextOf_odd_cases():
     If we manipulate the Python implementation to make this no longer true,
     nothing breaks:
 
-    >>> setattr(wrapper_around_none, '_obj', None) if hasattr(wrapper_around_none, '_obj') else None
+    >>> if hasattr(wrapper_around_none, '_obj'):
+    ...     setattr(wrapper_around_none, '_obj', None)
+
     >>> aq_inContextOf(wrapper_around_none, root)
     0
     >>> wrapper_around_none
@@ -2945,6 +2960,7 @@ def test_aq_inContextOf_odd_cases():
     0
 
     """
+
 
 def test_search_repeated_objects():
     """
@@ -3124,6 +3140,7 @@ class TestAcquire(unittest.TestCase):
         found = self.acquire(self.a.b.c, AQ_PARENT)
         self.assertTrue(found.aq_self is self.a.b.aq_self)
 
+
 class TestCooperativeBase(unittest.TestCase):
 
     def _make_acquirer(self, kind):
@@ -3133,7 +3150,7 @@ class TestCooperativeBase(unittest.TestCase):
             def __getattribute__(self, name):
                 if name == 'magic':
                     return 42
-                return super(ExtendsBase,self).__getattribute__(name)
+                return super(ExtendsBase, self).__getattribute__(name)
 
         class Acquirer(kind, ExtendsBase):
             pass
@@ -3144,10 +3161,13 @@ class TestCooperativeBase(unittest.TestCase):
         self.assertEqual(getattr(acquirer, 'magic'), 42)
 
     def test_implicit___getattribute__is_cooperative(self):
-        self._check___getattribute___is_cooperative(self._make_acquirer(Acquisition.Implicit))
+        self._check___getattribute___is_cooperative(
+            self._make_acquirer(Acquisition.Implicit))
 
     def test_explicit___getattribute__is_cooperative(self):
-        self._check___getattribute___is_cooperative(self._make_acquirer(Acquisition.Explicit))
+        self._check___getattribute___is_cooperative(
+            self._make_acquirer(Acquisition.Explicit))
+
 
 if 'Acquisition._Acquisition' not in sys.modules:
     # Implicitly wrapping an object that uses object.__getattribute__
@@ -3164,6 +3184,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
 
             class Persistent(object):
                 __slots__ = ('__flags',)
+
                 def __init__(self):
                     self.__flags = 42
 
@@ -3188,6 +3209,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
 
             class Persistent(object):
                 __slots__ = ('__flags',)
+
                 def __init__(self):
                     self.__flags = 42
 
@@ -3198,7 +3220,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
             wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
             wrapper2 = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
 
-            self.assertTrue( type(wrapper) is type(wrapper2))
+            self.assertTrue(type(wrapper) is type(wrapper2))
 
         def test_object_getattribute_in_rebound_method_with_dict(self):
 
@@ -3223,11 +3245,11 @@ if 'Acquisition._Acquisition' not in sys.modules:
             wrapper_dict = object.__getattribute__(wrapper, '__dict__')
             self.assertTrue('_Persistent__flags' in wrapper_dict)
 
-
-        def test_object_getattribute_in_rebound_method_with_slots_and_dict(self):
+        def test_object_getattribute_in_rebound_method_with_slots_and_dict(self):  # NOQA
 
             class Persistent(object):
                 __slots__ = ('__flags', '__dict__')
+
                 def __init__(self):
                     self.__flags = 42
                     self.__oid = 'oid'
@@ -3243,6 +3265,7 @@ if 'Acquisition._Acquisition' not in sys.modules:
 
             self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
             self.assertEqual(wrapped.get_oid(), wrapper.get_oid())
+
 
 class TestUnicode(unittest.TestCase):
 
@@ -3294,6 +3317,7 @@ class TestUnicode(unittest.TestCase):
         inner = A().__of__(outer)
         self.assertEqual(TRUE, unicode(inner))
 
+
 class TestProxying(unittest.TestCase):
 
     __binary_numeric_methods__ = [
@@ -3344,7 +3368,7 @@ class TestProxying(unittest.TestCase):
         '__ior__',
         # conversion
         # implementing it messes up all the arithmetic tests
-        #'__coerce__',
+        # '__coerce__',
     ]
 
     __unary_special_methods__ = [
@@ -3363,16 +3387,17 @@ class TestProxying(unittest.TestCase):
         '__float__': float,
         '__oct__': oct,
         '__hex__': hex,
-        '__len__': lambda o: o if isinstance(o,int) else len(o),
-        #'__index__': operator.index, # not implemented in C
+        '__len__': lambda o: o if isinstance(o, int) else len(o),
+        # '__index__': operator.index, # not implemented in C
     }
 
-
-    def _check_special_methods(self,base_class=Acquisition.Implicit):
-        "Check that special methods are proxied when called implicitly by the interpreter"
+    def _check_special_methods(self, base_class=Acquisition.Implicit):
+        # Check that special methods are proxied
+        # when called implicitly by the interpreter
 
         def binary_acquired_func(self, other):
             return self.value
+
         def unary_acquired_func(self):
             return self.value
 
@@ -3383,7 +3408,7 @@ class TestProxying(unittest.TestCase):
             acquire_meths[k] = unary_acquired_func
 
         def make_converter(f):
-            def converter(self,*args):
+            def converter(self, *args):
                 return f(self.value)
             return converter
         for k, convert in self.__unary_conversion_methods__.items():
@@ -3431,15 +3456,15 @@ class TestProxying(unittest.TestCase):
                     if meth in ('__div__', '__truediv__'):
                         pass
 
-        self.assertTrue(_found_at_least_one_div, "Must implement at least one of __div__ and __truediv__")
+        self.assertTrue(
+            _found_at_least_one_div,
+            "Must implement at least one of __div__ and __truediv__")
 
         # Unary methods
         for meth in self.__unary_special_methods__:
-            self.assertEqual(base.value,
-                             getattr(base.derived, meth)())
+            self.assertEqual(base.value, getattr(base.derived, meth)())
             op = getattr(operator, meth)
-            self.assertEqual(base.value,
-                             op(base.derived) )
+            self.assertEqual(base.value, op(base.derived))
 
         # Conversion functions
         for meth, converter in self.__unary_conversion_methods__.items():
@@ -3468,6 +3493,7 @@ class TestProxying(unittest.TestCase):
         class ReallyContains(base_class):
             if base_class is Acquisition.Explicit:
                 value = Acquisition.Acquired
+
             def __contains__(self, item):
                 return self.value == item
 
@@ -3476,19 +3502,18 @@ class TestProxying(unittest.TestCase):
         self.assertTrue(42 in base.derived)
         self.assertFalse(24 in base.derived)
 
-
         # Iterable objects are NOT iterated
         # XXX: Is this a bug in the C code? Shouldn't it do
         # what the interpreter does and fallback to iteration?
         class IterContains(base_class):
             if base_class is Acquisition.Explicit:
                 value = Acquisition.Acquired
+
             def __iter__(self):
                 return iter((42,))
         base.derived = IterContains()
 
         self.assertRaises(AttributeError, operator.contains, base.derived, 42)
-
 
     def test_implicit_proxy_contains(self):
         self._check_contains()
@@ -3511,8 +3536,7 @@ class TestProxying(unittest.TestCase):
 
         base.derived = Callable()
 
-        self.assertEqual( base.derived(1, k=2),
-                          (42, 1, 2))
+        self.assertEqual(base.derived(1, k=2), (42, 1, 2))
 
         if not PYPY:
             # XXX: This test causes certain versions
@@ -3524,7 +3548,7 @@ class TestProxying(unittest.TestCase):
             try:
                 base.derived()
                 self.fail("Not callable")
-            except (TypeError,AttributeError):
+            except (TypeError, AttributeError):
                 pass
 
     def test_implicit_proxy_call(self):
@@ -3533,7 +3557,7 @@ class TestProxying(unittest.TestCase):
     def test_explicit_proxy_call(self):
         self._check_call(base_class=Acquisition.Explicit)
 
-    def _check_hash(self,base_class=Acquisition.Implicit):
+    def _check_hash(self, base_class=Acquisition.Implicit):
         class B(Acquisition.Implicit):
             pass
         base = B()
@@ -3555,6 +3579,7 @@ class TestProxying(unittest.TestCase):
         class CannotAccessAcquiredAttributesAtHash(base_class):
             if base_class is Acquisition.Explicit:
                 value = Acquisition.Acquired
+
             def __hash__(self):
                 return self.value.hash
 
@@ -3569,7 +3594,7 @@ class TestProxying(unittest.TestCase):
     def test_explicit_proxy_hash(self):
         self._check_hash(base_class=Acquisition.Explicit)
 
-    def _check_comparison(self,base_class=Acquisition.Implicit):
+    def _check_comparison(self, base_class=Acquisition.Implicit):
         # Comparison behaviour is complex; see notes in _Wrapper
         class B(Acquisition.Implicit):
             pass
@@ -3578,6 +3603,7 @@ class TestProxying(unittest.TestCase):
 
         rich_cmp_methods = ['__lt__', '__gt__', '__eq__',
                             '__ne__', '__ge__', '__le__']
+
         def _never_called(self, other):
             raise RuntimeError("This should never be called")
 

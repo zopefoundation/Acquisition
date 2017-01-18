@@ -32,11 +32,11 @@ py3k = sys.version_info >= (3, )
 if is_pypy or is_pure or py3k:
     ext_modules = []
 else:
-    ext_modules=[Extension("Acquisition._Acquisition",
-                           [os.path.join('src', 'Acquisition',
-                                         '_Acquisition.c')],
-                           include_dirs=['include', 'src']),
-                 ]
+    ext_modules = [
+        Extension("Acquisition._Acquisition",
+                  [os.path.join('src', 'Acquisition', '_Acquisition.c')],
+                  include_dirs=['include', 'src']),
+    ]
 
 
 setup(

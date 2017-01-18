@@ -44,25 +44,19 @@ class IAcquisitionWrapper(Interface):
         """
 
     aq_base = Attribute(
-        """Get the object unwrapped."""
-        )
+        """Get the object unwrapped.""")
 
     aq_parent = Attribute(
-        """Get the parent of an object."""
-        )
+        """Get the parent of an object.""")
 
     aq_self = Attribute(
-        """Get the object with the outermost wrapper removed."""
-        )
+        """Get the object with the outermost wrapper removed.""")
 
     aq_inner = Attribute(
-        """Get the object with all but the innermost wrapper removed."""
-        )
+        """Get the object with all but the innermost wrapper removed.""")
 
     aq_chain = Attribute(
-        """Get a list of objects in the acquisition environment."""
-        )
+        """Get a list of objects in the acquisition environment.""")
 
     aq_explicit = Attribute(
-        """Get the object with an explicit acquisition wrapper."""
-        )
+        """Get the object with an explicit acquisition wrapper.""")

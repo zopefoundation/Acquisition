@@ -4,6 +4,8 @@ Changelog
 4.3.0 (unreleased)
 ------------------
 
+- Make tests compatible with ExtensionClass 4.2.0.
+
 - Drop support for Python 2.6 and 3.2.
 
 - Add support for Python 3.5 and 3.6.

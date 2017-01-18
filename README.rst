@@ -50,10 +50,12 @@ class. For example::
   >>> d.a.report()
   green
 
-  >>> a.report() # raises an attribute error
-  Traceback (most recent call last):
-    ...
-  AttributeError: color
+  >>> try:
+  ...     a.report()
+  ... except AttributeError:
+  ...     pass
+  ... else:
+  ...     raise AssertionError('AttributeError not raised.')
 
 The class ``A`` inherits acquisition behavior from
 ``Acquisition.Implicit``. The object, ``a``, "has" the color of

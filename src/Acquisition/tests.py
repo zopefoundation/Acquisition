@@ -91,10 +91,12 @@ def test_story():
     >>> d.a.report()
     green
 
-    >>> a.report() # raises an attribute error
-    Traceback (most recent call last):
-    ...
-    AttributeError: color
+    >>> try:
+    ...     a.report()
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     The class 'A' inherits acquisition behavior from
     'Acquisition.Implicit'.  The object, 'a', "has" the color of
@@ -395,22 +397,29 @@ def test_unwrapped():
     >>> show(c)
     unwrapped
 
-    >>> c.aq_parent
-    Traceback (most recent call last):
-    ...
-    AttributeError: aq_parent
+    >>> try:
+    ...     c.aq_parent
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
-    >>> c.__parent__
-    Traceback (most recent call last):
-    ...
-    AttributeError: __parent__
+    >>> try:
+    ...     c.__parent__
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_acquire(c, 'id')
     'unwrapped'
-    >>> Acquisition.aq_acquire(c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+
+    >>> try:
+    ...     Acquisition.aq_acquire(c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_acquire(c, 'id',
     ...  lambda searched, parent, name, ob, extra: extra)
@@ -435,10 +444,13 @@ def test_unwrapped():
     >>> Acquisition.aq_get(c, 'id')
     'unwrapped'
 
-    >>> Acquisition.aq_get(c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_get(c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
+
     >>> Acquisition.aq_get(c, 'x', 'foo')
     'foo'
     >>> Acquisition.aq_get(c, 'x', 'foo', 1)
@@ -513,10 +525,12 @@ def test_simple():
     >>> a.b.c.aq_acquire('id')
     'c'
 
-    >>> a.b.c.aq_acquire('x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     a.b.c.aq_acquire('x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
@@ -532,10 +546,12 @@ def test_simple():
     >>> Acquisition.aq_acquire(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_acquire(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_acquire(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
@@ -563,10 +579,13 @@ def test_simple():
     >>> Acquisition.aq_get(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_get(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_get(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
+
     >>> Acquisition.aq_get(a.b.c, 'x', 'foo')
     'foo'
     >>> Acquisition.aq_get(a.b.c, 'x', 'foo', 1)
@@ -758,10 +777,12 @@ def test_muliple():
     >>> a.a1.a11.a2.a21.aq_acquire('y')
     42
 
-    >>> a.a1.a11.a2.a21.aq_acquire('y', containment=1)
-    Traceback (most recent call last):
-    ...
-    AttributeError: y
+    >>> try:
+    ...     a.a1.a11.a2.a21.aq_acquire('y', containment=1)
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     Much of the same, but with methods:
 
@@ -863,12 +884,12 @@ def test_muliple():
     >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'y')
     42
 
-    >>> Acquisition.aq_acquire(a.a1.a11.a2.a21, 'y', containment=1)
-    Traceback (most recent call last):
-    ...
-    AttributeError: y
-
-
+    >>> try:
+    ...     Acquisition.aq_acquire(a.a1.a11.a2.a21, 'y', containment=1)
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
     """
 
 
@@ -1042,10 +1063,12 @@ def test_explicit():
     >>> a.b.c.aq_acquire('id')
     'c'
 
-    >>> a.b.c.aq_acquire('x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     a.b.c.aq_acquire('x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
@@ -1061,10 +1084,12 @@ def test_explicit():
     >>> Acquisition.aq_acquire(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_acquire(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_acquire(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
@@ -1092,10 +1117,12 @@ def test_explicit():
     >>> Acquisition.aq_get(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_get(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_get(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_get(a.b.c, 'y')
     42
@@ -1180,10 +1207,12 @@ def test_mixed_explicit_and_explicit():
     >>> a.b.c.aq_acquire('id')
     'c'
 
-    >>> a.b.c.aq_acquire('x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     a.b.c.aq_acquire('x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> a.b.c.aq_acquire('id',
     ...  lambda searched, parent, name, ob, extra: extra)
@@ -1199,10 +1228,12 @@ def test_mixed_explicit_and_explicit():
     >>> Acquisition.aq_acquire(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_acquire(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_acquire(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_acquire(a.b.c, 'y')
     42
@@ -1230,10 +1261,12 @@ def test_mixed_explicit_and_explicit():
     >>> Acquisition.aq_get(a.b.c, 'id')
     'c'
 
-    >>> Acquisition.aq_get(a.b.c, 'x')
-    Traceback (most recent call last):
-    ...
-    AttributeError: x
+    >>> try:
+    ...     Acquisition.aq_get(a.b.c, 'x')
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
     >>> Acquisition.aq_get(a.b.c, 'y')
     42
@@ -2276,10 +2309,12 @@ def test_implicit_wrapper_as___parent__():
     Note that messing with the wrapper won't in any way affect the
     wrapped object:
 
-      >>> Acquisition.aq_base(y).__parent__
-      Traceback (most recent call last):
-        ...
-      AttributeError: __parent__
+      >>> try:
+      ...     Acquisition.aq_base(y).__parent__
+      ... except AttributeError:
+      ...     pass
+      ... else:
+      ...     raise AssertionError('AttributeError not raised.')
     """
 
 
@@ -2356,10 +2391,12 @@ def test_explicit_wrapper_as___parent__():
     Note that messing with the wrapper won't in any way affect the
     wrapped object:
 
-      >>> Acquisition.aq_base(y).__parent__
-      Traceback (most recent call last):
-        ...
-      AttributeError: __parent__
+      >>> try:
+      ...     Acquisition.aq_base(y).__parent__
+      ... except AttributeError:
+      ...     pass
+      ... else:
+      ...     raise AssertionError('AttributeError not raised.')
     """
 
 
@@ -2483,63 +2520,48 @@ def test_explicit_wrapper_has_nonwrapper_as_aq_parent():
     """
 
 
-def test___parent__aq_parent_circles():
-    """
-    As a general safety belt, Acquisition won't follow a mixture of
-    circular __parent__ pointers and aq_parent wrappers.  These can
-    occurr when code that uses implicit acquisition wrappers meets
-    code that uses __parent__ pointers.
+class TestParentCircles(unittest.TestCase):
 
-      >>> class Impl(Acquisition.Implicit):
-      ...     hello = 'world'
+    def test___parent__aq_parent_circles(self):
+        # As a general safety belt, Acquisition won't follow a mixture of
+        # circular __parent__ pointers and aq_parent wrappers.  These can
+        # occurr when code that uses implicit acquisition wrappers meets
+        # code that uses __parent__ pointers.
 
-      >>> class Impl2(Acquisition.Implicit):
-      ...     hello = 'world2'
-      ...     only = 'here'
+        class Impl(Acquisition.Implicit):
+            hello = 'world'
 
-      >>> x = Impl()
-      >>> y = Impl2().__of__(x)
-      >>> x.__parent__ = y
+        class Impl2(Acquisition.Implicit):
+            hello = 'world2'
+            only = 'here'
 
-      >>> x.__parent__.aq_base is y.aq_base
-      True
-      >>> Acquisition.aq_parent(x) is y
-      True
-      >>> x.__parent__.__parent__ is x
-      True
+        x = Impl()
+        y = Impl2().__of__(x)
+        x.__parent__ = y
 
-      >>> x.hello
-      'world'
-      >>> Acquisition.aq_acquire(x, 'hello')
-      'world'
+        self.assertTrue(x.__parent__.aq_base is y.aq_base)
+        self.assertTrue(Acquisition.aq_parent(x) is y)
+        self.assertTrue(x.__parent__.__parent__ is x)
 
-      >>> x.only
-      Traceback (most recent call last):
-      ...
-      AttributeError: only
-      >>> Acquisition.aq_acquire(x, 'only')
-      'here'
+        self.assertEqual(x.hello, 'world')
+        self.assertEqual(Acquisition.aq_acquire(x, 'hello'), 'world')
 
-      >>> Acquisition.aq_acquire(x, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
+        with self.assertRaises(AttributeError):
+            x.only
 
-      >>> Acquisition.aq_acquire(y, 'non_existant_attr')
-      Traceback (most recent call last):
-      ...
-      RuntimeError: Recursion detected in acquisition wrapper
+        self.assertEqual(Acquisition.aq_acquire(x, 'only'), 'here')
 
-      >>> x.non_existant_attr
-      Traceback (most recent call last):
-      ...
-      AttributeError: non_existant_attr
+        with self.assertRaises(AttributeError):
+            Acquisition.aq_acquire(x, 'non_existant_attr')
 
-      >>> y.non_existant_attr
-      Traceback (most recent call last):
-      ...
-      RuntimeError: Recursion detected in acquisition wrapper
-    """
+        with self.assertRaises(RuntimeError):
+            Acquisition.aq_acquire(y, 'non_existant_attr')
+
+        with self.assertRaises(AttributeError):
+            x.non_existant_attr
+
+        with self.assertRaises(RuntimeError):
+            y.non_existant_attr
 
 
 if hasattr(Acquisition.ImplicitAcquisitionWrapper, '_obj'):
@@ -3646,6 +3668,7 @@ def test_suite():
         unittest.makeSuite(TestCreatingWrappers),
         unittest.makeSuite(TestPickle),
         unittest.makeSuite(TestInterfaces),
+        unittest.makeSuite(TestParentCircles),
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),

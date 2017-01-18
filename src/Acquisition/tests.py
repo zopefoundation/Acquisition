@@ -12,17 +12,61 @@
 #
 ##############################################################################
 """Acquisition test cases (and useful examples)
+"""
 
-  Acquisition [1] is a mechanism that allows objects to obtain
-  attributes from their environment.  It is similar to inheritence,
-  except that, rather than traversing an inheritence hierarchy
-  to obtain attributes, a containment hierarchy is traversed.
+from __future__ import print_function
+import gc
+import unittest
+import sys
+import platform
+import operator
+from doctest import DocTestSuite, DocFileSuite
 
-  The "ExtensionClass":ExtensionClass.html. release includes mix-in
-  extension base classes that can be used to add acquisition as a
-  feature to extension subclasses.  These mix-in classes use the
-  context-wrapping feature of ExtensionClasses to implement
-  acquisition. Consider the following example::
+import ExtensionClass
+import Acquisition
+
+
+if sys.version_info >= (3,):
+    PY3 = True
+    PY2 = False
+
+    def unicode(self):
+        # For test purposes, redirect the unicode
+        # to the type of the object, just like Py2 did
+        try:
+            return type(self).__unicode__(self)
+        except AttributeError as e:
+            return type(self).__str__(self)
+    long = int
+else:
+    PY2 = True
+    PY3 = False
+
+py_impl = getattr(platform, 'python_implementation', lambda: None)
+PYPY = py_impl() == 'PyPy'
+if not hasattr(gc, 'get_threshold'):
+    # PyPy
+    gc.get_threshold = lambda: ()
+    gc.set_threshold = lambda *x: None
+
+AQ_PARENT = unicode('aq_parent')
+UNICODE_WAS_CALLED = unicode('unicode was called')
+STR_WAS_CALLED = unicode('str was called')
+TRUE = unicode('True')
+
+
+def test_story():
+    """
+    Acquisition is a mechanism that allows objects to obtain
+    attributes from their environment.  It is similar to inheritence,
+    except that, rather than traversing an inheritence hierarchy
+    to obtain attributes, a containment hierarchy is traversed.
+
+    The "ExtensionClass":ExtensionClass.html. release includes mix-in
+    extension base classes that can be used to add acquisition as a
+    feature to extension subclasses.  These mix-in classes use the
+    context-wrapping feature of ExtensionClasses to implement
+    acquisition. Consider the following example:
 
     >>> import ExtensionClass, Acquisition
 
@@ -52,14 +96,14 @@
     ...
     AttributeError: color
 
-  The class 'A' inherits acquisition behavior from
-  'Acquisition.Implicit'.  The object, 'a', "has" the color of
-  objects 'c' and 'd' when it is accessed through them, but it
-  has no color by itself.  The object 'a' obtains attributes
-  from it's environment, where it's environment is defined by
-  the access path used to reach 'a'.
+    The class 'A' inherits acquisition behavior from
+    'Acquisition.Implicit'.  The object, 'a', "has" the color of
+    objects 'c' and 'd' when it is accessed through them, but it
+    has no color by itself.  The object 'a' obtains attributes
+    from it's environment, where it's environment is defined by
+    the access path used to reach 'a'.
 
-  Acquisition wrappers
+    Acquisition wrappers
 
     When an object that supports acquisition is accessed through
     an extension class instance, a special object, called an
@@ -71,20 +115,20 @@
 
     Aquisition wrappers provide access to the wrapped objects
     through the attributes 'aq_parent', 'aq_self', 'aq_base'.
-    In the example above, the expressions::
+    In the example above, the expressions:
 
-       >>> c.a.aq_parent is c
-       1
+    >>> c.a.aq_parent is c
+    1
 
-    and::
+    and:
 
-       >>> c.a.aq_self is a
-       1
+    >>> c.a.aq_self is a
+    1
 
-    both evaluate to true, but the expression::
+    both evaluate to true, but the expression:
 
-       >>> c.a is a
-       0
+    >>> c.a is a
+    0
 
     evaluates to false, because the expression 'c.a' evaluates
     to an acquisition wrapper around 'c' and 'a', not 'a' itself.
@@ -93,154 +137,154 @@
     nested and 'aq_self' may be a wrapped object.  The 'aq_base'
     attribute is the underlying object with all wrappers removed.
 
-  Acquisition Control
+    Acquisition Control
 
     Two styles of acquisition are supported in the current
     ExtensionClass release, implicit and explicit aquisition.
 
     Implicit acquisition
 
-      Implicit acquisition is so named because it searches for
-      attributes from the environment automatically whenever an
-      attribute cannot be obtained directly from an object or
-      through inheritence.
+    Implicit acquisition is so named because it searches for
+    attributes from the environment automatically whenever an
+    attribute cannot be obtained directly from an object or
+    through inheritence.
 
-      An attribute may be implicitly acquired if it's name does
-      not begin with an underscore, '_'.
+    An attribute may be implicitly acquired if it's name does
+    not begin with an underscore, '_'.
 
-      To support implicit acquisition, an object should inherit
-      from the mix-in class 'Acquisition.Implicit'.
+    To support implicit acquisition, an object should inherit
+    from the mix-in class 'Acquisition.Implicit'.
 
     Explicit Acquisition
 
-      When explicit acquisition is used, attributes are not
-      automatically obtained from the environment.  Instead, the
-      method 'aq_aquire' must be used, as in::
+    When explicit acquisition is used, attributes are not
+    automatically obtained from the environment.  Instead, the
+    method 'aq_aquire' must be used, as in:
 
-        print(c.a.aq_acquire('color'))
+    print(c.a.aq_acquire('color'))
 
-      To support explicit acquisition, an object should inherit
-      from the mix-in class 'Acquisition.Explicit'.
+    To support explicit acquisition, an object should inherit
+    from the mix-in class 'Acquisition.Explicit'.
 
     Controlled Acquisition
 
-      A class (or instance) can provide attribute by attribute control
-      over acquisition.  This is done by:
+    A class (or instance) can provide attribute by attribute control
+    over acquisition.  This is done by:
 
-      - subclassing from 'Acquisition.Explicit', and
+    - subclassing from 'Acquisition.Explicit', and
 
-      - setting all attributes that should be acquired to the special
-        value: 'Acquisition.Acquired'.  Setting an attribute to this
-        value also allows inherited attributes to be overridden with
-        acquired ones.
+    - setting all attributes that should be acquired to the special
+      value: 'Acquisition.Acquired'.  Setting an attribute to this
+      value also allows inherited attributes to be overridden with
+      acquired ones.
 
-        For example, in::
+    For example, in:
 
-          >>> class E(Acquisition.Explicit):
-          ...    id = 1
-          ...    secret = 2
-          ...    color = Acquisition.Acquired
-          ...    __roles__ = Acquisition.Acquired
+    >>> class E(Acquisition.Explicit):
+    ...    id = 1
+    ...    secret = 2
+    ...    color = Acquisition.Acquired
+    ...    __roles__ = Acquisition.Acquired
 
-        The *only* attributes that are automatically acquired from
-        containing objects are 'color', and '__roles__'.
+    The *only* attributes that are automatically acquired from
+    containing objects are 'color', and '__roles__'.
 
-          >>> c = C()
-          >>> c.foo = 'foo'
-          >>> c.e = E()
-          >>> c.e.color
-          'red'
-          >>> c.e.foo
-          Traceback (most recent call last):
-          ...
-          AttributeError: foo
+    >>> c = C()
+    >>> c.foo = 'foo'
+    >>> c.e = E()
+    >>> c.e.color
+    'red'
+    >>> c.e.foo
+    Traceback (most recent call last):
+    ...
+    AttributeError: foo
 
-        Note also that the '__roles__' attribute is acquired even
-        though it's name begins with an underscore:
+    Note also that the '__roles__' attribute is acquired even
+    though it's name begins with an underscore:
 
-          >>> c.__roles__ = 'Manager', 'Member'
-          >>> c.e.__roles__
-          ('Manager', 'Member')
+    >>> c.__roles__ = 'Manager', 'Member'
+    >>> c.e.__roles__
+    ('Manager', 'Member')
 
-        In fact, the special 'Acquisition.Acquired' value can be used
-        in 'Acquisition.Implicit' objects to implicitly acquire
-        selected objects that smell like private objects.
+    In fact, the special 'Acquisition.Acquired' value can be used
+    in 'Acquisition.Implicit' objects to implicitly acquire
+    selected objects that smell like private objects.
 
-          >>> class I(Acquisition.Implicit):
-          ...    __roles__ = Acquisition.Acquired
+    >>> class I(Acquisition.Implicit):
+    ...    __roles__ = Acquisition.Acquired
 
-          >>> c.x = C()
-          >>> try:
-          ...     c.x.__roles__
-          ... except AttributeError:
-          ...     pass
-          ... else:
-          ...     raise AssertionError('AttributeError not raised.')
+    >>> c.x = C()
+    >>> try:
+    ...     c.x.__roles__
+    ... except AttributeError:
+    ...     pass
+    ... else:
+    ...     raise AssertionError('AttributeError not raised.')
 
-          >>> c.x = I()
-          >>> c.x.__roles__
-          ('Manager', 'Member')
+    >>> c.x = I()
+    >>> c.x.__roles__
+    ('Manager', 'Member')
 
     Filtered Acquisition
 
-      The acquisition method, 'aq_acquire', accepts two optional
-      arguments. The first of the additional arguments is a
-      "filtering" function that is used when considering whether to
-      acquire an object.  The second of the additional arguments is an
-      object that is passed as extra data when calling the filtering
-      function and which defaults to 'None'.
+    The acquisition method, 'aq_acquire', accepts two optional
+    arguments. The first of the additional arguments is a
+    "filtering" function that is used when considering whether to
+    acquire an object.  The second of the additional arguments is an
+    object that is passed as extra data when calling the filtering
+    function and which defaults to 'None'.
 
-      The filter function is called with five arguments:
+    The filter function is called with five arguments:
 
-      - The object that the 'aq_acquire' method was called on,
+    - The object that the 'aq_acquire' method was called on,
 
-      - The object where an object was found,
+    - The object where an object was found,
 
-      - The name of the object, as passed to 'aq_acquire',
+    - The name of the object, as passed to 'aq_acquire',
 
-      - The object found, and
+    - The object found, and
 
-      - The extra data passed to 'aq_acquire'.
+    - The extra data passed to 'aq_acquire'.
 
-      If the filter returns a true object that the object found is
-      returned, otherwise, the acquisition search continues.
+    If the filter returns a true object that the object found is
+    returned, otherwise, the acquisition search continues.
 
-      For example, in::
+    For example, in:
 
-        >>> from Acquisition import Explicit
+    >>> from Acquisition import Explicit
 
-        >>> class HandyForTesting:
-        ...     def __init__(self, name): self.name=name
-        ...     def __str__(self):
-        ...       return "%s(%s)" % (self.name, self.__class__.__name__)
-        ...     __repr__=__str__
+    >>> class HandyForTesting:
+    ...     def __init__(self, name): self.name=name
+    ...     def __str__(self):
+    ...       return "%s(%s)" % (self.name, self.__class__.__name__)
+    ...     __repr__=__str__
 
-        >>> class E(Explicit, HandyForTesting):
-        ...     pass
+    >>> class E(Explicit, HandyForTesting):
+    ...     pass
 
-        >>> class Nice(HandyForTesting):
-        ...     isNice=1
-        ...     def __str__(self):
-        ...        return HandyForTesting.__str__(self)+' and I am nice!'
-        ...     __repr__=__str__
+    >>> class Nice(HandyForTesting):
+    ...     isNice=1
+    ...     def __str__(self):
+    ...        return HandyForTesting.__str__(self)+' and I am nice!'
+    ...     __repr__=__str__
 
-        >>> a = E('a')
-        >>> a.b = E('b')
-        >>> a.b.c = E('c')
-        >>> a.p = Nice('spam')
-        >>> a.b.p = E('p')
+    >>> a = E('a')
+    >>> a.b = E('b')
+    >>> a.b.c = E('c')
+    >>> a.p = Nice('spam')
+    >>> a.b.p = E('p')
 
-        >>> def find_nice(self, ancestor, name, object, extra):
-        ...     return hasattr(object,'isNice') and object.isNice
+    >>> def find_nice(self, ancestor, name, object, extra):
+    ...     return hasattr(object,'isNice') and object.isNice
 
-        >>> print(a.b.c.aq_acquire('p', find_nice))
-        spam(Nice) and I am nice!
+    >>> print(a.b.c.aq_acquire('p', find_nice))
+    spam(Nice) and I am nice!
 
-      The filtered acquisition in the last line skips over the first
-      attribute it finds with the name 'p', because the attribute
-      doesn't satisfy the condition given in the filter.
+    The filtered acquisition in the last line skips over the first
+    attribute it finds with the name 'p', because the attribute
+    doesn't satisfy the condition given in the filter.
 
-  Acquisition and methods
+    Acquisition and methods
 
     Python methods of objects that support acquisition can use
     acquired attributes as in the 'report' method of the first example
@@ -255,27 +299,27 @@
     this time.  This is because wrapper objects do not conform to the
     data structures expected by these methods.
 
-  Acquiring Acquiring objects
+    Acquiring Acquiring objects
 
-    Consider the following example::
+    Consider the following example:
 
-      >>> from Acquisition import Implicit
+    >>> from Acquisition import Implicit
 
-      >>> class C(Implicit):
-      ...     def __init__(self, name): self.name=name
-      ...     def __str__(self):
-      ...         return "%s(%s)" % (self.name, self.__class__.__name__)
-      ...     __repr__=__str__
+    >>> class C(Implicit):
+    ...     def __init__(self, name): self.name=name
+    ...     def __str__(self):
+    ...         return "%s(%s)" % (self.name, self.__class__.__name__)
+    ...     __repr__=__str__
 
-      >>> a = C("a")
-      >>> a.b = C("b")
-      >>> a.b.pref = "spam"
-      >>> a.b.c = C("c")
-      >>> a.b.c.color = "red"
-      >>> a.b.c.pref = "eggs"
-      >>> a.x = C("x")
+    >>> a = C("a")
+    >>> a.b = C("b")
+    >>> a.b.pref = "spam"
+    >>> a.b.c = C("c")
+    >>> a.b.c.color = "red"
+    >>> a.b.c.pref = "eggs"
+    >>> a.x = C("x")
 
-      >>> o = a.b.c.x
+    >>> o = a.b.c.x
 
     The expression 'o.color' might be expected to return '"red"'. In
     earlier versions of ExtensionClass, however, this expression
@@ -287,15 +331,15 @@
     In the current release of ExtensionClass, the expression "o.color"
     does indeed return '"red"'.
 
-      >>> o.color
-      'red'
+    >>> o.color
+    'red'
 
     When searching for an attribute in 'o', objects are searched in
     the order 'x', 'a', 'b', 'c'. So, for example, the expression,
-    'o.pref' returns '"spam"', not '"eggs"'::
+    'o.pref' returns '"spam"', not '"eggs"':
 
-      >>> o.pref
-      'spam'
+    >>> o.pref
+    'spam'
 
     In earlier releases of ExtensionClass, the attempt to get the
     'pref' attribute from 'o' would have failed.
@@ -324,51 +368,7 @@
     lookups. For example, in the expression: 'a.b.c.x.foo', the object
     'a' is searched no more than once, even though it is wrapped three
     times.
-
-.. [1] Gil, J., Lorenz, D.,
-   "Environmental Acquisition--A New Inheritance-Like Abstraction Mechanism",
-   http://www.bell-labs.com/people/cope/oopsla/Oopsla96TechnicalProgramAbstracts.html#GilLorenz,
-   OOPSLA '96 Proceedings, ACM SIG-PLAN, October, 1996
 """
-from __future__ import print_function
-import gc
-import unittest
-import sys
-import platform
-import operator
-from doctest import DocTestSuite, DocFileSuite
-
-import ExtensionClass
-import Acquisition
-
-
-if sys.version_info >= (3,):
-    PY3 = True
-    PY2 = False
-
-    def unicode(self):
-        # For test purposes, redirect the unicode
-        # to the type of the object, just like Py2 did
-        try:
-            return type(self).__unicode__(self)
-        except AttributeError as e:
-
-            return type(self).__str__(self)
-    long = int
-else:
-    PY2 = True
-    PY3 = False
-py_impl = getattr(platform, 'python_implementation', lambda: None)
-PYPY = py_impl() == 'PyPy'
-if not hasattr(gc, 'get_threshold'):
-    # PyPy
-    gc.get_threshold = lambda: ()
-    gc.set_threshold = lambda *x: None
-
-AQ_PARENT = unicode('aq_parent')
-UNICODE_WAS_CALLED = unicode('unicode was called')
-STR_WAS_CALLED = unicode('str was called')
-TRUE = unicode('True')
 
 
 class I(Acquisition.Implicit):
@@ -1510,260 +1510,225 @@ class TestCreatingWrappers(unittest.TestCase):
             ImplicitAcquisitionWrapper(obj=1)
 
 
-def test_cant_pickle_acquisition_wrappers_classic():
-    """
-    >>> import pickle
+class TestPickle(unittest.TestCase):
 
-    >>> class X:
-    ...     def __getstate__(self):
-    ...         return 1
+    def test_cant_pickle_acquisition_wrappers_classic(self):
+        import pickle
 
-    We shouldn't be able to pickle wrappers:
+        class X:
+            def __getstate__(self):
+                return 1
 
-    >>> from Acquisition import ImplicitAcquisitionWrapper
-    >>> w = ImplicitAcquisitionWrapper(X(), X())
-    >>> pickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        # We shouldn't be able to pickle wrappers:
 
-    But that's not enough. We need to defeat persistence as well. :)
-    This is tricky. We want to generate the error in __getstate__, not
-    in the attr access, as attribute errors are too-often hidden:
+        from Acquisition import ImplicitAcquisitionWrapper
+        w = ImplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            pickle.dumps(w)
 
-    >>> getstate = w.__getstate__
-    >>> getstate()
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        # But that's not enough. We need to defeat persistence as well. :)
+        # This is tricky. We want to generate the error in __getstate__, not
+        # in the attr access, as attribute errors are too-often hidden:
 
-    We shouldn't be able to pickle wrappers:
+        getstate = w.__getstate__
+        with self.assertRaises(TypeError):
+            getstate()
 
-    >>> from Acquisition import ExplicitAcquisitionWrapper
-    >>> w = ExplicitAcquisitionWrapper(X(), X())
-    >>> pickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        # We shouldn't be able to pickle wrappers:
 
-    But that's not enough. We need to defeat persistence as well. :)
-    This is tricky. We want to generate the error in __getstate__, not
-    in the attr access, as attribute errors are too-often hidden:
+        from Acquisition import ExplicitAcquisitionWrapper
+        w = ExplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            pickle.dumps(w)
 
-    >>> getstate = w.__getstate__
-    >>> getstate()
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
-    """
+        # But that's not enough. We need to defeat persistence as well. :)
+        # This is tricky. We want to generate the error in __getstate__, not
+        # in the attr access, as attribute errors are too-often hidden:
 
+        getstate = w.__getstate__
+        with self.assertRaises(TypeError):
+            getstate()
 
-def test_cant_pickle_acquisition_wrappers_newstyle():
-    """
-    >>> import pickle
+    def test_cant_pickle_acquisition_wrappers_newstyle(self):
+        import pickle
 
-    >>> class X(object):
-    ...     def __getstate__(self):
-    ...         return 1
+        class X(object):
+            def __getstate__(self):
+                return 1
 
-    We shouldn't be able to pickle wrappers:
+        # We shouldn't be able to pickle wrappers:
 
-    >>> from Acquisition import ImplicitAcquisitionWrapper
-    >>> w = ImplicitAcquisitionWrapper(X(), X())
-    >>> pickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        from Acquisition import ImplicitAcquisitionWrapper
+        w = ImplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            pickle.dumps(w)
 
-    But that's not enough. We need to defeat persistence as well. :)
-    This is tricky. We want to generate the error in __getstate__, not
-    in the attr access, as attribute errors are too-often hidden:
+        # But that's not enough. We need to defeat persistence as well. :)
+        # This is tricky. We want to generate the error in __getstate__, not
+        # in the attr access, as attribute errors are too-often hidden:
 
-    >>> getstate = w.__getstate__
-    >>> getstate()
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        getstate = w.__getstate__
+        with self.assertRaises(TypeError):
+            getstate()
 
-    We shouldn't be able to pickle wrappers:
+        # We shouldn't be able to pickle wrappers:
 
-    >>> from Acquisition import ExplicitAcquisitionWrapper
-    >>> w = ExplicitAcquisitionWrapper(X(), X())
-    >>> pickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        from Acquisition import ExplicitAcquisitionWrapper
+        w = ExplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            pickle.dumps(w)
 
-    But that's not enough. We need to defeat persistence as well. :)
-    This is tricky. We want to generate the error in __getstate__, not
-    in the attr access, as attribute errors are too-often hidden:
+        # But that's not enough. We need to defeat persistence as well. :)
+        # This is tricky. We want to generate the error in __getstate__, not
+        # in the attr access, as attribute errors are too-often hidden:
 
-    >>> getstate = w.__getstate__
-    >>> getstate()
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
-    """
+        getstate = w.__getstate__
+        with self.assertRaises(TypeError):
+            getstate()
 
+    def test_cant_persist_acquisition_wrappers_classic(self):
+        try:
+            import cPickle
+        except ImportError:
+            import pickle as cPickle
 
-def test_cant_persist_acquisition_wrappers_classic():
-    """
-    >>> try:
-    ...      import cPickle
-    ... except ImportError:
-    ...      import pickle as cPickle
+        class X:
+            _p_oid = '1234'
 
-    >>> class X:
-    ...     _p_oid = '1234'
-    ...     def __getstate__(self):
-    ...         return 1
+            def __getstate__(self):
+                return 1
 
-    We shouldn't be able to pickle wrappers:
+        # We shouldn't be able to pickle wrappers:
 
-    >>> from Acquisition import ImplicitAcquisitionWrapper
-    >>> w = ImplicitAcquisitionWrapper(X(), X())
-    >>> cPickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        from Acquisition import ImplicitAcquisitionWrapper
+        w = ImplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            cPickle.dumps(w)
 
-    Check for pickle protocol one:
+        # Check for pickle protocol one:
 
-    >>> cPickle.dumps(w, 1)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        with self.assertRaises(TypeError):
+            cPickle.dumps(w, 1)
 
-    Check custom pickler:
+        # Check custom pickler:
 
-    >>> from io import BytesIO
-    >>> file = BytesIO()
-    >>> pickler = cPickle.Pickler(file, 1)
+        from io import BytesIO
+        file = BytesIO()
+        pickler = cPickle.Pickler(file, 1)
 
-    >>> pickler.dump(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        with self.assertRaises(TypeError):
+            pickler.dump(w)
 
-    Check custom pickler with a persistent_id method matching the semantics
-    in ZODB.serialize.ObjectWriter.persistent_id:
+        # Check custom pickler with a persistent_id method matching
+        # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = BytesIO()
-    >>> pickler = cPickle.Pickler(file, 1)
+        file = BytesIO()
+        pickler = cPickle.Pickler(file, 1)
 
-    >>> def persistent_id(obj):
-    ...     if not hasattr(obj, '_p_oid'): return None
-    ...     klass = type(obj)
-    ...     oid = obj._p_oid
-    ...     if hasattr(klass, '__getnewargs__'):
-    ...         # Coverage, make sure it can be called
-    ...         assert klass.__getnewargs__(obj) == ()
-    ...         return oid
-    ...     return 'class_and_oid', klass
+        def persistent_id(obj):
+            if not hasattr(obj, '_p_oid'):
+                return None
+            klass = type(obj)
+            oid = obj._p_oid
+            if hasattr(klass, '__getnewargs__'):
+                # Coverage, make sure it can be called
+                assert klass.__getnewargs__(obj) == ()
+                return oid
+            return 'class_and_oid', klass
 
-    >>> try: pickler.inst_persistent_id = persistent_id
-    ... except AttributeError: pass
-    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
-    >>> _ = pickler.dump(w)
-    >>> state = file.getvalue()
-    >>> b'1234' in state
-    True
-    >>> b'class_and_oid' in state
-    False
-    """
+        try:
+            pickler.inst_persistent_id = persistent_id
+        except AttributeError:
+            pass
+        pickler.persistent_id = persistent_id  # PyPy and Py3k
+        pickler.dump(w)
+        state = file.getvalue()
+        self.assertTrue(b'1234' in state)
+        self.assertFalse(b'class_and_oid' in state)
 
+    def test_cant_persist_acquisition_wrappers_newstyle(self):
+        try:
+            import cPickle
+        except ImportError:
+            import pickle as cPickle
 
-def test_cant_persist_acquisition_wrappers_newstyle():
-    """
-    >>> try:
-    ...      import cPickle
-    ... except ImportError:
-    ...      import pickle as cPickle
+        class X(object):
+            _p_oid = '1234'
 
-    >>> class X(object):
-    ...     _p_oid = '1234'
-    ...     def __getstate__(self):
-    ...         return 1
+            def __getstate__(self):
+                return 1
 
-    We shouldn't be able to pickle wrappers:
+        # We shouldn't be able to pickle wrappers:
 
-    >>> from Acquisition import ImplicitAcquisitionWrapper
-    >>> w = ImplicitAcquisitionWrapper(X(), X())
-    >>> cPickle.dumps(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        from Acquisition import ImplicitAcquisitionWrapper
+        w = ImplicitAcquisitionWrapper(X(), X())
+        with self.assertRaises(TypeError):
+            cPickle.dumps(w)
 
-    Check for pickle protocol one:
+        # Check for pickle protocol one:
 
-    >>> cPickle.dumps(w, 1)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        with self.assertRaises(TypeError):
+            cPickle.dumps(w, 1)
 
-    Check custom pickler:
+        # Check custom pickler:
 
-    >>> from io import BytesIO
-    >>> file = BytesIO()
-    >>> pickler = cPickle.Pickler(file, 1)
+        from io import BytesIO
+        file = BytesIO()
+        pickler = cPickle.Pickler(file, 1)
 
-    >>> pickler.dump(w)
-    Traceback (most recent call last):
-    ...
-    TypeError: Can't pickle objects in acquisition wrappers.
+        with self.assertRaises(TypeError):
+            pickler.dump(w)
 
-    Check custom pickler with a persistent_id method matching the semantics
-    in ZODB.serialize.ObjectWriter.persistent_id:
+        # Check custom pickler with a persistent_id method matching
+        # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
 
-    >>> file = BytesIO()
-    >>> pickler = cPickle.Pickler(file, 1)
+        file = BytesIO()
+        pickler = cPickle.Pickler(file, 1)
 
-    >>> def persistent_id(obj):
-    ...     if not hasattr(obj, '_p_oid'): return None
-    ...     klass = type(obj)
-    ...     oid = obj._p_oid
-    ...     if hasattr(klass, '__getnewargs__'):
-    ...         return oid
-    ...     return 'class_and_oid', klass
+        def persistent_id(obj):
+            if not hasattr(obj, '_p_oid'):
+                return None
+            klass = type(obj)
+            oid = obj._p_oid
+            if hasattr(klass, '__getnewargs__'):
+                return oid
+            return 'class_and_oid', klass
+
+        try:
+            pickler.inst_persistent_id = persistent_id
+        except AttributeError:
+            pass
+
+        pickler.persistent_id = persistent_id  # PyPy and Py3k
+        pickler.dump(w)
+        state = file.getvalue()
+        self.assertTrue(b'1234' in state)
+        self.assertFalse(b'class_and_oid' in state)
 
 
-    >>> try: pickler.inst_persistent_id = persistent_id
-    ... except AttributeError: pass
-    >>> pickler.persistent_id = persistent_id #PyPy and Py3k
-    >>> _ = pickler.dump(w)
-    >>> state = file.getvalue()
-    >>> b'1234' in state
-    True
-    >>> b'class_and_oid' in state
-    False
-    """
+class TestInterfaces(unittest.TestCase):
 
+    def test_interfaces(self):
+        from zope.interface.verify import verifyClass
 
-def test_interfaces():
-    """
-    >>> from zope.interface.verify import verifyClass
+        # Explicit and Implicit implement IAcquirer:
 
-    Explicit and Implicit implement IAcquirer:
+        from Acquisition import Explicit
+        from Acquisition import Implicit
+        from Acquisition.interfaces import IAcquirer
+        self.assertTrue(verifyClass(IAcquirer, Explicit))
+        self.assertTrue(verifyClass(IAcquirer, Implicit))
 
-    >>> from Acquisition import Explicit
-    >>> from Acquisition import Implicit
-    >>> from Acquisition.interfaces import IAcquirer
-    >>> verifyClass(IAcquirer, Explicit)
-    True
-    >>> verifyClass(IAcquirer, Implicit)
-    True
+        # ExplicitAcquisitionWrapper and ImplicitAcquisitionWrapper implement
+        # IAcquisitionWrapper:
 
-    ExplicitAcquisitionWrapper and ImplicitAcquisitionWrapper implement
-    IAcquisitionWrapper:
-
-    >>> from Acquisition import ExplicitAcquisitionWrapper
-    >>> from Acquisition import ImplicitAcquisitionWrapper
-    >>> from Acquisition.interfaces import IAcquisitionWrapper
-    >>> verifyClass(IAcquisitionWrapper, ExplicitAcquisitionWrapper)
-    True
-    >>> verifyClass(IAcquisitionWrapper, ImplicitAcquisitionWrapper)
-    True
-    """
+        from Acquisition import ExplicitAcquisitionWrapper
+        from Acquisition import ImplicitAcquisitionWrapper
+        from Acquisition.interfaces import IAcquisitionWrapper
+        self.assertTrue(
+            verifyClass(IAcquisitionWrapper, ExplicitAcquisitionWrapper))
+        self.assertTrue(
+            verifyClass(IAcquisitionWrapper, ImplicitAcquisitionWrapper))
 
 
 try:
@@ -2121,7 +2086,7 @@ def test_container_proxying():
     [1, 2, 3]
 
     The __iter__proxy should also pass the wrapped object as self to
-    the __iter__ of objects defining __iter__::
+    the __iter__ of objects defining __iter__:
 
     >>> class C(Acquisition.Implicit):
     ...     def __iter__(self):
@@ -2137,7 +2102,7 @@ def test_container_proxying():
     [(0, 'i'), (1, 'i'), (2, 'i'), (3, 'i'), (4, 'i')]
 
     And it should pass the wrapped object as self to
-    the __getitem__ of objects without an __iter__::
+    the __getitem__ of objects without an __iter__:
 
     >>> class C(Acquisition.Implicit):
     ...     def __getitem__(self, i):
@@ -2150,7 +2115,7 @@ def test_container_proxying():
     [0, 1, 2, 3, 4]
 
     Finally let's make sure errors are still correctly raised after having
-    to use a modified version of `PyObject_GetIter` for iterator support::
+    to use a modified version of `PyObject_GetIter` for iterator support:
 
     >>> class C(Acquisition.Implicit):
     ...     pass
@@ -3678,6 +3643,9 @@ def test_suite():
 
     suites = [
         DocTestSuite(),
+        unittest.makeSuite(TestCreatingWrappers),
+        unittest.makeSuite(TestPickle),
+        unittest.makeSuite(TestInterfaces),
         unittest.makeSuite(TestParent),
         unittest.makeSuite(TestAcquire),
         unittest.makeSuite(TestUnicode),

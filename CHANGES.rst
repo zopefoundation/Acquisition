@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.3.0 (unreleased)
+4.3.0 (2017-01-20)
 ------------------
 
 - Make tests compatible with ExtensionClass 4.2.0.

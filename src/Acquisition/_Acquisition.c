@@ -53,7 +53,7 @@ static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__getitem__, *py__setitem__, *py__delitem__,
   *py__getslice__, *py__setslice__, *py__delslice__,  *py__contains__,
   *py__len__, *py__of__, *py__call__, *py__repr__, *py__str__, *py__unicode__,
-  *py__cmp__, *py__parent__, *py__iter__;
+  *py__cmp__, *py__parent__, *py__iter__, *py__bool__;
 
 static PyObject *Acquired=0;
 
@@ -78,6 +78,7 @@ init_py_names(void)
   INIT_PY_NAME(__pos__);
   INIT_PY_NAME(__abs__);
   INIT_PY_NAME(__nonzero__);
+  INIT_PY_NAME(__bool__);
   INIT_PY_NAME(__invert__);
   INIT_PY_NAME(__int__);
   INIT_PY_NAME(__long__);
@@ -980,13 +981,13 @@ Wrapper_length(Wrapper *self)
 }
 
 static PyObject *
-Wrapper_add(Wrapper *self, PyObject *bb)
+Wrapper_add(PyObject *self, PyObject *bb)
 {
-  return CallMethodO(OBJECT(self),py__add__,Build("(O)", bb) ,NULL);
+  return CallMethodO(self, py__add__,Build("(O)", bb) ,NULL);
 }
 
 static PyObject *
-Wrapper_mul(Wrapper *self, Py_ssize_t  n)
+Wrapper_repeat(Wrapper *self, Py_ssize_t  n)
 {
   return CallMethodO(OBJECT(self),py__mul__,Build("(" FORMAT_N ")", n),NULL);
 }
@@ -1088,8 +1089,8 @@ Wrapper_iter(Wrapper *self)
 
 static PySequenceMethods Wrapper_as_sequence = {
 	(lenfunc)Wrapper_length,		/*sq_length*/
-	(binaryfunc)Wrapper_add,		/*sq_concat*/
-	(ssizeargfunc)Wrapper_mul,		/*sq_repeat*/
+	Wrapper_add,		/*sq_concat*/
+	(ssizeargfunc)Wrapper_repeat,		/*sq_repeat*/
 	(ssizeargfunc)Wrapper_item,		/*sq_item*/
 	(ssizessizeargfunc)Wrapper_slice,		/*sq_slice*/
 	(ssizeobjargproc)Wrapper_ass_item,	/*sq_ass_item*/
@@ -1136,96 +1137,121 @@ static PyMappingMethods Wrapper_as_mapping = {
 
 /* Code to access Wrapper objects as numbers */
 
-static PyObject *
-Wrapper_sub(Wrapper *self, PyObject *o)
+#define WRAP_UNARYOP(OPNAME) \
+    static PyObject* Wrapper_##OPNAME(PyObject* self) { \
+        return PyObject_CallMethod(self, "__"#OPNAME"__", NULL); \
+    }
+
+#define WRAP_BINOP(OPNAME) \
+    static PyObject* Wrapper_##OPNAME(PyObject* self, PyObject* o1) { \
+        return PyObject_CallMethod(self, "__"#OPNAME"__", "O", o1); \
+    }
+
+#define WRAP_TERNARYOP(OPNAME) \
+    static PyObject* Wrapper_##OPNAME(PyObject* self, PyObject* o1, PyObject* o2) { \
+        return PyObject_CallMethod(self, "__"#OPNAME"__", "OO", o1, o2); \
+    }
+
+WRAP_BINOP(sub);
+WRAP_BINOP(mul);
+
+#ifndef PY3K
+WRAP_BINOP(div);
+#endif
+
+WRAP_BINOP(mod);
+WRAP_BINOP(divmod);
+WRAP_TERNARYOP(pow);
+WRAP_UNARYOP(neg);
+WRAP_UNARYOP(pos);
+WRAP_UNARYOP(abs);
+WRAP_UNARYOP(invert);
+WRAP_BINOP(lshift);
+WRAP_BINOP(rshift);
+WRAP_BINOP(and);
+WRAP_BINOP(xor);
+WRAP_BINOP(or);
+
+WRAP_UNARYOP(int);
+
+#ifndef PY3K
+WRAP_UNARYOP(long);
+#endif
+
+WRAP_UNARYOP(float);
+
+#ifndef PY3K
+WRAP_UNARYOP(oct);
+WRAP_UNARYOP(hex);
+#endif
+
+WRAP_BINOP(iadd);
+WRAP_BINOP(isub);
+WRAP_BINOP(imul);
+
+#ifndef PY3K
+WRAP_BINOP(idiv);
+#endif
+
+WRAP_BINOP(imod);
+WRAP_TERNARYOP(ipow);
+WRAP_BINOP(ilshift);
+WRAP_BINOP(irshift);
+WRAP_BINOP(iand);
+WRAP_BINOP(ixor);
+WRAP_BINOP(ior);
+WRAP_BINOP(floordiv);
+WRAP_BINOP(truediv);
+WRAP_BINOP(ifloordiv);
+WRAP_BINOP(itruediv);
+WRAP_UNARYOP(index);
+WRAP_BINOP(matmul);
+WRAP_BINOP(imatmul);
+
+static int
+Wrapper_nonzero(PyObject *self)
 {
-  return CallMethodO(OBJECT(self),py__sub__,Build("(O)", o),NULL);
+    int res;
+    PyObject* result = NULL;
+    PyObject* callable = NULL;
+
+#ifdef PY3K
+    callable = PyObject_GetAttr(self, py__bool__);
+#else
+    callable = PyObject_GetAttr(self, py__nonzero__);
+#endif
+
+    if (callable == NULL) {
+        PyErr_Clear();
+
+        callable = PyObject_GetAttr(self, py__len__);
+        if (callable == NULL) {
+            PyErr_Clear();
+            return 1;
+        }
+    }
+
+    result = PyObject_CallObject(callable, NULL);
+    Py_DECREF(callable);
+
+    if (result == NULL) {
+        return -1;
+    }
+
+    res = PyObject_IsTrue(result);
+    Py_DECREF(result);
+
+    return res;
+
 }
 
-static PyObject *
-Wrapper_div(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__div__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_mod(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__mod__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_divmod(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__divmod__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_pow(Wrapper *self, PyObject *o, PyObject *m)
-{
-  return CallMethodO(OBJECT(self),py__pow__,Build("(OO)", o, m),NULL);
-}
-
-static PyObject *
-Wrapper_neg(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__neg__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_pos(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__pos__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_abs(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__abs__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_invert(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__invert__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_lshift(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__lshift__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_rshift(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__rshift__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_and(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__and__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_xor(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__xor__,Build("(O)", o),NULL);
-}
-
-static PyObject *
-Wrapper_or(Wrapper *self, PyObject *o)
-{
-  return CallMethodO(OBJECT(self),py__or__,Build("(O)", o),NULL);
-}
-
+#ifndef PY3K
 static int 
-Wrapper_coerce(Wrapper **self, PyObject **o)
+Wrapper_coerce(PyObject **self, PyObject **o)
 {
   PyObject *m;
 
-  UNLESS (m=PyObject_GetAttr(OBJECT(*self), py__coerce__))
+  UNLESS (m=PyObject_GetAttr(*self, py__coerce__))
     {
       PyErr_Clear();
       Py_INCREF(*self);
@@ -1246,89 +1272,75 @@ err:
   Py_DECREF(m);
   return -1;  
 }
-
-static PyObject *
-Wrapper_int(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__int__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_long(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__long__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_float(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__float__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_oct(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__oct__, NULL, NULL);
-}
-
-static PyObject *
-Wrapper_hex(Wrapper *self)
-{
-  return CallMethodO(OBJECT(self), py__hex__, NULL, NULL);
-}
-
-static int
-Wrapper_nonzero(Wrapper *self)
-{
-  long l;
-  PyObject *r;
-
-  UNLESS(r=PyObject_GetAttr(OBJECT(self), py__nonzero__))
-    {
-      PyErr_Clear();
-
-      /* Try len */
-      UNLESS(r=PyObject_GetAttr(OBJECT(self), py__len__))
-      {
-        /* No len, it's true :-) */
-        PyErr_Clear();
-        return 1;
-      }
-    }
-
-  UNLESS_ASSIGN(r,PyObject_CallObject(r,NULL)) return -1;
-  l = PyLong_AsLong(r);
-  Py_DECREF(r);
-  return l;
-}
+#endif
 
 static PyNumberMethods Wrapper_as_number = {
-	(binaryfunc)Wrapper_add,	/*nb_add*/
-	(binaryfunc)Wrapper_sub,	/*nb_subtract*/
-	(binaryfunc)Wrapper_mul,	/*nb_multiply*/
-	(binaryfunc)Wrapper_div,	/*nb_divide*/
-	(binaryfunc)Wrapper_mod,	/*nb_remainder*/
-	(binaryfunc)Wrapper_divmod,	/*nb_divmod*/
-	(ternaryfunc)Wrapper_pow,	/*nb_power*/
-	(unaryfunc)Wrapper_neg,		/*nb_negative*/
-	(unaryfunc)Wrapper_pos,		/*nb_positive*/
-	(unaryfunc)Wrapper_abs,		/*nb_absolute*/
-	(inquiry)Wrapper_nonzero,	/*nb_nonzero*/
-	(unaryfunc)Wrapper_invert,	/*nb_invert*/
-	(binaryfunc)Wrapper_lshift,	/*nb_lshift*/
-	(binaryfunc)Wrapper_rshift,	/*nb_rshift*/
-	(binaryfunc)Wrapper_and,	/*nb_and*/
-	(binaryfunc)Wrapper_xor,	/*nb_xor*/
-	(binaryfunc)Wrapper_or,		/*nb_or*/
+    Wrapper_add,        /* nb_add */
+    Wrapper_sub,        /* nb_subtract */
+    Wrapper_mul,        /* nb_multiply */
 #ifndef PY3K
-	(coercion)Wrapper_coerce,	/*nb_coerce*/
+    Wrapper_div,        /* nb_divide */
 #endif
-	(unaryfunc)Wrapper_int,		/*nb_int*/
-	(unaryfunc)Wrapper_long,	/*nb_long*/
-	(unaryfunc)Wrapper_float,	/*nb_float*/
-	(unaryfunc)Wrapper_oct,		/*nb_oct*/
-	(unaryfunc)Wrapper_hex,		/*nb_hex*/
+    Wrapper_mod,        /* nb_remainder */
+    Wrapper_divmod,     /* nb_divmod */
+    Wrapper_pow,        /* nb_power */
+    Wrapper_neg,        /* nb_negative */
+    Wrapper_pos,        /* nb_positive */
+    Wrapper_abs,        /* nb_absolute */
+    Wrapper_nonzero,    /* nb_nonzero */
+    Wrapper_invert,     /* nb_invert */
+    Wrapper_lshift,     /* nb_lshift */
+    Wrapper_rshift,     /* nb_rshift */
+    Wrapper_and,        /* nb_and */
+    Wrapper_xor,        /* nb_xor */
+    Wrapper_or,         /* nb_or */
+
+#ifndef PY3K
+    Wrapper_coerce,     /* nb_coerce */
+#endif
+
+    Wrapper_int,        /* nb_int */
+
+#ifdef PY3K
+    NULL,
+#else
+    Wrapper_long,       /* nb_long */
+#endif
+
+    Wrapper_float,      /* nb_float */
+
+#ifndef PY3K
+    Wrapper_oct,        /* nb_oct*/
+    Wrapper_hex,        /* nb_hex*/
+#endif
+
+    Wrapper_iadd,       /* nb_inplace_add */
+    Wrapper_isub,       /* nb_inplace_subtract */
+    Wrapper_imul,       /* nb_inplace_multiply */
+
+#ifndef PY3K
+    Wrapper_idiv,       /* nb_inplace_divide */
+#endif
+
+    Wrapper_imod,       /* nb_inplace_remainder */
+    Wrapper_ipow,       /* nb_inplace_power */
+    Wrapper_ilshift,    /* nb_inplace_lshift */
+    Wrapper_irshift,    /* nb_inplace_rshift */
+    Wrapper_iand,       /* nb_inplace_and */
+    Wrapper_ixor,       /* nb_inplace_xor */
+    Wrapper_ior,        /* nb_inplace_or */
+    Wrapper_floordiv,   /* nb_floor_divide */
+    Wrapper_truediv,    /* nb_true_divide */
+    Wrapper_ifloordiv,  /* nb_inplace_floor_divide */
+    Wrapper_itruediv,   /* nb_inplace_true_divide */
+    Wrapper_index,      /* nb_index */
+
+#if ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION > 4))
+    Wrapper_matmul,     /* nb_matrix_multiply */
+    Wrapper_imatmul,    /* nb_inplace_matrix_multiply */
+#endif
 };
+
 
 
 /* -------------------------------------------------------- */

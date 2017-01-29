@@ -44,15 +44,8 @@ typedef struct {
 static ACQUISITIONCAPI *AcquisitionCAPI = NULL;
 
 #define aq_init() { \
-    PyObject *module; \
-    PyObject *api; \
-    if (! (module = PyImport_ImportModule("Acquisition"))) return; \
-    if (! (api = PyObject_GetAttrString(module,"AcquisitionCAPI"))) return; \
-    Py_DECREF(module); \
-    AcquisitionCAPI = PyCObject_AsVoidPtr(api); \
-    Py_DECREF(api); \
+    AcquisitionCAPI = PyCapsule_Import("Acquisition.AcquisitionCAPI", 0); \
 }
-
 
 
 #endif

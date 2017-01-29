@@ -13,6 +13,7 @@
  ****************************************************************************/
 
 #include "ExtensionClass/ExtensionClass.h"
+#include "ExtensionClass/_compat.h"
 
 #define _IN_ACQUISITION_C
 #include "Acquisition/Acquisition.h"
@@ -59,7 +60,7 @@ static PyObject *Acquired=0;
 static void
 init_py_names(void)
 {
-#define INIT_PY_NAME(N) py ## N = PyString_FromString(#N)
+#define INIT_PY_NAME(N) py ## N = NATIVE_FROM_STRING(#N)
   INIT_PY_NAME(__add__);
   INIT_PY_NAME(__sub__);
   INIT_PY_NAME(__mul__);
@@ -144,6 +145,26 @@ diff_to_bool(int diff, int op)
 	return result;
 }
 
+static PyObject*
+convert_name(PyObject *name)
+{
+#ifdef Py_USING_UNICODE
+    if (PyUnicode_Check(name)) {
+        name = PyUnicode_AsEncodedString(name, NULL, NULL);
+    }
+    else
+#endif
+    if (!PyBytes_Check(name)) {
+        PyErr_SetString(PyExc_TypeError, "attribute name must be a string");
+        return NULL;
+    }
+    else {
+        Py_INCREF(name);
+    }
+    return name;
+}
+
+
 /* Declarations for objects of type Wrapper */
 
 typedef struct {
@@ -152,10 +173,13 @@ typedef struct {
   PyObject *container;
 } Wrapper;
 
-staticforward PyExtensionClass Wrappertype, XaqWrappertype;
+static PyExtensionClass Wrappertype, XaqWrappertype;
 
-#define isWrapper(O) ((O)->ob_type==(PyTypeObject*)&Wrappertype || \
-		      (O)->ob_type==(PyTypeObject*)&XaqWrappertype)
+#define isImplicitWrapper(o) (Py_TYPE(o) == (PyTypeObject*)&Wrappertype)
+#define isExplicitWrapper(o) (Py_TYPE(o) == (PyTypeObject*)&XaqWrappertype)
+
+#define isWrapper(o) (isImplicitWrapper(o) || isExplicitWrapper(o))
+
 #define WRAPPER(O) ((Wrapper*)(O))
 
 static int
@@ -214,7 +238,7 @@ __of__(PyObject *inst, PyObject *parent)
       {
         if (r->ob_refcnt !=1 )
           {
-            t = PyObject_CallFunctionObjArgs((PyObject *)(r->ob_type), 
+            t = PyObject_CallFunctionObjArgs((PyObject *)Py_TYPE(r),
                                              WRAPPER(r)->obj, 
                                              WRAPPER(r)->container,
                                              NULL);
@@ -292,7 +316,7 @@ static void
 Wrapper_dealloc(Wrapper *self)     
 {
   Wrapper_clear(self);
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject *
@@ -336,7 +360,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
     case 'e':
       if (strcmp(name,"explicit")==0)
 	{
-	  if (self->ob_type != (PyTypeObject *)&XaqWrappertype)
+	  if (!isExplicitWrapper(self))
 	    return newWrapper(self->obj, self->container, 
 			      (PyTypeObject *)&XaqWrappertype);
 	  Py_INCREF(self);
@@ -399,7 +423,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
     case 'u':
       if (strcmp(name,"uncle")==0)
 	{
-	  return PyString_FromString("Bob");
+	  return NATIVE_FROM_STRING("Bob");
 	}
       break;
       
@@ -483,12 +507,10 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
   PyObject *result;
   char *name="";
 
-  if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  else if (PyUnicode_Check(oname)) {
-    tmp=PyUnicode_AsASCIIString(oname);
-    if (tmp==NULL) return NULL;
-    name=PyString_AS_STRING(tmp);
+  if ((tmp = convert_name(oname)) == NULL) {
+      return NULL;
   }
+  name = PyBytes_AS_STRING(tmp);
 
   result = Wrapper_findattr_name(self, name, oname, filter, extra, orig,
                                  sob, sco, explicit, containment);
@@ -568,10 +590,8 @@ Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
 
 				 /* Search object container if explicit,
 				    or object is implicit acquirer */
-				 explicit ||
-				 self->obj->ob_type == 
-				 (PyTypeObject*)&Wrappertype,
-				  explicit, containment)))
+				 explicit || isImplicitWrapper(self->obj),
+				 explicit, containment)))
 	    {
 	      if (PyECMethod_Check(r) && PyECMethod_Self(r)==self->obj)
 		ASSIGN(r,PyECMethod_New(r,OBJECT(self)));
@@ -774,12 +794,10 @@ Xaq_getattro(Wrapper *self, PyObject *oname)
   char *name="";
 
   /* Special case backward-compatible acquire method. */
-  if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  else if (PyUnicode_Check(oname)) {
-    tmp=PyUnicode_AsASCIIString(oname);
-    if (tmp==NULL) return NULL;
-    name=PyString_AS_STRING(tmp);
+  if ((tmp = convert_name(oname)) == NULL) {
+      return NULL;
   }
+  name = PyBytes_AS_STRING(tmp);
 
   if (*name=='a' && name[1]=='c' && strcmp(name+2,"quire")==0)
     result = Py_FindAttr(OBJECT(self),oname);
@@ -802,13 +820,11 @@ Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
   char *name="";
   int result;
 
-  /* Allow assignment to parent, to change context. */
-  if (PyString_Check(oname)) name=PyString_AS_STRING(oname);
-  else if (PyUnicode_Check(oname)) {
-    tmp=PyUnicode_AsASCIIString(oname);
-    if (tmp==NULL) return -1;
-    name=PyString_AS_STRING(tmp);
+  if ((tmp = convert_name(oname)) == NULL) {
+      return -1;
   }
+  name = PyBytes_AS_STRING(tmp);
+
   if ((*name=='a' && name[1]=='q' && name[2]=='_' 
        && strcmp(name+3,"parent")==0) || (strcmp(name, "__parent__")==0))
     {
@@ -870,7 +886,7 @@ Wrapper_compare(Wrapper *self, PyObject *w)
   ASSIGN(m, PyObject_CallFunction(m, "O", w));
   UNLESS (m) return -1;
   
-  r=PyInt_AsLong(m);
+  r = PyLong_AsLong(m);
 
   Py_DECREF(m);
 
@@ -958,7 +974,7 @@ Wrapper_length(Wrapper *self)
 
   UNLESS(r=PyObject_GetAttr(OBJECT(self), py__len__)) return -1;
   UNLESS_ASSIGN(r,PyObject_CallObject(r,NULL)) return -1;
-  l=PyInt_AsLong(r);
+  l = PyLong_AsLong(r);
   Py_DECREF(r);
   return l;
 }
@@ -1033,7 +1049,7 @@ Wrapper_contains(Wrapper *self, PyObject *v)
 
   UNLESS(v=CallMethodO(OBJECT(self),py__contains__,Build("(O)", v) ,NULL))
     return -1;
-  c = PyInt_AsLong(v);
+  c = PyLong_AsLong(v);
   Py_DECREF(v);
   return c;
 }
@@ -1057,7 +1073,7 @@ Wrapper_iter(Wrapper *self)
           PyErr_Format(PyExc_TypeError,
                    "iter() returned non-iterator "
                    "of type '%.100s'",
-                   res->ob_type->tp_name);
+                   Py_TYPE(res)->tp_name);
           Py_DECREF(res);
           res = NULL;
       }
@@ -1281,7 +1297,7 @@ Wrapper_nonzero(Wrapper *self)
     }
 
   UNLESS_ASSIGN(r,PyObject_CallObject(r,NULL)) return -1;
-  l=PyInt_AsLong(r);
+  l = PyLong_AsLong(r);
   Py_DECREF(r);
   return l;
 }
@@ -1304,7 +1320,9 @@ static PyNumberMethods Wrapper_as_number = {
 	(binaryfunc)Wrapper_and,	/*nb_and*/
 	(binaryfunc)Wrapper_xor,	/*nb_xor*/
 	(binaryfunc)Wrapper_or,		/*nb_or*/
+#ifndef PY3K
 	(coercion)Wrapper_coerce,	/*nb_coerce*/
+#endif
 	(unaryfunc)Wrapper_int,		/*nb_int*/
 	(unaryfunc)Wrapper_long,	/*nb_long*/
 	(unaryfunc)Wrapper_float,	/*nb_float*/
@@ -1339,8 +1357,7 @@ Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
   if (filter==Py_None) filter=0;
 
   result = Wrapper_findattr(self,name,filter,extra,OBJECT(self),1,
-			  explicit || 
-			  self->ob_type==(PyTypeObject*)&Wrappertype,
+			  explicit || isImplicitWrapper(self),
 			  explicit, containment);
   if (result == NULL && defalt != NULL) {
     /* as "Python/bltinmodule.c:builtin_getattr" turn
@@ -1408,8 +1425,7 @@ static struct PyMethodDef Wrapper_methods[] = {
 };
 
 static PyExtensionClass Wrappertype = {
-  PyObject_HEAD_INIT(NULL)
-  0,					/*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0)
   "Acquisition.ImplicitAcquisitionWrapper",		/*tp_name*/
   sizeof(Wrapper),       		/*tp_basicsize*/
   0,					/*tp_itemsize*/
@@ -1418,7 +1434,7 @@ static PyExtensionClass Wrappertype = {
   (printfunc)0,				/*tp_print*/
   (getattrfunc)0,			/*tp_getattr*/
   (setattrfunc)0,			/*tp_setattr*/
-  (cmpfunc)0,	    			/*tp_compare*/
+  0,	    			/*tp_compare*/
   (reprfunc)Wrapper_repr,      		/*tp_repr*/
   &Wrapper_as_number,			/*tp_as_number*/
   &Wrapper_as_sequence,			/*tp_as_sequence*/
@@ -1455,8 +1471,7 @@ static PyExtensionClass Wrappertype = {
 };
 
 static PyExtensionClass XaqWrappertype = {
-  PyObject_HEAD_INIT(NULL)
-  0,					/*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0)
   "Acquisition.ExplicitAcquisitionWrapper",		/*tp_name*/
   sizeof(Wrapper),       		/*tp_basicsize*/
   0,					/*tp_itemsize*/
@@ -1465,7 +1480,7 @@ static PyExtensionClass XaqWrappertype = {
   (printfunc)0,				/*tp_print*/
   (getattrfunc)0,			/*tp_getattr*/
   (setattrfunc)0,			/*tp_setattr*/
-  (cmpfunc)0,    		/*tp_compare*/
+  0,    		/*tp_compare*/
   (reprfunc)Wrapper_repr,      		/*tp_repr*/
   &Wrapper_as_number,			/*tp_as_number*/
   &Wrapper_as_sequence,			/*tp_as_sequence*/
@@ -1562,8 +1577,7 @@ capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
   if (isWrapper(self)) {
     result = Wrapper_findattr(
 	      WRAPPER(self), name, filter, extra, OBJECT(self),1,
-	      explicit || 
-	      WRAPPER(self)->ob_type==(PyTypeObject*)&Wrappertype,
+	      explicit || isImplicitWrapper(self),
 	      explicit, containment);  
     goto check_default;
   }
@@ -1924,7 +1938,7 @@ capi_aq_inContextOf(PyObject *self, PyObject *o, int inner)
     /*   if aq_base(next) is o: return 1 */
     c = next;
     while (isWrapper(c) && WRAPPER(c)->obj) c = WRAPPER(c)->obj;
-    if (c == o) return PyInt_FromLong(1);
+    if (c == o) return PyLong_FromLong(1);
 
     if (inner)
       {
@@ -1940,7 +1954,7 @@ capi_aq_inContextOf(PyObject *self, PyObject *o, int inner)
     if (next == Py_None) break;
   }
 
-  return PyInt_FromLong(0);
+  return PyLong_FromLong(0);
 }
 
 static PyObject *
@@ -1982,8 +1996,24 @@ static struct PyMethodDef methods[] = {
   {NULL,	NULL}
 };
 
-void
-init_Acquisition(void)
+#ifdef PY3K
+static struct PyModuleDef moduledef =
+{
+    PyModuleDef_HEAD_INIT,
+    "_Acquisition",                         /* m_name */
+    "Provide base classes for acquiring objects",   /* m_doc */
+    -1,                                     /* m_size */
+    methods,                                /* m_methods */
+    NULL,                                   /* m_reload */
+    NULL,                                   /* m_traverse */
+    NULL,                                   /* m_clear */
+    NULL,                                   /* m_free */
+};
+#endif
+
+
+static PyObject*
+module_init(void)
 {
   PyObject *m, *d;
   PyObject *api;
@@ -1992,22 +2022,27 @@ init_Acquisition(void)
     "Base class for objects that implicitly"
     " acquire attributes from containers\n"
     , Acquirer_methods);
+
   PURE_MIXIN_CLASS(ExplicitAcquirer,
     "Base class for objects that explicitly"
     " acquire attributes from containers\n"
     , Xaq_methods);
 
-  UNLESS(ExtensionClassImported) return;
+  UNLESS(ExtensionClassImported) return NULL;
 
-  UNLESS(Acquired=PyString_FromStringAndSize(NULL,42)) return;
-  strcpy(PyString_AsString(Acquired),
-	 "<Special Object Used to Force Acquisition>");
+  Acquired = NATIVE_FROM_STRING("<Special Object Used to Force Acquisition>");
+  if (Acquired == NULL) {
+      return NULL;
+  }
 
-  /* Create the module and add the functions */
-  m = Py_InitModule4("_Acquisition", methods,
-	   "Provide base classes for acquiring objects\n\n"
-	   "$Id$\n",
-		     OBJECT(NULL),PYTHON_API_VERSION);
+#ifdef PY3K
+  m = PyModule_Create(&moduledef);
+#else
+  m = Py_InitModule3(
+        "_Acquisition",
+        methods,
+	    "Provide base classes for acquiring objects\n\n");
+#endif
 
   d = PyModule_GetDict(m);
   init_py_names();
@@ -2030,7 +2065,22 @@ init_Acquisition(void)
   AcquisitionCAPI.AQ_Inner = capi_aq_inner;
   AcquisitionCAPI.AQ_Chain = capi_aq_chain;
 
-  api = PyCObject_FromVoidPtr(&AcquisitionCAPI, NULL);
+  api = PyCapsule_New(&AcquisitionCAPI, "AcquisitionCAPI", NULL);
+
   PyDict_SetItemString(d, "AcquisitionCAPI", api);
   Py_DECREF(api);
+
+  return m;
 }
+
+#ifdef PY3K
+PyMODINIT_FUNC PyInit__Acquisition(void)
+{
+    return module_init();
+}
+#else
+PyMODINIT_FUNC init_Acquisition(void)
+{
+    module_init();
+}
+#endif

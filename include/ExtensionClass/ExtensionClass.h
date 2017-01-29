@@ -186,7 +186,7 @@ static struct ExtensionClassCAPIstruct {
 /* The following macro can be used to define an extension base class
    that only provides method and that is used as a pure mix-in class. */
 #define PURE_MIXIN_CLASS(NAME,DOC,METHODS) \
-static PyExtensionClass NAME ## Type = { PyObject_HEAD_INIT(NULL) 0, # NAME, \
+static PyExtensionClass NAME ## Type = { PyVarObject_HEAD_INIT(NULL, 0) # NAME, \
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
    0 , DOC, (traverseproc)METHODS, }
 
@@ -239,12 +239,12 @@ static PyExtensionClass NAME ## Type = { PyObject_HEAD_INIT(NULL) 0, # NAME, \
 
 #define PyExtensionClass_Export(D,N,T) \
   if (! ExtensionClassImported || \
-      PyExtensionClassCAPI->PyExtensionClass_Export_((D),(N),&(T)) < 0) return;
+      PyExtensionClassCAPI->PyExtensionClass_Export_((D),(N),&(T)) < 0) return NULL;
 
 
 #define ExtensionClassImported \
   ((PyExtensionClassCAPI != NULL) || \
-   (PyExtensionClassCAPI = PyCObject_Import("ExtensionClass","CAPI2")))
+   (PyExtensionClassCAPI = PyCapsule_Import("ExtensionClass.CAPI2", 0)))
 
 
 /* These are being overridded to use tp_free when used with

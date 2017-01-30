@@ -966,18 +966,48 @@ Wrapper_call(Wrapper *self, PyObject *args, PyObject *kw)
 }
 
 /* Code to handle accessing Wrapper objects as sequence objects */
-
 static Py_ssize_t
-Wrapper_length(Wrapper *self)
+Wrapper_length(PyObject* self)
 {
-  long l;
-  PyObject *r;
+    PyObject *result;
+    PyObject *callable;
+    PyObject *tres;
+    Py_ssize_t res;
 
-  UNLESS(r=PyObject_GetAttr(OBJECT(self), py__len__)) return -1;
-  UNLESS_ASSIGN(r,PyObject_CallObject(r,NULL)) return -1;
-  l = PyLong_AsLong(r);
-  Py_DECREF(r);
-  return l;
+    callable = PyObject_GetAttr(self, py__len__);
+    if (callable == NULL) {
+        if (PyErr_ExceptionMatches(PyExc_AttributeError)) {
+            /* PyObject_LengthHint in Python3 catches only TypeError.
+             * Python2 catches both (type and attribute error)
+             */
+            PyErr_SetString(PyExc_TypeError, "object has no len()");
+        }
+        return -1;
+    }
+
+    result = PyObject_CallObject(callable, NULL);
+    Py_DECREF(callable);
+
+    if (result == NULL) {
+        return -1;
+    }
+
+    /* PyLong_AsSsize_t can only be called on long objects. */
+    tres = PyNumber_Long(result);
+    Py_DECREF(result);
+
+    if (tres == NULL) {
+        return -1;
+    }
+
+    res = PyLong_AsSsize_t(tres);
+    Py_DECREF(tres);
+
+    if (res == -1 && PyErr_Occurred()) {
+        return -1;
+    }
+
+    return res;
 }
 
 static PyObject *

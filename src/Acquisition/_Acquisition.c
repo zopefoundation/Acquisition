@@ -1950,7 +1950,9 @@ capi_aq_inContextOf(PyObject *self, PyObject *o, int inner)
     /*   if aq_base(next) is o: return 1 */
     c = next;
     while (isWrapper(c) && WRAPPER(c)->obj) c = WRAPPER(c)->obj;
-    if (c == o) return PyLong_FromLong(1);
+    if (c == o) {
+        Py_RETURN_TRUE;
+    }
 
     if (inner)
       {
@@ -1966,7 +1968,7 @@ capi_aq_inContextOf(PyObject *self, PyObject *o, int inner)
     if (next == Py_None) break;
   }
 
-  return PyLong_FromLong(0);
+  Py_RETURN_FALSE;
 }
 
 static PyObject *

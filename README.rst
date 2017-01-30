@@ -312,7 +312,7 @@ You can find out if an object is in the containment context of another
 object using the ``aq_inContextOf`` method. For example:
 
   >>> a.b.aq_inContextOf(a)
-  1
+  True
 
 .. Note: as of this writing the aq_inContextOf examples don't work the
    way they should be working. According to Jim, this is because

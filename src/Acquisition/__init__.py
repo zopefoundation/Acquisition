@@ -918,7 +918,7 @@ def aq_inContextOf(self, o, inner=True):
 
     while True:
         if aq_base(next) is o:
-            return 1
+            return True
 
         if inner:
             self = aq_inner(next)
@@ -933,7 +933,7 @@ def aq_inContextOf(self, o, inner=True):
         if next is None:
             break
 
-    return 0
+    return False
 
 
 if 'PURE_PYTHON' not in os.environ:  # pragma: no cover

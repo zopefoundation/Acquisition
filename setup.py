@@ -59,7 +59,6 @@ setup(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
@@ -68,7 +67,7 @@ setup(
     ],
     ext_modules=ext_modules,
     install_requires=[
-        'ExtensionClass >= 4.1.1',
+        'ExtensionClass >= 4.2.0',
         'zope.interface',
     ],
     include_package_data=True,

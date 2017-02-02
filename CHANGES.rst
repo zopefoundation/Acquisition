@@ -4,7 +4,7 @@ Changelog
 4.4.0 (unreleased)
 ------------------
 
-
+- Drop support for Python 3.3.
 
 4.3.0 (2017-01-20)
 ------------------

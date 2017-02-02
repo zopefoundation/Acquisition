@@ -3661,7 +3661,7 @@ def test_suite():
     import os.path
     here = os.path.dirname(__file__)
     root = os.path.join(here, os.pardir, os.pardir)
-    readme = os.path.relpath(os.path.join(root, 'README.rst'))
+    readme = os.path.join(root, 'README.rst')
 
     suites = [
         DocTestSuite(),
@@ -3679,6 +3679,6 @@ def test_suite():
     # This file is only available in a source checkout, skip it
     # when tests are run for an installed version.
     if os.path.isfile(readme):
-        suites.append(DocFileSuite(readme))
+        suites.append(DocFileSuite(readme, module_relative=False))
 
     return unittest.TestSuite(suites)

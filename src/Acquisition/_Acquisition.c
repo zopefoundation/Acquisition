@@ -508,22 +508,16 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
     attribute.
 */
 {
-  PyObject *tmp=NULL;
-  PyObject *result;
-  char *name="";
+  PyObject *tmp, *result;
 
   if ((tmp = convert_name(oname)) == NULL) {
       return NULL;
   }
-  name = PyBytes_AS_STRING(tmp);
 
-  result = Wrapper_findattr_name(self, name, oname, filter, extra, orig,
-                                 sob, sco, explicit, containment);
-
+  result = Wrapper_findattr_name(self, PyBytes_AS_STRING(tmp), oname, filter,
+                                 extra, orig, sob, sco, explicit, containment);
   Py_XDECREF(tmp);
-
   return result;
-
 }
 
 static PyObject *

@@ -285,35 +285,16 @@ Wrapper_descrget(Wrapper *self, PyObject *inst, PyObject *cls)
 static int
 Wrapper_traverse(Wrapper *self, visitproc visit, void *arg)
 {
-    int vret;
-
-    if (self->obj) {
-        vret = visit(self->obj, arg);
-        if (vret != 0)
-            return vret;
-    }
-    if (self->container) {
-        vret = visit(self->container, arg);
-        if (vret != 0)
-            return vret;
-    }
-
+    Py_VISIT(self->obj);
+    Py_VISIT(self->container);
     return 0;
 }
 
 static int 
 Wrapper_clear(Wrapper *self)
 {
-    PyObject *tmp;
-
-    tmp = self->obj;
-    self->obj = NULL;
-    Py_XDECREF(tmp);
-
-    tmp = self->container;
-    self->container = NULL;
-    Py_XDECREF(tmp);
-
+    Py_CLEAR(self->obj);
+    Py_CLEAR(self->container);
     return 0;
 }
 

@@ -181,7 +181,13 @@ static PyExtensionClass Wrappertype, XaqWrappertype;
 
 #define isWrapper(o) (isImplicitWrapper(o) || isExplicitWrapper(o))
 
+/* Same as isWrapper but does a check for NULL pointer. */
+#define XisWrapper(o) ((o) ? isWrapper(o) : 0)
+
 #define WRAPPER(O) ((Wrapper*)(O))
+
+#define newWrapper(obj, container, Wrappertype) \
+    PyObject_CallFunctionObjArgs(OBJECT(Wrappertype), obj, container, NULL)
 
 static int
 Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
@@ -216,48 +222,49 @@ Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
 
 /* ---------------------------------------------------------------- */
 
+/* Creates a new Wrapper object with the values from the old one.
+ * Steals a reference from 'ob' (also in the error case).
+ * Returns a new reference.
+ * Returns NULL on error.
+ */
+static PyObject *
+clone_wrapper(Wrapper *ob)
+{
+    PyObject *tmp;
+
+    /* Only clone if its shared with others. */
+    if (Py_REFCNT(ob) == 1) {
+        return (PyObject*) ob;
+    }
+
+    tmp = newWrapper(ob->obj, ob->container, Py_TYPE(ob));
+    Py_DECREF(ob);
+    return tmp;
+}
+
 static PyObject *
 __of__(PyObject *inst, PyObject *parent)
 {
-  PyObject *r, *t;
+    PyObject *result;
+    result = PyObject_CallMethodObjArgs(inst, py__of__, parent, NULL);
 
-  UNLESS(r=PyObject_GetAttr(inst, py__of__)) return NULL;
-  UNLESS(t=PyTuple_New(1)) goto err;
-  Py_INCREF(parent);
-  PyTuple_SET_ITEM(t,0,parent);
-  ASSIGN(r,PyObject_CallObject(r,t));
-  Py_DECREF(t);
+    if (XisWrapper(result) && XisWrapper(WRAPPER(result)->container)) {
+        while (XisWrapper(WRAPPER(result)->obj) &&
+                (WRAPPER(WRAPPER(result)->obj)->container ==
+                 WRAPPER(WRAPPER(result)->container)->obj)) {
 
-  if (r != NULL
-      && isWrapper(r) 
-      && WRAPPER(r)->container && isWrapper(WRAPPER(r)->container)
-      )
-    while (WRAPPER(r)->obj && isWrapper(WRAPPER(r)->obj)
-	   && (WRAPPER(WRAPPER(r)->obj)->container == 
-	       WRAPPER(WRAPPER(r)->container)->obj)
-	   )
-      {
-        if (r->ob_refcnt !=1 )
-          {
-            t = PyObject_CallFunctionObjArgs((PyObject *)Py_TYPE(r),
-                                             WRAPPER(r)->obj, 
-                                             WRAPPER(r)->container,
-                                             NULL);
-            Py_DECREF(r);
-            if (t==NULL)
-              return NULL;
-            r = t;
-          }
+            /* Copy it, because the result could be shared with others. */
+            if ((result = clone_wrapper(WRAPPER(result))) == NULL) {
+                return NULL;
+            }
 
-        /* Simplify wrapper */
-        Py_XINCREF(WRAPPER(WRAPPER(r)->obj)->obj);
-        ASSIGN(WRAPPER(r)->obj, WRAPPER(WRAPPER(r)->obj)->obj);
-      }
+            /* Simplify wrapper */
+            Py_XINCREF(WRAPPER(WRAPPER(result)->obj)->obj);
+            ASSIGN(WRAPPER(result)->obj, WRAPPER(WRAPPER(result)->obj)->obj);
+        }
+    }
 
-  return r;
-err:
-  Py_DECREF(r);
-  return NULL;
+    return result;
 }
 
 static PyObject *
@@ -273,9 +280,6 @@ Wrapper_descrget(Wrapper *self, PyObject *inst, PyObject *cls)
   return __of__((PyObject *)self, inst);
 }
 
-
-#define newWrapper(obj, container, Wrappertype) \
-    PyObject_CallFunctionObjArgs(OBJECT(Wrappertype), obj, container, NULL)
 
 
 static int

@@ -567,6 +567,7 @@ class _Wrapper(ExtensionClass.Base):
         '__add__',
         '__sub__',
         '__mul__',
+        '__matmul__',
         '__floordiv__',  # not implemented in C
         '__mod__',
         '__divmod__',
@@ -601,6 +602,7 @@ class _Wrapper(ExtensionClass.Base):
         '__iadd__',
         '__isub__',
         '__imul__',
+        '__imatmul__',
         '__idiv__',
         '__itruediv__',
         '__ifloordiv__',

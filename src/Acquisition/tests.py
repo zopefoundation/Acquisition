@@ -3358,6 +3358,12 @@ class TestProxying(unittest.TestCase):
         # '__coerce__',
     ]
 
+    if PY3 and sys.version_info.minor >= 5:
+        __binary_numeric_methods__.extend([
+            '__matmul__',
+            '__imatmul__'
+        ])
+
     __unary_special_methods__ = [
         # arithmetic
         '__neg__',

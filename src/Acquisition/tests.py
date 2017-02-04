@@ -3382,7 +3382,7 @@ class TestProxying(unittest.TestCase):
         # Check that special methods are proxied
         # when called implicitly by the interpreter
 
-        def binary_acquired_func(self, other):
+        def binary_acquired_func(self, other, modulo=None):
             return self.value
 
         def unary_acquired_func(self):
@@ -3426,9 +3426,11 @@ class TestProxying(unittest.TestCase):
         _found_at_least_one_div = False
 
         for meth in self.__binary_numeric_methods__:
-            # called on the instance
-            self.assertEqual(base.value,
-                             getattr(base.derived, meth)(-1))
+            op = getattr(operator, meth, None)
+            if op is not None:
+                # called on the instance
+                self.assertEqual(base.value, op(base.derived, -1))
+
             # called on the type, as the interpreter does
             # Note that the C version can only implement either __truediv__
             # or __div__, not both

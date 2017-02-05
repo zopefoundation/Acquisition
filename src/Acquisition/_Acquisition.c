@@ -192,32 +192,34 @@ static PyExtensionClass Wrappertype, XaqWrappertype;
 static int
 Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
 {
-  PyObject *obj, *container;
+    PyObject *obj, *container;
 
-  if (kwargs && PyDict_Size(kwargs) != 0)
-    {
-      PyErr_SetString(PyExc_TypeError,
-                      "kwyword arguments not allowed");
-      return -1;
+    if (kwargs && PyDict_Size(kwargs) != 0) {
+        PyErr_SetString(PyExc_TypeError,
+                        "kwyword arguments not allowed");
+        return -1;
     }
 
-  UNLESS(PyArg_ParseTuple(args, "OO:__init__", &obj, &container)) return -1;
-
-  if (self == WRAPPER(obj)) {
-  	PyErr_SetString(PyExc_ValueError,
-		"Cannot wrap acquisition wrapper in itself (Wrapper__init__)");
-  	return -1;
-  }
-
-  Py_INCREF(obj);
-  self->obj=obj;
-
-  if (container != Py_None)
-    {
-      Py_INCREF(container);
-      self->container=container;
+    if (!PyArg_ParseTuple(args, "OO:__init__", &obj, &container)) {
+        return -1;
     }
-  return 0;
+
+    if (self == WRAPPER(obj)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Cannot wrap acquisition wrapper "
+                        "in itself (Wrapper__init__)");
+        return -1;
+    }
+
+    Py_INCREF(obj);
+    self->obj = obj;
+
+    if (container != Py_None) {
+        Py_INCREF(container);
+        self->container=container;
+    }
+
+    return 0;
 }
 
 /* ---------------------------------------------------------------- */
@@ -270,17 +272,13 @@ __of__(PyObject *inst, PyObject *parent)
 static PyObject *
 Wrapper_descrget(Wrapper *self, PyObject *inst, PyObject *cls)
 {
-
-  if (inst == NULL)
-    {
-      Py_INCREF(self);
-      return (PyObject *)self;
+    if (inst == NULL) {
+        Py_INCREF(self);
+        return OBJECT(self);
     }
-  
-  return __of__((PyObject *)self, inst);
+
+    return __of__(OBJECT(self), inst);
 }
-
-
 
 static int
 Wrapper_traverse(Wrapper *self, visitproc visit, void *arg)
@@ -301,8 +299,8 @@ Wrapper_clear(Wrapper *self)
 static void
 Wrapper_dealloc(Wrapper *self)     
 {
-  Wrapper_clear(self);
-  Py_TYPE(self)->tp_free((PyObject*)self);
+    Wrapper_clear(self);
+    Py_TYPE(self)->tp_free(OBJECT(self));
 }
 
 static PyObject *

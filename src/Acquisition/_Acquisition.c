@@ -1235,8 +1235,11 @@ WRAP_BINOP(truediv);
 WRAP_BINOP(ifloordiv);
 WRAP_BINOP(itruediv);
 WRAP_UNARYOP(index);
+
+#if ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION > 4))
 WRAP_BINOP(matmul);
 WRAP_BINOP(imatmul);
+#endif
 
 static int
 Wrapper_nonzero(PyObject *self)

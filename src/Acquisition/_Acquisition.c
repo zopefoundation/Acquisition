@@ -422,39 +422,34 @@ static int
 apply_filter(PyObject *filter, PyObject *inst, PyObject *oname, PyObject *r,
 	     PyObject *extra, PyObject *orig)
 {
-  /* Calls the filter, passing arguments.
+    /* Calls the filter, passing arguments.
 
-  Returns 1 if the filter accepts the value, 0 if not, -1 if an
-  exception occurred.
+    Returns 1 if the filter accepts the value, 0 if not, -1 if an
+    exception occurred.
 
-  Note the special reference counting rule: This function decrements
-  the refcount of 'r' when it returns 0 or -1.  When it returns 1, it
-  leaves the refcount unchanged.
-  */
+    Note the special reference counting rule: This function decrements
+    the refcount of 'r' when it returns 0 or -1.  When it returns 1, it
+    leaves the refcount unchanged.
+    */
 
-  PyObject *fr;
-  int ir;
+    PyObject *py_res;
+    int res;
 
-  UNLESS(fr=PyTuple_New(5)) goto err;
-  PyTuple_SET_ITEM(fr,0,orig);
-  Py_INCREF(orig);
-  PyTuple_SET_ITEM(fr,1,inst);
-  Py_INCREF(inst);
-  PyTuple_SET_ITEM(fr,2,oname);
-  Py_INCREF(oname);
-  PyTuple_SET_ITEM(fr,3,r);
-  Py_INCREF(r);
-  PyTuple_SET_ITEM(fr,4,extra);
-  Py_INCREF(extra);
-  UNLESS_ASSIGN(fr,PyObject_CallObject(filter, fr)) goto err;
-  ir=PyObject_IsTrue(fr);
-  Py_DECREF(fr);
-  if (ir) return 1;
-  Py_DECREF(r);
-  return 0;
-err:
-  Py_DECREF(r);
-  return -1;
+    py_res = PyObject_CallFunctionObjArgs(filter, orig, inst, oname, r, extra, NULL);
+    if (py_res == NULL) {
+        Py_DECREF(r);
+        return -1;
+    }
+
+    res = PyObject_IsTrue(py_res);
+    Py_DECREF(py_res);
+
+    if (res == 0 || res == -1) {
+        Py_DECREF(r);
+        return res;
+    }
+
+    return 1;
 }
 
 static PyObject *

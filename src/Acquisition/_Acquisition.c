@@ -51,7 +51,10 @@ static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__getitem__, *py__setitem__, *py__delitem__,
   *py__getslice__, *py__setslice__, *py__delslice__,  *py__contains__,
   *py__len__, *py__of__, *py__call__, *py__repr__, *py__str__, *py__unicode__,
-  *py__cmp__, *py__parent__, *py__iter__, *py__bool__;
+  *py__cmp__, *py__parent__, *py__iter__, *py__bool__, *py__index__, *py__iadd__,
+  *py__isub__, *py__imul__, *py__imod__, *py__ipow__, *py__ilshift__, *py__irshift__,
+  *py__iand__, *py__ixor__, *py__ior__, *py__floordiv__, *py__truediv__,
+  *py__ifloordiv__, *py__itruediv__, *py__matmul__, *py__imatmul__, *py__idiv__;
 
 static PyObject *Acquired=0;
 
@@ -99,6 +102,24 @@ init_py_names(void)
   INIT_PY_NAME(__cmp__);
   INIT_PY_NAME(__parent__);
   INIT_PY_NAME(__iter__);
+  INIT_PY_NAME(__index__);
+  INIT_PY_NAME(__iadd__);
+  INIT_PY_NAME(__isub__);
+  INIT_PY_NAME(__imul__);
+  INIT_PY_NAME(__imod__);
+  INIT_PY_NAME(__ipow__);
+  INIT_PY_NAME(__ilshift__);
+  INIT_PY_NAME(__irshift__);
+  INIT_PY_NAME(__iand__);
+  INIT_PY_NAME(__ixor__);
+  INIT_PY_NAME(__ior__);
+  INIT_PY_NAME(__floordiv__);
+  INIT_PY_NAME(__truediv__);
+  INIT_PY_NAME(__ifloordiv__);
+  INIT_PY_NAME(__itruediv__);
+  INIT_PY_NAME(__matmul__);
+  INIT_PY_NAME(__imatmul__);
+  INIT_PY_NAME(__idiv__);
 #undef INIT_PY_NAME
 }
 
@@ -1153,17 +1174,17 @@ static PyMappingMethods Wrapper_as_mapping = {
 
 #define WRAP_UNARYOP(OPNAME) \
     static PyObject* Wrapper_##OPNAME(PyObject* self) { \
-        return PyObject_CallMethod(self, "__"#OPNAME"__", NULL); \
+        return PyObject_CallMethodObjArgs(self, py__##OPNAME##__, NULL); \
     }
 
 #define WRAP_BINOP(OPNAME) \
     static PyObject* Wrapper_##OPNAME(PyObject* self, PyObject* o1) { \
-        return PyObject_CallMethod(self, "__"#OPNAME"__", "O", o1); \
+        return CallMethodArgs(self, py__##OPNAME##__, "(O)", o1); \
     }
 
 #define WRAP_TERNARYOP(OPNAME) \
     static PyObject* Wrapper_##OPNAME(PyObject* self, PyObject* o1, PyObject* o2) { \
-        return PyObject_CallMethod(self, "__"#OPNAME"__", "OO", o1, o2); \
+        return CallMethodArgs(self, py__##OPNAME##__, "(OO)", o1, o2); \
     }
 
 WRAP_BINOP(sub);

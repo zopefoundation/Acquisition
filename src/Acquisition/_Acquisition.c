@@ -32,7 +32,6 @@ PyVar_Assign(PyObject **v,  PyObject *e)
 #define UNLESS_ASSIGN(V,E) ASSIGN(V,E); UNLESS(V)
 #define OBJECT(O) ((PyObject*)(O))
 
-#define FORMAT_N "n"
 #if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
 typedef int Py_ssize_t;
 typedef Py_ssize_t (*lenfunc)(PyObject *);
@@ -42,7 +41,6 @@ typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
 typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
 #define PY_SSIZE_T_MAX INT_MAX
 #define PY_SSIZE_T_MIN INT_MIN
-#define FORMAT_N "i"
 #endif
 
 static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
@@ -105,20 +103,39 @@ init_py_names(void)
 }
 
 static PyObject *
-CallMethodO(PyObject *self, PyObject *name,
-            PyObject *args, PyObject *kw)
+CallMethod(PyObject *self, PyObject *name, PyObject *args, PyObject *kwargs)
 {
-  if (! args && PyErr_Occurred()) return NULL;
-  UNLESS(name=PyObject_GetAttr(self,name)) {
-    if (args) { Py_DECREF(args); }
-    return NULL;
-  }
-  ASSIGN(name,PyEval_CallObjectWithKeywords(name,args,kw));
-  if (args) { Py_DECREF(args); }
-  return name;
+    PyObject *callable, *result;
+
+    if ((callable = PyObject_GetAttr(self, name)) == NULL) {
+        return NULL;
+    }
+
+    result = PyEval_CallObjectWithKeywords(callable, args, kwargs);
+
+    Py_DECREF(callable);
+    return result;
 }
 
-#define Build Py_BuildValue
+static PyObject *
+CallMethodArgs(PyObject *self, PyObject *name, char *format, ...)
+{
+    va_list args;
+    PyObject *py_args, *result;
+
+    va_start(args, format);
+    py_args = Py_VaBuildValue(format, args);
+    va_end(args);
+
+    if (py_args == NULL) {
+        return NULL;
+    }
+
+    result = CallMethod(self, name, py_args, NULL);
+
+    Py_DECREF(py_args);
+    return result;
+}
 
 /* For obscure reasons, we need to use tp_richcompare instead of tp_compare.
  * The comparisons here all most naturally compute a cmp()-like result.
@@ -931,10 +948,9 @@ Wrapper_hash(Wrapper *self)
 }
 
 static PyObject *
-Wrapper_call(Wrapper *self, PyObject *args, PyObject *kw)
+Wrapper_call(PyObject *self, PyObject *args, PyObject *kw)
 {
-  Py_INCREF(args);
-  return CallMethodO(OBJECT(self),py__call__,args,kw);
+    return CallMethod(self, py__call__, args, kw);
 }
 
 /* Code to handle accessing Wrapper objects as sequence objects */
@@ -985,76 +1001,73 @@ Wrapper_length(PyObject* self)
 static PyObject *
 Wrapper_add(PyObject *self, PyObject *bb)
 {
-  return CallMethodO(self, py__add__,Build("(O)", bb) ,NULL);
+    return CallMethodArgs(self, py__add__, "(O)", bb);
 }
 
 static PyObject *
-Wrapper_repeat(Wrapper *self, Py_ssize_t  n)
+Wrapper_repeat(PyObject *self, Py_ssize_t n)
 {
-  return CallMethodO(OBJECT(self),py__mul__,Build("(" FORMAT_N ")", n),NULL);
+    return CallMethodArgs(self, py__mul__, "(n)", n);
 }
 
 static PyObject *
-Wrapper_item(Wrapper *self, Py_ssize_t  i)
+Wrapper_item(PyObject *self, Py_ssize_t i)
 {
-  return CallMethodO(OBJECT(self),py__getitem__, Build("(" FORMAT_N ")", i),NULL);
+    return CallMethodArgs(self, py__getitem__, "(n)", i);
 }
 
 static PyObject *
-Wrapper_slice(Wrapper *self, Py_ssize_t  ilow, Py_ssize_t  ihigh)
+Wrapper_slice(PyObject *self, Py_ssize_t ilow, Py_ssize_t ihigh)
 {
-  return CallMethodO(OBJECT(self),py__getslice__,
-		     Build("(" FORMAT_N FORMAT_N ")", ilow, ihigh),NULL);
+    return CallMethodArgs(self, py__getslice__, "(nn)", ilow, ihigh);
 }
 
 static int
-Wrapper_ass_item(Wrapper *self, Py_ssize_t  i, PyObject *v)
+Wrapper_ass_item(PyObject *self, Py_ssize_t  i, PyObject *v)
 {
-  if (v)
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__setitem__,
-			   Build("(" FORMAT_N "O)", i, v),NULL))
-	return -1;
+    if (v) {
+        v = CallMethodArgs(self, py__setitem__, "(nO)", i, v);
+    } else {
+        v = CallMethodArgs(self, py__delitem__, "(n)", i);
     }
-  else
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__delitem__,
-			   Build("(" FORMAT_N ")", i),NULL))
-	return -1;
+
+    if (v == NULL) {
+        return -1;
     }
-  Py_DECREF(v);
-  return 0;
+
+    Py_DECREF(v);
+    return 0;
 }
 
 static int
-Wrapper_ass_slice(Wrapper *self, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
+Wrapper_ass_slice(PyObject *self, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
 {
-  if (v)
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__setslice__,
-			   Build("(" FORMAT_N FORMAT_N "O)", ilow, ihigh, v),NULL))
-	return -1;
+    if (v) {
+        v = CallMethodArgs(self, py__setslice__, "(nnO)", ilow, ihigh, v);
+    } else {
+        v = CallMethodArgs(self, py__delslice__, "(nn)", ilow, ihigh);
     }
-  else
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__delslice__,
-			   Build("(" FORMAT_N FORMAT_N ")", ilow, ihigh),NULL))
-	return -1;
+
+    if (v == NULL) {
+        return -1;
     }
-  Py_DECREF(v);
-  return 0;
+
+    Py_DECREF(v);
+    return 0;
 }
 
 static int
-Wrapper_contains(Wrapper *self, PyObject *v)
+Wrapper_contains(PyObject *self, PyObject *v)
 {
-  long c;
+    long result;
 
-  UNLESS(v=CallMethodO(OBJECT(self),py__contains__,Build("(O)", v) ,NULL))
-    return -1;
-  c = PyLong_AsLong(v);
-  Py_DECREF(v);
-  return c;
+    if ((v = CallMethodArgs(self, py__contains__, "(O)", v)) == NULL) {
+        return -1;
+    }
+
+    result = PyLong_AsLong(v);
+    Py_DECREF(v);
+    return result;
 }
 
 /* Support for iteration cannot rely on the internal implementation of
@@ -1104,29 +1117,28 @@ static PySequenceMethods Wrapper_as_sequence = {
 
 /* Code to access Wrapper objects as mappings */
 
+
 static PyObject *
-Wrapper_subscript(Wrapper *self, PyObject *key)
+Wrapper_subscript(PyObject *self, PyObject *key)
 {
-  return CallMethodO(OBJECT(self),py__getitem__,Build("(O)", key),NULL);
+    return CallMethodArgs(self, py__getitem__, "(O)", key);
 }
 
 static int
-Wrapper_ass_sub(Wrapper *self, PyObject *key, PyObject *v)
+Wrapper_ass_sub(PyObject *self, PyObject *key, PyObject *v)
 {
-  if (v)
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__setitem__,
-			   Build("(OO)", key, v),NULL))
-	return -1;
+    if (v) {
+        v = CallMethodArgs(self, py__setitem__, "(OO)", key, v);
+    } else {
+        v = CallMethodArgs(self, py__delitem__, "(O)", key);
     }
-  else
-    {
-      UNLESS(v=CallMethodO(OBJECT(self),py__delitem__,
-			   Build("(O)", key),NULL))
-	return -1;
+
+    if (v == NULL) {
+        return -1;
     }
-  Py_XDECREF(v);
-  return 0;
+
+    Py_DECREF(v);
+    return 0;
 }
 
 static PyMappingMethods Wrapper_as_mapping = {

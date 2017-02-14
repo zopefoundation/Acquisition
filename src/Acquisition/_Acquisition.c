@@ -227,18 +227,18 @@ static PyExtensionClass Wrappertype, XaqWrappertype;
 #define newWrapper(obj, container, Wrappertype) \
     PyObject_CallFunctionObjArgs(OBJECT(Wrappertype), obj, container, NULL)
 
+static char *init_kwlist[] = {"obj", "container", NULL};
+
 static int
-Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
+Wrapper_init(Wrapper *self, PyObject *args, PyObject *kwargs)
 {
+    int rc;
     PyObject *obj, *container;
 
-    if (kwargs && PyDict_Size(kwargs) != 0) {
-        PyErr_SetString(PyExc_TypeError,
-                        "kwyword arguments not allowed");
-        return -1;
-    }
+    rc = PyArg_ParseTupleAndKeywords(
+            args, kwargs, "OO:__init__", init_kwlist, &obj, &container);
 
-    if (!PyArg_ParseTuple(args, "OO:__init__", &obj, &container)) {
+    if (!rc) {
         return -1;
     }
 
@@ -249,15 +249,38 @@ Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
 
+    /* Avoid memory leak if __init__ is called multiple times. */
+    Py_CLEAR(self->obj);
+    Py_CLEAR(self->container);
+
     Py_INCREF(obj);
     self->obj = obj;
 
     if (container != Py_None) {
         Py_INCREF(container);
-        self->container=container;
+        self->container = container;
     }
 
     return 0;
+}
+
+static PyObject *
+Wrapper__new__(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+    Wrapper *self = WRAPPER(type->tp_alloc(type, 0));
+    if (Wrapper_init(self, args, kwargs) == -1) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    return OBJECT(self);
+}
+
+
+static int
+Wrapper__init__(Wrapper *self, PyObject *args, PyObject *kwargs)
+{
+    return Wrapper_init(self, args, kwargs);
 }
 
 /* ---------------------------------------------------------------- */
@@ -1518,6 +1541,8 @@ static PyExtensionClass Wrappertype = {
   /* tp_descr_set      */ 0,
   /* tp_dictoffset     */ 0,
   /* tp_init           */ (initproc)Wrapper__init__,
+  /* tp_alloc          */ 0,
+  /* tp_new            */ Wrapper__new__
 };
 
 static PyExtensionClass XaqWrappertype = {
@@ -1564,6 +1589,8 @@ static PyExtensionClass XaqWrappertype = {
   /* tp_descr_set      */ 0,
   /* tp_dictoffset     */ 0,
   /* tp_init           */ (initproc)Wrapper__init__,
+  /* tp_alloc          */ 0,
+  /* tp_new            */ Wrapper__new__
 };
 
 static PyObject *

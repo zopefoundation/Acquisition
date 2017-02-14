@@ -367,114 +367,90 @@ Wrapper_dealloc(Wrapper *self)
 static PyObject *
 Wrapper_special(Wrapper *self, char *name, PyObject *oname)
 {
-  PyObject *r=0;
 
-  switch(*name)
-    {
-    case 'b':
-      if (strcmp(name,"base")==0)
-	{
-	  if (self->obj)
-	    {
-	      r=self->obj;
-	      while (isWrapper(r) && WRAPPER(r)->obj) r=WRAPPER(r)->obj;
-	    }
-	  else r=Py_None;
-	  Py_INCREF(r);
-	  return r;
-	}
-      break;
-    case 'p':
-      if (strcmp(name,"parent")==0)
-	{
-	  if (self->container) r=self->container;
-	  else r=Py_None;
-	  Py_INCREF(r);
-	  return r;
-	}
-      break;
-    case 's':
-      if (strcmp(name,"self")==0)
-	{
-	  if (self->obj) r=self->obj;
-	  else r=Py_None;
-	  Py_INCREF(r);
-	  return r;
-	}
-      break;
-    case 'e':
-      if (strcmp(name,"explicit")==0)
-	{
-	  if (!isExplicitWrapper(self))
-	    return newWrapper(self->obj, self->container, 
-			      (PyTypeObject *)&XaqWrappertype);
-	  Py_INCREF(self);
-	  return OBJECT(self);
-	}
-      break;
-    case 'a':
-      if (strcmp(name,"acquire")==0)
-	{
-	  return Py_FindAttr(OBJECT(self),oname);
-	}
-      break;
-    case 'c':
-      if (strcmp(name,"chain")==0)
-	{
-	  if ((r = PyList_New(0)))
-	    while (1)
-	      {
-		if (PyList_Append(r,OBJECT(self)) >= 0)
-		  {
-		    if (isWrapper(self) && self->container) 
-		      {
-			self=WRAPPER(self->container);
-			continue;
-		      }
-		  }
-		else
-		  {
-		    Py_DECREF(r);
-		  }
-		break;
-	      }
-	  return r;
-	}
-      break;
-    case 'i':
-      if (strcmp(name,"inContextOf")==0)
-	{
-	  return Py_FindAttr(OBJECT(self),oname);
-	}
-      if (strcmp(name,"inner")==0)
-	{
-	  if (self->obj)
-	    {
-	      r=self->obj;
-	      while (isWrapper(r) && WRAPPER(r)->obj) 
-		{
-		  self=WRAPPER(r);
-		  r=WRAPPER(r)->obj;
-		}
-	      r=OBJECT(self);
-	    }
-	  else r=Py_None;
+    PyObject *r = NULL;
 
-	  Py_INCREF(r);
-	  return r;
-	}
-      break;
+    switch(*name) {
+        case 'b':
+            if (strcmp(name, "base") == 0) {
+                for (r = self->obj; isWrapper(r); r = WRAPPER(r)->obj) {}
+                Py_INCREF(r);
+                return r;
+            }
+            break;
 
-    case 'u':
-      if (strcmp(name,"uncle")==0)
-	{
-	  return NATIVE_FROM_STRING("Bob");
-	}
-      break;
-      
+        case 'p':
+            if (strcmp(name, "parent") == 0) {
+                r = self->container ? self->container : Py_None;
+                Py_INCREF(r);
+                return r;
+            }
+            break;
+
+        case 's':
+            if (strcmp(name, "self") == 0) {
+                Py_INCREF(self->obj);
+                return self->obj;
+            }
+            break;
+
+        case 'e':
+            if (strcmp(name, "explicit") == 0) {
+                if (isExplicitWrapper(self)) {
+                    Py_INCREF(self);
+                    return OBJECT(self);
+                }
+
+                return newWrapper(self->obj, self->container, &XaqWrappertype);
+            }
+            break;
+
+        case 'a':
+            if (strcmp(name, "acquire") == 0) {
+                return Py_FindAttr(OBJECT(self), oname);
+            }
+            break;
+
+        case 'c':
+            if (strcmp(name, "chain") == 0) {
+                if ((r = PyList_New(0)) == NULL) {
+                    return NULL;
+                }
+
+                while (PyList_Append(r, OBJECT(self)) == 0) {
+                    if (isWrapper(self) && self->container) {
+                        self = WRAPPER(self->container);
+                    } else {
+                        return r;
+                    }
+                }
+
+                Py_DECREF(r);
+                return NULL;
+            }
+            break;
+
+        case 'i':
+            if (strcmp(name, "inContextOf") == 0) {
+                return Py_FindAttr(OBJECT(self), oname);
+            } else if (strcmp(name, "inner") == 0) {
+                for (r = self->obj; isWrapper(r); r = WRAPPER(r)->obj) {
+                    self = WRAPPER(r);
+                }
+
+                Py_INCREF(self);
+                return OBJECT(self);
+            }
+            break;
+
+        case 'u':
+            if (strcmp(name, "uncle") == 0) {
+                return NATIVE_FROM_STRING("Bob");
+            }
+            break;
     }
 
-  return NULL;
+    return NULL;
 }
 
 static int

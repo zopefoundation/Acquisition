@@ -32,6 +32,10 @@ PyVar_Assign(PyObject **v,  PyObject *e)
 #define UNLESS_ASSIGN(V,E) ASSIGN(V,E); UNLESS(V)
 #define OBJECT(O) ((PyObject*)(O))
 
+/* sizeof("x") == 2 because of the '\0' byte. */
+#define STR_STARTSWITH(ob, pattern) ((strncmp(ob, pattern, sizeof(pattern) - 1) == 0))
+#define STR_EQ(ob, pattern) ((strcmp(ob, pattern) == 0))
+
 #if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
 typedef int Py_ssize_t;
 typedef Py_ssize_t (*lenfunc)(PyObject *);
@@ -203,6 +207,26 @@ convert_name(PyObject *name)
     return name;
 }
 
+/* Returns 1 if the current exception set is AttributeError otherwise 0.
+ * On 1 the AttributeError is removed from the global error indicator.
+ * On 0 the global error indactor is still set.
+ */
+static int
+swallow_attribute_error(void)
+{
+    PyObject* error;
+
+    if ((error = PyErr_Occurred()) == NULL) {
+        return 0;
+    }
+
+    if (PyErr_GivenExceptionMatches(error, PyExc_AttributeError)) {
+        PyErr_Clear();
+        return 1;
+    }
+
+    return 0;
+}
 
 /* Declarations for objects of type Wrapper */
 
@@ -519,16 +543,16 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
     attribute.
 */
 {
-  PyObject *tmp, *result;
+    PyObject *tmp, *result;
 
-  if ((tmp = convert_name(oname)) == NULL) {
-      return NULL;
-  }
+    if ((tmp = convert_name(oname)) == NULL) {
+        return NULL;
+    }
 
-  result = Wrapper_findattr_name(self, PyBytes_AS_STRING(tmp), oname, filter,
-                                 extra, orig, sob, sco, explicit, containment);
-  Py_XDECREF(tmp);
-  return result;
+    result = Wrapper_findattr_name(self, PyBytes_AS_STRING(tmp), oname, filter,
+                                   extra, orig, sob, sco, explicit, containment);
+    Py_XDECREF(tmp);
+    return result;
 }
 
 static PyObject *
@@ -550,124 +574,121 @@ Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
  the incorrect name may be looked up.
 */
 {
+    PyObject *r;
 
-  PyObject *r, *v, *tb;
+    if (STR_STARTSWITH(name, "aq_") || STR_EQ(name, "__parent__")) {
+        /* __parent__ is an alias to aq_parent */
+        name = STR_EQ(name, "__parent__") ? "parent" : name + 3;
 
-  if ((*name=='a' && name[1]=='q' && name[2]=='_') ||
-      (strcmp(name, "__parent__")==0))
-    {
-      /* __parent__ is an alias to aq_parent */
-      if (strcmp(name, "__parent__")==0)
-        name = "parent";
-      else
-        name = name + 3;
-
-      if ((r=Wrapper_special(self, name, oname)))
-        {
-          if (filter)
-            switch(apply_filter(filter,OBJECT(self),oname,r,extra,orig))
-              {
-              case -1: return NULL;
-              case 1: return r;
-              }
-          else return r;
+        if ((r = Wrapper_special(self, name, oname))) {
+            if (filter) {
+                switch(apply_filter(filter, OBJECT(self), oname, r, extra, orig)) {
+                    case -1: return NULL;
+                    case 1: return r;
+                }
+            } else {
+                return r;
+            }
+        } else {
+            PyErr_Clear();
         }
-      else PyErr_Clear();
-    }
-  else if (*name=='_' && name[1]=='_' && 
-           (strcmp(name+2,"reduce__")==0 ||
-            strcmp(name+2,"reduce_ex__")==0 ||
-            strcmp(name+2,"getstate__")==0
-            ))
-    return PyObject_GenericGetAttr(((PyObject*)self), oname);
+    } else if (STR_STARTSWITH(name, "__") &&
+                    (STR_EQ(name, "__reduce__") ||
+                     STR_EQ(name, "__reduce_ex__") ||
+                     STR_EQ(name, "__getstate__"))) {
 
-  /* If we are doing a containment search, then replace self with aq_inner */
-  if (containment)
-    while (self->obj && isWrapper(self->obj))
-      self=WRAPPER(self->obj);
-
-  if (sob && self->obj)
-    {
-      if (isWrapper(self->obj))
-	{
-	  if (self == WRAPPER(self->obj)) {
-	  	PyErr_SetString(PyExc_RuntimeError,
-			"Recursion detected in acquisition wrapper");
-		return NULL;
-	  }
-	  if ((r=Wrapper_findattr(WRAPPER(self->obj),
-				 oname, filter, extra, orig, 1, 
-
-				 /* Search object container if explicit,
-				    or object is implicit acquirer */
-				 explicit || isImplicitWrapper(self->obj),
-				 explicit, containment)))
-	    {
-	      if (PyECMethod_Check(r) && PyECMethod_Self(r)==self->obj)
-		ASSIGN(r,PyECMethod_New(r,OBJECT(self)));
-	      else if (has__of__(r)) ASSIGN(r,__of__(r,OBJECT(self)));
-	      return r;
-	    }
-
-	  PyErr_Fetch(&r,&v,&tb);
-	  if (r && (r != PyExc_AttributeError))
-	    {
-	      PyErr_Restore(r,v,tb);
-	      return NULL;
-	    }
-	  Py_XDECREF(r); Py_XDECREF(v); Py_XDECREF(tb);
-	  r=NULL;
-	}
-      /* Deal with mixed __parent__ / aq_parent circles */
-      else if (self->container && isWrapper(self->container) &&
-               WRAPPER(self->container)->container &&
-               self == WRAPPER(WRAPPER(self->container)->container)) {
-          PyErr_SetString(PyExc_RuntimeError,
-              "Recursion detected in acquisition wrapper");
-          return NULL;
-      }
-      /* normal attribute lookup */
-      else if ((r=PyObject_GetAttr(self->obj,oname)))
-	{
-	  if (r==Acquired)
-	    {
-	      Py_DECREF(r);
-	      return Wrapper_acquire(self, oname, filter, extra, orig, 1, 
-				     containment);
-	    }
-
-	  if (PyECMethod_Check(r) && PyECMethod_Self(r)==self->obj)
-	    ASSIGN(r,PyECMethod_New(r,OBJECT(self)));
-	  else if (has__of__(r)) ASSIGN(r,__of__(r,OBJECT(self)));
-
-	  if (r && filter)
-	    switch(apply_filter(filter,OBJECT(self),oname,r,extra,orig))
-	      {
-	      case -1: return NULL;
-	      case 1: return r;
-	      }
-	  else return r;
-	}
-      else {
-	PyErr_Fetch(&r,&v,&tb);
-	if (r != PyExc_AttributeError)
-	  {
-	    PyErr_Restore(r,v,tb);
-	    return NULL;
-	  }
-	Py_XDECREF(r); Py_XDECREF(v); Py_XDECREF(tb);
-	r=NULL;
-      }
-      PyErr_Clear();
+        return PyObject_GenericGetAttr(OBJECT(self), oname);
     }
 
-  /* Lookup has failed, acquire it from parent. */
-  if (sco && (*name != '_' || explicit)) 
-    return Wrapper_acquire(self, oname, filter, extra, orig, explicit, 
-			   containment);
+    /* If we are doing a containment search, then replace self with aq_inner */
+    if (containment) {
+        while (isWrapper(self->obj)) {
+            self = WRAPPER(self->obj);
+        }
+    }
 
-  PyErr_SetObject(PyExc_AttributeError,oname);
-  return NULL;
+    if (sob) {
+        if (isWrapper(self->obj)) {
+            if (self == WRAPPER(self->obj)) {
+                PyErr_SetString(PyExc_RuntimeError,
+                                "Recursion detected in acquisition wrapper");
+                return NULL;
+            }
+
+            r = Wrapper_findattr(
+                    WRAPPER(self->obj),
+                    oname,
+                    filter,
+                    extra,
+                    orig,
+                    1,
+                    /* Search object container if explicit,
+                    or object is implicit acquirer */
+                    explicit || isImplicitWrapper(self->obj),
+                    explicit,
+                    containment);
+
+            if (r) {
+                if (PyECMethod_Check(r) && PyECMethod_Self(r) == self->obj) {
+                    ASSIGN(r, PyECMethod_New(r, OBJECT(self)));
+                }
+                else if (has__of__(r)) {
+                  ASSIGN(r, __of__(r, OBJECT(self)));
+                }
+                return r;
+            } else if (!swallow_attribute_error()) {
+                return NULL;
+            }
+        }
+
+        /* Deal with mixed __parent__ / aq_parent circles */
+        else if (self->container &&
+                 isWrapper(self->container) &&
+                 WRAPPER(self->container)->container &&
+                 self == WRAPPER(WRAPPER(self->container)->container))
+        {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "Recursion detected in acquisition wrapper");
+            return NULL;
+        }
+
+        /* normal attribute lookup */
+        else if ((r = PyObject_GetAttr(self->obj, oname))) {
+            if (r == Acquired) {
+                Py_DECREF(r);
+                return Wrapper_acquire(
+                        self, oname, filter, extra, orig, 1, containment);
+            }
+
+            if (PyECMethod_Check(r) && PyECMethod_Self(r) == self->obj) {
+                ASSIGN(r, PyECMethod_New(r, OBJECT(self)));
+            } else if (has__of__(r)) {
+                ASSIGN(r, __of__(r, OBJECT(self)));
+            }
+
+            if (r && filter) {
+                switch(apply_filter(filter, OBJECT(self), oname, r, extra, orig)) {
+                    case -1: return NULL;
+                    case 1: return r;
+                }
+            } else {
+                return r;
+            }
+        } else if (!swallow_attribute_error()) {
+            return NULL;
+        }
+
+        PyErr_Clear();
+    }
+
+    /* Lookup has failed, acquire it from parent. */
+    if (sco && (*name != '_' || explicit)) {
+        return Wrapper_acquire(
+                self, oname, filter, extra, orig, explicit, containment);
+    }
+
+    PyErr_SetObject(PyExc_AttributeError, oname);
+    return NULL;
 }
 
 static PyObject *

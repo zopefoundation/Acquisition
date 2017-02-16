@@ -822,11 +822,7 @@ Wrapper_acquire(
 static PyObject *
 Wrapper_getattro(Wrapper *self, PyObject *oname)
 {
-  if (self->obj || self->container)
     return Wrapper_findattr(self, oname, NULL, NULL, NULL, 1, 1, 0, 0);
-
-  /* Maybe we are getting initialized? */
-  return Py_FindAttr(OBJECT(self),oname);
 }
 
 static PyObject *

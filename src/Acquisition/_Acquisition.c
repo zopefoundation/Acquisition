@@ -372,6 +372,15 @@ apply__of__(PyObject *self, PyObject *inst)
 }
 
 static PyObject *
+get_base(PyObject *ob)
+{
+    while (isWrapper(ob)) {
+        ob = WRAPPER(ob)->obj;
+    }
+    return ob;
+}
+
+static PyObject *
 Wrapper_descrget(Wrapper *self, PyObject *inst, PyObject *cls)
 {
     if (inst == NULL) {
@@ -883,47 +892,47 @@ Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
 static int
 Wrapper_compare(Wrapper *self, PyObject *w)
 {
-  PyObject *obj, *wobj;
-  PyObject *m;
-  int r;
 
-  if (OBJECT(self) == w) return 0;
+    PyObject *obj, *wobj;
+    PyObject *m;
+    int r;
 
-  UNLESS (m=PyObject_GetAttr(OBJECT(self), py__cmp__))
-    {
-      /* Unwrap self completely -> obj. */
-      while (self->obj && isWrapper(self->obj))
-        self=WRAPPER(self->obj);
-      obj = self->obj;
-      /* Unwrap w completely -> wobj. */
-      if (isWrapper(w))
-        {
-          while (WRAPPER(w)->obj && isWrapper(WRAPPER(w)->obj))
-            w=WRAPPER(w)->obj;
-          wobj = WRAPPER(w)->obj;
-        }
-      else wobj = w;
-
-      PyErr_Clear();
-      if (obj == wobj) return 0;
-      return (obj < w) ? -1 : 1;
+    if (OBJECT(self) == w) {
+        return 0;
     }
 
-  ASSIGN(m, PyObject_CallFunction(m, "O", w));
-  UNLESS (m) return -1;
-  
-  r = PyLong_AsLong(m);
+    if ((m = PyObject_GetAttr(OBJECT(self), py__cmp__)) == NULL) {
+        PyErr_Clear();
 
-  Py_DECREF(m);
+        /* Unwrap self completely -> obj. */
+        obj = get_base(OBJECT(self));
 
-  return r;  
+        /* Unwrap w completely -> wobj. */
+        wobj = get_base(w);
+
+        if (obj == wobj) {
+            return 0;
+        } else if (obj < w) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+
+    ASSIGN(m, PyObject_CallFunction(m, "O", w));
+    if (m == NULL) {
+        return -1;
+    }
+
+    r = PyLong_AsLong(m);
+    Py_DECREF(m);
+    return r;
 }
 
 static PyObject *
 Wrapper_richcompare(Wrapper *self, PyObject *w, int op)
 {
-  int diff = Wrapper_compare(self, w);
-  return diff_to_bool(diff, op);
+    return diff_to_bool(Wrapper_compare(self, w), op);
 }
 
 static PyObject *

@@ -828,69 +828,56 @@ Wrapper_getattro(Wrapper *self, PyObject *oname)
 static PyObject *
 Xaq_getattro(Wrapper *self, PyObject *oname)
 {
-  PyObject *tmp=NULL;
-  PyObject *result;
-  char *name="";
+    PyObject *tmp, *result;
 
-  /* Special case backward-compatible acquire method. */
-  if ((tmp = convert_name(oname)) == NULL) {
-      return NULL;
-  }
-  name = PyBytes_AS_STRING(tmp);
+    if ((tmp = convert_name(oname)) == NULL) {
+        return NULL;
+    }
 
-  if (*name=='a' && name[1]=='c' && strcmp(name+2,"quire")==0)
-    result = Py_FindAttr(OBJECT(self),oname);
+    /* Special case backward-compatible acquire method. */
+    if (STR_EQ(PyBytes_AS_STRING(tmp), "acquire")) {
+        result = Py_FindAttr(OBJECT(self), oname);
+    } else {
+        result = Wrapper_findattr(self, oname, NULL, NULL, NULL, 1, 0, 0, 0);
+    }
 
-  else if (self->obj || self->container)
-    result = Wrapper_findattr(self, oname, NULL, NULL, NULL, 1, 0, 0, 0);
-
-  /* Maybe we are getting initialized? */
-  else result = Py_FindAttr(OBJECT(self),oname);
-
-  Py_XDECREF(tmp);
-
-  return result;
+    Py_DECREF(tmp);
+    return result;
 }
 
 static int
 Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
 {
-  PyObject *tmp=NULL;
-  char *name="";
-  int result;
 
-  if ((tmp = convert_name(oname)) == NULL) {
-      return -1;
-  }
-  name = PyBytes_AS_STRING(tmp);
+    PyObject *tmp = NULL;
+    char *name = "";
+    int result;
 
-  if ((*name=='a' && name[1]=='q' && name[2]=='_' 
-       && strcmp(name+3,"parent")==0) || (strcmp(name, "__parent__")==0))
-    {
-      Py_XINCREF(v);
-      ASSIGN(self->container, v);
-      result = 0;
+    if ((tmp = convert_name(oname)) == NULL) {
+        return -1;
     }
 
-  else if (self->obj)
-    {
-      /* Unwrap passed in wrappers! */
-      while (v && isWrapper(v))
-	v=WRAPPER(v)->obj;
+    name = PyBytes_AS_STRING(tmp);
 
-      if (v) result = PyObject_SetAttr(self->obj, oname, v);
-      else   result = PyObject_DelAttr(self->obj, oname);
+    if (STR_EQ(name, "aq_parent") || STR_EQ(name, "__parent__")) {
+        Py_XINCREF(v);
+        ASSIGN(self->container, v);
+        result = 0;
+    } else {
+        /* Unwrap passed in wrappers! */
+        while (v && isWrapper(v)) {
+            v = WRAPPER(v)->obj;
+        }
+        if (v) {
+            result = PyObject_SetAttr(self->obj, oname, v);
+        }
+        else {
+            result = PyObject_DelAttr(self->obj, oname);
+        }
     }
-  else
-    {
-  PyErr_SetString(PyExc_AttributeError, 
-		  "Attempt to set attribute on empty acquisition wrapper");
-      result = -1;
-    }
 
-  Py_XDECREF(tmp);
-
-  return result;
+    Py_DECREF(tmp);
+    return result;
 }
 
 static int

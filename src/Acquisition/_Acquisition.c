@@ -938,58 +938,49 @@ Wrapper_richcompare(Wrapper *self, PyObject *w, int op)
 static PyObject *
 Wrapper_repr(Wrapper *self)
 {
-  PyObject *r;
+    PyObject *r;
 
-  if ((r=PyObject_GetAttr(OBJECT(self),py__repr__)))
-    {
-      ASSIGN(r,PyObject_CallFunction(r,NULL,NULL));
-      return r;
-    }
-  else
-    {
-      PyErr_Clear();
-      return PyObject_Repr(self->obj);
+    if ((r = PyObject_GetAttr(OBJECT(self), py__repr__))) {
+        ASSIGN(r, PyObject_CallFunction(r, NULL, NULL));
+        return r;
+    } else {
+        PyErr_Clear();
+        return PyObject_Repr(self->obj);
     }
 }
 
 static PyObject *
 Wrapper_str(Wrapper *self)
 {
-  PyObject *r;
+    PyObject *r;
 
-  if ((r=PyObject_GetAttr(OBJECT(self),py__str__)))
-    {
-      ASSIGN(r,PyObject_CallFunction(r,NULL,NULL));
-      return r;
-    }
-  else
-    {
-      PyErr_Clear();
-      return PyObject_Str(self->obj);
+    if ((r = PyObject_GetAttr(OBJECT(self), py__str__))) {
+        ASSIGN(r, PyObject_CallFunction(r,NULL,NULL));
+        return r;
+    } else {
+        PyErr_Clear();
+        return PyObject_Str(self->obj);
     }
 }
 
 static PyObject *
 Wrapper_unicode(Wrapper *self)
 {
-  PyObject *r;
+    PyObject *r;
 
-  if ((r=PyObject_GetAttr(OBJECT(self),py__unicode__)))
-    {
-      ASSIGN(r,PyObject_CallFunction(r,NULL,NULL));
-      return r;
-    }
-  else
-    {
-      PyErr_Clear();
-      return Wrapper_str(self);
+    if ((r = PyObject_GetAttr(OBJECT(self), py__unicode__))) {
+        ASSIGN(r, PyObject_CallFunction(r, NULL, NULL));
+        return r;
+    } else {
+        PyErr_Clear();
+        return Wrapper_str(self);
     }
 }
 
 static long
 Wrapper_hash(Wrapper *self)
 {
-  return PyObject_Hash(self->obj);
+    return PyObject_Hash(self->obj);
 }
 
 static PyObject *

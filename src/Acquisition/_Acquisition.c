@@ -1621,97 +1621,104 @@ static struct PyMethodDef ExplicitAcquirer_methods[] = {
 };
 
 static PyObject *
-capi_aq_acquire(PyObject *self, PyObject *name, PyObject *filter,
-	PyObject *extra, int explicit, PyObject *defalt, int containment)
+capi_aq_acquire(
+    PyObject *self,
+    PyObject *name,
+    PyObject *filter,
+	PyObject *extra,
+    int explicit,
+    PyObject *defalt,
+    int containment)
 {
-  PyObject *result, *v, *tb;
+    PyObject *result;
 
-  if (filter==Py_None) filter=0;
-
-  /* We got a wrapped object, so business as usual */
-  if (isWrapper(self)) {
-    result = Wrapper_findattr(
-	      WRAPPER(self), name, filter, extra, OBJECT(self),1,
-	      explicit || isImplicitWrapper(self),
-	      explicit, containment);  
-    goto check_default;
-  }
-  /* Not wrapped; check if we have a __parent__ pointer.  If that's
-     the case, create a wrapper and pretend it's business as usual. */
-  else if ((result = PyObject_GetAttr(self, py__parent__)))
-    {
-      self = newWrapper(self, result, (PyTypeObject*)&Wrappertype);
-      Py_DECREF(result); /* don't need __parent__ anymore */
-      result = Wrapper_findattr(WRAPPER(self), name, filter, extra,
-                                OBJECT(self), 1, 1, explicit, containment);
-      /* Get rid of temporary wrapper */
-      Py_DECREF(self);
-      goto check_default;
+    if (filter == Py_None) {
+        filter = NULL;
     }
-  /* No wrapper and no __parent__, so just getattr. */
-  else
-    {
-      /* Clean up the AttributeError from the previous getattr
-         (because it has clearly failed). */
-      PyErr_Fetch(&result,&v,&tb);
-      if (result && (result != PyExc_AttributeError))
-        {
-          PyErr_Restore(result,v,tb);
-          return NULL;
+
+    /* We got a wrapped object, so business as usual */
+    if (isWrapper(self)) {
+        result = Wrapper_findattr(WRAPPER(self), name, filter, extra,
+                                  OBJECT(self), 1,
+                                  explicit || isImplicitWrapper(self),
+                                  explicit, containment);
+    }
+
+    /* Not wrapped; check if we have a __parent__ pointer.  If that's
+     * the case, create a wrapper and pretend it's business as usual.
+     */
+    else if ((result = PyObject_GetAttr(self, py__parent__))) {
+        self = newWrapper(self, result, &Wrappertype);
+
+        /* don't need __parent__ anymore */
+        Py_DECREF(result);
+
+        result = Wrapper_findattr(WRAPPER(self), name, filter, extra,
+                                  OBJECT(self), 1, 1, explicit, containment);
+
+        /* Get rid of temporary wrapper */
+        Py_DECREF(self);
+    }
+
+    /* No wrapper and no __parent__, so just getattr. */
+    else {
+        /* Clean up the AttributeError from the previous getattr
+         * (because it has clearly failed).
+         */
+        if (!swallow_attribute_error()) {
+            return NULL;
         }
-      Py_XDECREF(result); Py_XDECREF(v); Py_XDECREF(tb);
 
-      if (! filter) {
-        result = PyObject_GetAttr(self, name);
-        goto check_default;
-      }
+        if (!filter) {
+            result = PyObject_GetAttr(self, name);
+        } else {
+            /* Construct a wrapper so we can use Wrapper_findattr */
+            if ((self = newWrapper(self, Py_None, &Wrappertype)) == NULL) {
+                return NULL;
+            }
 
-      /* Crap, we've got to construct a wrapper so we can use
-         Wrapper_findattr */
-      UNLESS (self=newWrapper(self, Py_None, (PyTypeObject*)&Wrappertype)) 
-        return NULL;
-  
-      result=Wrapper_findattr(WRAPPER(self), name, filter, extra, OBJECT(self),
-                              1, 1, explicit, containment);
+            result = Wrapper_findattr(WRAPPER(self), name, filter, extra,
+                                      OBJECT(self), 1, 1, explicit, containment);
 
-      /* Get rid of temporary wrapper */
-      Py_DECREF(self);
-      goto check_default;
+            /* Get rid of temporary wrapper */
+            Py_DECREF(self);
+        }
     }
-check_default:
+
     if (result == NULL && defalt != NULL) {
-      /* as "Python/bltinmodule.c:builtin_getattr" turn
-        only 'AttributeError' into a default value, such
-        that e.g. "ConflictError" and errors raised by the filter
-        are not mapped to the default value.
-      */
-      if (PyErr_ExceptionMatches(PyExc_AttributeError)) {
-        PyErr_Clear();
-        Py_INCREF(defalt);
-        result = defalt;
-      }
+        /* Python/bltinmodule.c:builtin_getattr turns only 'AttributeError'
+         * into a default value.
+         */
+        if (swallow_attribute_error()) {
+            Py_INCREF(defalt);
+            result = defalt;
+        }
     }
+
     return result;
 }
 
 static PyObject *
 module_aq_acquire(PyObject *ignored, PyObject *args, PyObject *kw)
 {
-  PyObject *self;
-  PyObject *name, *filter=0, *extra=Py_None;
-  PyObject *expl=0, *defalt=0;
-  int explicit=1, containment=0;
+    PyObject *self;
+    PyObject *name, *filter = NULL, *extra = Py_None;
+    PyObject *expl = NULL, *defalt = NULL;
+    int explicit = 1, containment = 0;
 
-  UNLESS (PyArg_ParseTupleAndKeywords(
-	     args, kw, "OO|OOOOi", acquire_args,
-	     &self, &name, &filter, &extra, &expl, &defalt, &containment
-	     ))
-    return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|OOOOi", acquire_args,
+                                     &self, &name, &filter, &extra, &expl,
+                                     &defalt, &containment))
+    {
+        return NULL;
+    }
 
-  if (expl) explicit=PyObject_IsTrue(expl);
+    if (expl) {
+        explicit = PyObject_IsTrue(expl);
+    }
 
-  return capi_aq_acquire(self, name, filter, extra, explicit, defalt,
-  	containment);
+    return capi_aq_acquire(self, name, filter, extra,
+                           explicit, defalt, containment);
 }
 
 static PyObject *

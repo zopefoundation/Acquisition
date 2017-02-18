@@ -1299,31 +1299,32 @@ Wrapper_nonzero(PyObject *self)
 }
 
 #ifndef PY3K
-static int 
+static int
 Wrapper_coerce(PyObject **self, PyObject **o)
 {
-  PyObject *m;
+    PyObject *m;
 
-  UNLESS (m=PyObject_GetAttr(*self, py__coerce__))
-    {
-      PyErr_Clear();
-      Py_INCREF(*self);
-      Py_INCREF(*o);
-      return 0;
+    if ((m=PyObject_GetAttr(*self, py__coerce__)) == NULL) {
+        PyErr_Clear();
+        Py_INCREF(*self);
+        Py_INCREF(*o);
+        return 0;
     }
 
-  ASSIGN(m, PyObject_CallFunction(m, "O", *o));
-  UNLESS (m) return -1;
+    ASSIGN(m, PyObject_CallFunction(m, "O", *o));
+    if (m == NULL) {
+        return -1;
+    }
 
-  UNLESS (PyArg_ParseTuple(m,"OO", self, o)) goto err;
-  Py_INCREF(*self);
-  Py_INCREF(*o);
-  Py_DECREF(m);
-  return 0;
+    if (!PyArg_ParseTuple(m, "OO", self, o)) {
+        Py_DECREF(m);
+        return -1;
+    }
 
-err:
-  Py_DECREF(m);
-  return -1;  
+    Py_INCREF(*self);
+    Py_INCREF(*o);
+    Py_DECREF(m);
+    return 0;
 }
 #endif
 

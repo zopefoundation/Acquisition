@@ -1406,38 +1406,44 @@ static char *acquire_args[] = {"object", "name", "filter", "extra", "explicit",
 static PyObject *
 Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
 {
-  PyObject *name, *filter=0, *extra=Py_None;
-  PyObject *expl=0, *defalt=0;
-  int explicit=1;
-  int containment=0;
-  PyObject *result; /* DM 2005-08-25: argument "default" ignored */
+    PyObject *name, *filter = NULL, *extra = Py_None;
+    PyObject *expl = NULL, *defalt = NULL;
+    int explicit = 1;
+    int containment = 0;
+    PyObject *result;
 
-  UNLESS (PyArg_ParseTupleAndKeywords(
-	     args, kw, "O|OOOOi", acquire_args+1,
-	     &name, &filter, &extra, &expl, &defalt, &containment
-	     ))
-    return NULL;
-
-  if (expl) explicit=PyObject_IsTrue(expl);
-
-  if (filter==Py_None) filter=0;
-
-  result = Wrapper_findattr(self,name,filter,extra,OBJECT(self),1,
-			  explicit || isImplicitWrapper(self),
-			  explicit, containment);
-  if (result == NULL && defalt != NULL) {
-    /* as "Python/bltinmodule.c:builtin_getattr" turn
-       only 'AttributeError' into a default value, such
-       that e.g. "ConflictError" and errors raised by the filter
-       are not mapped to the default value.
-    */
-    if (PyErr_ExceptionMatches(PyExc_AttributeError)) {
-      PyErr_Clear();
-      Py_INCREF(defalt);
-      result = defalt;
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O|OOOOi", acquire_args+1,
+                                     &name, &filter, &extra, &expl,
+                                     &defalt, &containment))
+    {
+        return NULL;
     }
-  }
-  return result;
+
+    if (expl) {
+        explicit = PyObject_IsTrue(expl);
+    }
+
+    if (filter == Py_None) {
+        filter = NULL;
+    }
+
+    result = Wrapper_findattr(self, name, filter, extra, OBJECT(self), 1,
+                              explicit || isImplicitWrapper(self),
+                              explicit, containment);
+
+    if (result == NULL && defalt != NULL) {
+        /* as "Python/bltinmodule.c:builtin_getattr" turn
+         * only 'AttributeError' into a default value, such
+         * that e.g. "ConflictError" and errors raised by the filter
+         * are not mapped to the default value.
+         */
+        if (swallow_attribute_error()) {
+            Py_INCREF(defalt);
+            result = defalt;
+        }
+    }
+
+    return result;
 }
 
 /* forward declaration so that we can use it in Wrapper_inContextOf */

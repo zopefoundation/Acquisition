@@ -1582,52 +1582,42 @@ static PyExtensionClass XaqWrappertype = {
 };
 
 static PyObject *
-acquire_of(PyObject *self, PyObject *args)
+acquire_of(PyObject *self, PyObject *inst, PyExtensionClass *target)
 {
-  PyObject *inst;
-
-  UNLESS(PyArg_ParseTuple(args, "O", &inst)) return NULL;
-
-  UNLESS(PyExtensionInstance_Check(inst))
-    {
-      PyErr_SetString(PyExc_TypeError,
-		      "attempt to wrap extension method using an object that\n"
-		      "is not an extension class instance.");
-      return NULL;
+    if (!PyExtensionInstance_Check(inst)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "attempt to wrap extension method using an object that"
+                        " is not an extension class instance.");
+        return NULL;
     }
 
-  return newWrapper(self, inst, (PyTypeObject *)&Wrappertype);
+    return newWrapper(self, inst, target);
+
+}
+static PyObject *
+aq__of__(PyObject *self, PyObject *inst)
+{
+    return acquire_of(self, inst, &Wrappertype);
 }
 
 static PyObject *
-xaq_of(PyObject *self, PyObject *args)
+xaq__of__(PyObject *self, PyObject *inst)
 {
-  PyObject *inst;
-
-  UNLESS(PyArg_ParseTuple(args, "O", &inst)) return NULL;
-
-  UNLESS(PyExtensionInstance_Check(inst))
-    {
-      PyErr_SetString(PyExc_TypeError,
-		      "attempt to wrap extension method using an object that\n"
-		      "is not an extension class instance.");
-      return NULL;
-    }
-
-  return newWrapper(self, inst, (PyTypeObject *)&XaqWrappertype);
+    return acquire_of(self, inst, &XaqWrappertype);
 }
 
 static struct PyMethodDef Acquirer_methods[] = {
-  {"__of__",(PyCFunction)acquire_of, METH_VARARGS, 
-   "__of__(context) -- return the object in a context"},
-  
-  {NULL,		NULL}		/* sentinel */
+    {"__of__",(PyCFunction)aq__of__, METH_O,
+     "__of__(context) -- return the object in a context"},
+
+    {NULL, NULL}
 };
 
-static struct PyMethodDef Xaq_methods[] = {
-  {"__of__",(PyCFunction)xaq_of, METH_VARARGS,""},
-  
-  {NULL,		NULL}		/* sentinel */
+static struct PyMethodDef ExplicitAcquirer_methods[] = {
+    {"__of__",(PyCFunction)xaq__of__, METH_O,
+     "__of__(context) -- return the object in a context"},
+
+    {NULL, NULL}
 };
 
 static PyObject *
@@ -2087,13 +2077,13 @@ module_init(void)
 
   PURE_MIXIN_CLASS(Acquirer,
     "Base class for objects that implicitly"
-    " acquire attributes from containers\n"
-    , Acquirer_methods);
+    " acquire attributes from containers\n",
+    Acquirer_methods);
 
   PURE_MIXIN_CLASS(ExplicitAcquirer,
     "Base class for objects that explicitly"
-    " acquire attributes from containers\n"
-    , Xaq_methods);
+    " acquire attributes from containers\n",
+    ExplicitAcquirer_methods);
 
   UNLESS(ExtensionClassImported) return NULL;
 

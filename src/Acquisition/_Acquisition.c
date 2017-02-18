@@ -1452,33 +1452,34 @@ static PyObject * capi_aq_inContextOf(PyObject *self, PyObject *o, int inner);
 static PyObject *
 Wrapper_inContextOf(Wrapper *self, PyObject *args)
 {
-  PyObject *o;
+    PyObject *o;
+    int inner = 1;
+    if (!PyArg_ParseTuple(args, "O|i", &o, &inner)) {
+        return NULL;
+    }
 
-  int inner=1;
-  UNLESS(PyArg_ParseTuple(args,"O|i",&o,&inner)) return NULL;
-
-  return capi_aq_inContextOf((PyObject*)self, o, inner);
+    return capi_aq_inContextOf(OBJECT(self), o, inner);
 }
 
 PyObject *
 Wrappers_are_not_picklable(PyObject *wrapper, PyObject *args)
 {
-  PyErr_SetString(PyExc_TypeError, 
-                  "Can't pickle objects in acquisition wrappers.");
-  return NULL;
+    PyErr_SetString(PyExc_TypeError,
+                    "Can't pickle objects in acquisition wrappers.");
+    return NULL;
 }
 
 static PyObject *
 Wrapper___getnewargs__(PyObject *self)
 {
-  return PyTuple_New(0);
+    return PyTuple_New(0);
 }
 
 static struct PyMethodDef Wrapper_methods[] = {
-  {"acquire", (PyCFunction)Wrapper_acquire_method, 
+  {"acquire", (PyCFunction)Wrapper_acquire_method,
    METH_VARARGS|METH_KEYWORDS,
    "Get an attribute, acquiring it if necessary"},
-  {"aq_acquire", (PyCFunction)Wrapper_acquire_method, 
+  {"aq_acquire", (PyCFunction)Wrapper_acquire_method,
    METH_VARARGS|METH_KEYWORDS,
    "Get an attribute, acquiring it if necessary"},
   {"aq_inContextOf", (PyCFunction)Wrapper_inContextOf, METH_VARARGS,
@@ -1492,104 +1493,92 @@ static struct PyMethodDef Wrapper_methods[] = {
   {"__reduce_ex__", (PyCFunction)Wrappers_are_not_picklable, METH_VARARGS,
    "Wrappers are not picklable"},
   {"__unicode__", (PyCFunction)Wrapper_unicode, METH_NOARGS,
-   "Unicode"},   
-  {NULL,		NULL}		/* sentinel */
+   "Unicode"},
+  {NULL,  NULL}
 };
 
 static PyExtensionClass Wrappertype = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-  "Acquisition.ImplicitAcquisitionWrapper",		/*tp_name*/
-  sizeof(Wrapper),       		/*tp_basicsize*/
-  0,					/*tp_itemsize*/
-  /* methods */
-  (destructor)Wrapper_dealloc,		/*tp_dealloc*/
-  (printfunc)0,				/*tp_print*/
-  (getattrfunc)0,			/*tp_getattr*/
-  (setattrfunc)0,			/*tp_setattr*/
-  0,	    			/*tp_compare*/
-  (reprfunc)Wrapper_repr,      		/*tp_repr*/
-  &Wrapper_as_number,			/*tp_as_number*/
-  &Wrapper_as_sequence,			/*tp_as_sequence*/
-  &Wrapper_as_mapping,			/*tp_as_mapping*/
-  (hashfunc)Wrapper_hash,      		/*tp_hash*/
-  (ternaryfunc)Wrapper_call,		/*tp_call*/
-  (reprfunc)Wrapper_str,       		/*tp_str*/
-  (getattrofunc)Wrapper_getattro,	/*tp_getattr with object key*/
-  (setattrofunc)Wrapper_setattro,      	/*tp_setattr with object key*/
-  /* tp_as_buffer      */ 0,
-  /* tp_flags          */ Py_TPFLAGS_DEFAULT 
-                          | Py_TPFLAGS_BASETYPE
-                          | Py_TPFLAGS_HAVE_GC
-#ifdef Py_TPFLAGS_HAVE_VERSION_TAG
-                          | Py_TPFLAGS_HAVE_VERSION_TAG
-#endif
-                          ,
-  "Wrapper object for implicit acquisition", /* Documentation string */
-  /* tp_traverse       */ (traverseproc)Wrapper_traverse,
-  /* tp_clear          */ (inquiry)Wrapper_clear,
-  /* tp_richcompare    */ (richcmpfunc)Wrapper_richcompare,
-  /* tp_weaklistoffset */ (long)0,
-  (getiterfunc)Wrapper_iter,		/*tp_iter*/
-  /* tp_iternext       */ (iternextfunc)0,
-  /* tp_methods        */ Wrapper_methods,
-  /* tp_members        */ 0,
-  /* tp_getset         */ 0,
-  /* tp_base           */ 0,
-  /* tp_dict           */ 0,
-  /* tp_descr_get      */ (descrgetfunc)Wrapper_descrget,
-  /* tp_descr_set      */ 0,
-  /* tp_dictoffset     */ 0,
-  /* tp_init           */ (initproc)Wrapper__init__,
-  /* tp_alloc          */ 0,
-  /* tp_new            */ Wrapper__new__
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Acquisition.ImplicitAcquisitionWrapper",       /* tp_name */
+    sizeof(Wrapper),                                /* tp_basicsize */
+    0,                                              /* tp_itemsize */
+    (destructor)Wrapper_dealloc,                    /* tp_dealloc */
+    (printfunc)0,                                   /* tp_print */
+    (getattrfunc)0,                                 /* tp_getattr */
+    (setattrfunc)0,                                 /* tp_setattr */
+    0,                                              /* tp_compare */
+    (reprfunc)Wrapper_repr,                         /* tp_repr */
+    &Wrapper_as_number,                             /* tp_as_number */
+    &Wrapper_as_sequence,                           /* tp_as_sequence */
+    &Wrapper_as_mapping,                            /* tp_as_mapping */
+    (hashfunc)Wrapper_hash,                         /* tp_hash */
+    (ternaryfunc)Wrapper_call,                      /* tp_call */
+    (reprfunc)Wrapper_str,                          /* tp_str */
+    (getattrofunc)Wrapper_getattro,                 /* tp_getattro */
+    (setattrofunc)Wrapper_setattro,                 /* tp_setattro */
+    0,                                              /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+          Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_HAVE_VERSION_TAG, /* tp_flags */
+    "Wrapper object for implicit acquisition",      /* tp_doc */
+    (traverseproc)Wrapper_traverse,                 /* tp_traverse */
+    (inquiry)Wrapper_clear,                         /* tp_clear */
+    (richcmpfunc)Wrapper_richcompare,               /* tp_richcompare */
+    0,                                              /* tp_weaklistoffset */
+    (getiterfunc)Wrapper_iter,                      /* tp_iter */
+    0,                                              /* tp_iternext */
+    Wrapper_methods,                                /* tp_methods */
+    0,                                              /* tp_members */
+    0,                                              /* tp_getset */
+    0,                                              /* tp_base */
+    0,                                              /* tp_dict */
+    (descrgetfunc)Wrapper_descrget,                 /* tp_descr_get */
+    0,                                              /* tp_descr_set */
+    0,                                              /* tp_dictoffset */
+    (initproc)Wrapper__init__,                      /* tp_init */
+    0,                                              /* tp_alloc */
+    Wrapper__new__                                  /* tp_new */
 };
 
 static PyExtensionClass XaqWrappertype = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-  "Acquisition.ExplicitAcquisitionWrapper",		/*tp_name*/
-  sizeof(Wrapper),       		/*tp_basicsize*/
-  0,					/*tp_itemsize*/
-  /* methods */
-  (destructor)Wrapper_dealloc,		/*tp_dealloc*/
-  (printfunc)0,				/*tp_print*/
-  (getattrfunc)0,			/*tp_getattr*/
-  (setattrfunc)0,			/*tp_setattr*/
-  0,    		/*tp_compare*/
-  (reprfunc)Wrapper_repr,      		/*tp_repr*/
-  &Wrapper_as_number,			/*tp_as_number*/
-  &Wrapper_as_sequence,			/*tp_as_sequence*/
-  &Wrapper_as_mapping,			/*tp_as_mapping*/
-  (hashfunc)Wrapper_hash,      		/*tp_hash*/
-  (ternaryfunc)Wrapper_call,		/*tp_call*/
-  (reprfunc)Wrapper_str,       		/*tp_str*/
-  (getattrofunc)Xaq_getattro,		/*tp_getattr with object key*/
-  (setattrofunc)Wrapper_setattro,      	/*tp_setattr with object key*/
-  /* tp_as_buffer      */ 0,
-  /* tp_flags          */ Py_TPFLAGS_DEFAULT 
-                          | Py_TPFLAGS_BASETYPE
-                          | Py_TPFLAGS_HAVE_GC
-#ifdef Py_TPFLAGS_HAVE_VERSION_TAG
-                          | Py_TPFLAGS_HAVE_VERSION_TAG
-#endif
-                          ,
-  "Wrapper object for implicit acquisition", /* Documentation string */
-  /* tp_traverse       */ (traverseproc)Wrapper_traverse,
-  /* tp_clear          */ (inquiry)Wrapper_clear,
-  /* tp_richcompare    */ (richcmpfunc)Wrapper_richcompare,
-  /* tp_weaklistoffset */ (long)0,
-  (getiterfunc)Wrapper_iter,		/*tp_iter*/
-  /* tp_iternext       */ (iternextfunc)0,
-  /* tp_methods        */ Wrapper_methods,
-  /* tp_members        */ 0,
-  /* tp_getset         */ 0,
-  /* tp_base           */ 0,
-  /* tp_dict           */ 0,
-  /* tp_descr_get      */ (descrgetfunc)Wrapper_descrget,
-  /* tp_descr_set      */ 0,
-  /* tp_dictoffset     */ 0,
-  /* tp_init           */ (initproc)Wrapper__init__,
-  /* tp_alloc          */ 0,
-  /* tp_new            */ Wrapper__new__
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Acquisition.ExplicitAcquisitionWrapper",       /*tp_name*/
+    sizeof(Wrapper),                                /* tp_basicsize */
+    0,                                              /* tp_itemsize */
+    (destructor)Wrapper_dealloc,                    /* tp_dealloc */
+    (printfunc)0,                                   /* tp_print */
+    (getattrfunc)0,                                 /* tp_getattr */
+    (setattrfunc)0,                                 /* tp_setattr */
+    0,                                              /* tp_compare */
+    (reprfunc)Wrapper_repr,                         /* tp_repr */
+    &Wrapper_as_number,                             /* tp_as_number */
+    &Wrapper_as_sequence,                           /* tp_as_sequence */
+    &Wrapper_as_mapping,                            /* tp_as_mapping */
+    (hashfunc)Wrapper_hash,                         /* tp_hash */
+    (ternaryfunc)Wrapper_call,                      /* tp_call */
+    (reprfunc)Wrapper_str,                          /* tp_str */
+    (getattrofunc)Xaq_getattro,                     /* tp_getattro */
+    (setattrofunc)Wrapper_setattro,                 /* tp_setattro */
+    0,                                              /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+          Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_HAVE_VERSION_TAG, /* tp_flags */
+    "Wrapper object for explicit acquisition",      /* tp_doc */
+    (traverseproc)Wrapper_traverse,                 /* tp_traverse */
+    (inquiry)Wrapper_clear,                         /* tp_clear */
+    (richcmpfunc)Wrapper_richcompare,               /* tp_richcompare */
+    0,                                              /* tp_weaklistoffset */
+    (getiterfunc)Wrapper_iter,                      /* tp_iter */
+    0,                                              /* tp_iternext */
+    Wrapper_methods,                                /* tp_methods */
+    0,                                              /* tp_members */
+    0,                                              /* tp_getset */
+    0,                                              /* tp_base */
+    0,                                              /* tp_dict */
+    (descrgetfunc)Wrapper_descrget,                 /* tp_descr_get */
+    0,                                              /* tp_descr_set */
+    0,                                              /* tp_dictoffset */
+    (initproc)Wrapper__init__,                      /* tp_init */
+    0,                                              /* tp_alloc */
+    Wrapper__new__                                  /* tp_new */
 };
 
 static PyObject *

@@ -2014,62 +2014,63 @@ static struct PyModuleDef moduledef =
 static PyObject*
 module_init(void)
 {
-  PyObject *m, *d;
-  PyObject *api;
+    PyObject *m, *d;
+    PyObject *api;
 
-  PURE_MIXIN_CLASS(Acquirer,
-    "Base class for objects that implicitly"
-    " acquire attributes from containers\n",
-    Acquirer_methods);
+    PURE_MIXIN_CLASS(Acquirer,
+                     "Base class for objects that implicitly"
+                     " acquire attributes from containers\n",
+                     Acquirer_methods);
 
-  PURE_MIXIN_CLASS(ExplicitAcquirer,
-    "Base class for objects that explicitly"
-    " acquire attributes from containers\n",
-    ExplicitAcquirer_methods);
+    PURE_MIXIN_CLASS(ExplicitAcquirer,
+                     "Base class for objects that explicitly"
+                     " acquire attributes from containers\n",
+                     ExplicitAcquirer_methods);
 
-  UNLESS(ExtensionClassImported) return NULL;
+    if (!ExtensionClassImported) {
+        return NULL;
+    }
 
-  Acquired = NATIVE_FROM_STRING("<Special Object Used to Force Acquisition>");
-  if (Acquired == NULL) {
-      return NULL;
-  }
+    Acquired = NATIVE_FROM_STRING("<Special Object Used to Force Acquisition>");
+    if (Acquired == NULL) {
+        return NULL;
+    }
 
 #ifdef PY3K
-  m = PyModule_Create(&moduledef);
+    m = PyModule_Create(&moduledef);
 #else
-  m = Py_InitModule3(
-        "_Acquisition",
-        methods,
-	    "Provide base classes for acquiring objects\n\n");
+    m = Py_InitModule3("_Acquisition",
+                       methods,
+                       "Provide base classes for acquiring objects\n\n");
 #endif
 
-  d = PyModule_GetDict(m);
-  init_py_names();
-  PyExtensionClass_Export(d,"Acquirer",AcquirerType);
-  PyExtensionClass_Export(d,"ImplicitAcquisitionWrapper",Wrappertype);
-  PyExtensionClass_Export(d,"ExplicitAcquirer",ExplicitAcquirerType);
-  PyExtensionClass_Export(d,"ExplicitAcquisitionWrapper",XaqWrappertype);
+    d = PyModule_GetDict(m);
+    init_py_names();
+    PyExtensionClass_Export(d,"Acquirer", AcquirerType);
+    PyExtensionClass_Export(d,"ImplicitAcquisitionWrapper", Wrappertype);
+    PyExtensionClass_Export(d,"ExplicitAcquirer", ExplicitAcquirerType);
+    PyExtensionClass_Export(d,"ExplicitAcquisitionWrapper", XaqWrappertype);
 
-  /* Create aliases */
-  PyDict_SetItemString(d,"Implicit",OBJECT(&AcquirerType));
-  PyDict_SetItemString(d,"Explicit",OBJECT(&ExplicitAcquirerType));
-  PyDict_SetItemString(d,"Acquired",Acquired);
+    /* Create aliases */
+    PyDict_SetItemString(d,"Implicit", OBJECT(&AcquirerType));
+    PyDict_SetItemString(d,"Explicit", OBJECT(&ExplicitAcquirerType));
+    PyDict_SetItemString(d,"Acquired", Acquired);
 
-  AcquisitionCAPI.AQ_Acquire = capi_aq_acquire;
-  AcquisitionCAPI.AQ_Get = capi_aq_get;
-  AcquisitionCAPI.AQ_IsWrapper = capi_aq_iswrapper;
-  AcquisitionCAPI.AQ_Base = capi_aq_base;
-  AcquisitionCAPI.AQ_Parent = capi_aq_parent;
-  AcquisitionCAPI.AQ_Self = capi_aq_self;
-  AcquisitionCAPI.AQ_Inner = capi_aq_inner;
-  AcquisitionCAPI.AQ_Chain = capi_aq_chain;
+    AcquisitionCAPI.AQ_Acquire = capi_aq_acquire;
+    AcquisitionCAPI.AQ_Get = capi_aq_get;
+    AcquisitionCAPI.AQ_IsWrapper = capi_aq_iswrapper;
+    AcquisitionCAPI.AQ_Base = capi_aq_base;
+    AcquisitionCAPI.AQ_Parent = capi_aq_parent;
+    AcquisitionCAPI.AQ_Self = capi_aq_self;
+    AcquisitionCAPI.AQ_Inner = capi_aq_inner;
+    AcquisitionCAPI.AQ_Chain = capi_aq_chain;
 
-  api = PyCapsule_New(&AcquisitionCAPI, "AcquisitionCAPI", NULL);
+    api = PyCapsule_New(&AcquisitionCAPI, "AcquisitionCAPI", NULL);
 
-  PyDict_SetItemString(d, "AcquisitionCAPI", api);
-  Py_DECREF(api);
+    PyDict_SetItemString(d, "AcquisitionCAPI", api);
+    Py_DECREF(api);
 
-  return m;
+    return m;
 }
 
 #ifdef PY3K

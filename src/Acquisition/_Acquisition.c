@@ -1773,44 +1773,33 @@ module_aq_base(PyObject *ignored, PyObject *self)
 static PyObject *
 capi_aq_parent(PyObject *self)
 {
-  PyObject *result, *v, *tb;
+    PyObject *result;
 
-  if (isWrapper(self) && WRAPPER(self)->container)
-    {
-      result=WRAPPER(self)->container;
-      Py_INCREF(result);
-      return result;
+    if (isWrapper(self) && WRAPPER(self)->container) {
+        Py_INCREF(WRAPPER(self)->container);
+        return WRAPPER(self)->container;
     }
-  else if ((result=PyObject_GetAttr(self, py__parent__)))
-    /* We already own the reference to result (PyObject_GetAttr gives
-       it to us), no need to INCREF here */
-    return result;
-  else
-    {
-      /* We need to clean up the AttributeError from the previous
-         getattr (because it has clearly failed) */
-      PyErr_Fetch(&result,&v,&tb);
-      if (result && (result != PyExc_AttributeError))
-        {
-          PyErr_Restore(result,v,tb);
-          return NULL;
+    else if ((result = PyObject_GetAttr(self, py__parent__))) {
+        /* We already own the reference to result (PyObject_GetAttr gives
+         * it to us), no need to INCREF here.
+         */
+        return result;
+    } else {
+        /* We need to clean up the AttributeError from the previous
+         * getattr (because it has clearly failed).
+         */
+        if (!swallow_attribute_error()) {
+            return NULL;
         }
-      Py_XDECREF(result); Py_XDECREF(v); Py_XDECREF(tb);
 
-      result=Py_None;
-      Py_INCREF(result);
-      return result;
+        Py_RETURN_NONE;
     }
 }
 
 static PyObject *
-module_aq_parent(PyObject *ignored, PyObject *args)
+module_aq_parent(PyObject *ignored, PyObject *self)
 {
-  PyObject *self;
-
-  UNLESS (PyArg_ParseTuple(args, "O", &self)) return NULL;
-
-  return capi_aq_parent(self);
+    return capi_aq_parent(self);
 }
 
 static PyObject *
@@ -2002,7 +1991,7 @@ static struct PyMethodDef methods[] = {
   },
   {"aq_base", (PyCFunction)module_aq_base, METH_O,
    "aq_base(ob) -- Get the object unwrapped"},
-  {"aq_parent", (PyCFunction)module_aq_parent, METH_VARARGS, 
+  {"aq_parent", (PyCFunction)module_aq_parent, METH_O,
    "aq_parent(ob) -- Get the parent of an object"},
   {"aq_self", (PyCFunction)module_aq_self, METH_VARARGS, 
    "aq_self(ob) -- Get the object with the outermost wrapper removed"},

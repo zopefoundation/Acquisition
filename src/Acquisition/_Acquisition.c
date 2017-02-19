@@ -643,10 +643,8 @@ Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
                 if (PyECMethod_Check(r) && PyECMethod_Self(r) == self->obj) {
                     ASSIGN(r, PyECMethod_New(r, OBJECT(self)));
                 }
-                else if (has__of__(r)) {
-                  ASSIGN(r, __of__(r, OBJECT(self)));
-                }
-                return r;
+                return apply__of__(r, OBJECT(self));
+
             } else if (!swallow_attribute_error()) {
                 return NULL;
             }
@@ -673,9 +671,9 @@ Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
 
             if (PyECMethod_Check(r) && PyECMethod_Self(r) == self->obj) {
                 ASSIGN(r, PyECMethod_New(r, OBJECT(self)));
-            } else if (has__of__(r)) {
-                ASSIGN(r, __of__(r, OBJECT(self)));
             }
+
+            r = apply__of__(r, OBJECT(self));
 
             if (r && filter) {
                 switch(apply_filter(filter, OBJECT(self), oname, r, extra, orig)) {

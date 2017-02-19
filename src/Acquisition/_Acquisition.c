@@ -1917,50 +1917,55 @@ module_aq_chain(PyObject *ignored, PyObject *args)
 static PyObject *
 capi_aq_inContextOf(PyObject *self, PyObject *o, int inner)
 {
-  PyObject *next, *c;
+    PyObject *result = Py_False;
 
-  /* next = self
-     o = aq_base(o) */
-  next = self;
-  while (isWrapper(o) && WRAPPER(o)->obj)
-    o=WRAPPER(o)->obj;
+    o = get_base(o);
 
-  while (1) {
+    /* This allows Py_DECREF at the end, if the while loop did nothing. */
+    Py_INCREF(self);
 
-    /*   if aq_base(next) is o: return 1 */
-    c = next;
-    while (isWrapper(c) && WRAPPER(c)->obj) c = WRAPPER(c)->obj;
-    if (c == o) {
-        Py_RETURN_TRUE;
+    while (1) {
+        /* if aq_base(self) is o: return 1 */
+        if (get_base(self) == o) {
+            result = Py_True;
+            break;
+        }
+
+        if (inner) {
+            ASSIGN(self, capi_aq_inner(self));
+            if (self == NULL) {
+                return NULL;
+            } else if (self == Py_None) {
+                result = Py_False;
+                break;
+            }
+        }
+
+        ASSIGN(self, capi_aq_parent(self));
+        if (self == NULL) {
+            return NULL;
+        } else if (self == Py_None) {
+            result = Py_False;
+            break;
+        }
     }
 
-    if (inner)
-      {
-        self = capi_aq_inner(next);
-        Py_DECREF(self);  /* We're not holding on to the inner wrapper */
-        if (self == Py_None) break;
-      }
-    else
-      self = next;
-
-    next = capi_aq_parent(self);
-    Py_DECREF(next); /* We're not holding on to the parent */
-    if (next == Py_None) break;
-  }
-
-  Py_RETURN_FALSE;
+    Py_DECREF(self);
+    Py_INCREF(result);
+    return result;
 }
 
 static PyObject *
 module_aq_inContextOf(PyObject *ignored, PyObject *args)
 {
-  PyObject *self, *o;
-  int inner=1;
+    PyObject *self, *o;
+    int inner = 1;
 
-  UNLESS (PyArg_ParseTuple(args, "OO|i", &self, &o, &inner))
-    return NULL;
+    if (!PyArg_ParseTuple(args, "OO|i", &self, &o, &inner)) {
+        return NULL;
+    }
 
-  return capi_aq_inContextOf(self, o, inner);
+    return capi_aq_inContextOf(self, o, inner);
 }
 
 static struct PyMethodDef methods[] = {

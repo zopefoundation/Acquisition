@@ -1594,6 +1594,7 @@ acquire_of(PyObject *self, PyObject *inst, PyExtensionClass *target)
     return newWrapper(self, inst, target);
 
 }
+
 static PyObject *
 aq__of__(PyObject *self, PyObject *inst)
 {
@@ -1752,37 +1753,21 @@ module_aq_get(PyObject *r, PyObject *args)
 
 static int 
 capi_aq_iswrapper(PyObject *self) {
-	return isWrapper(self);
+    return isWrapper(self);
 }
 
 static PyObject *
 capi_aq_base(PyObject *self)
 {
-  PyObject *result;
-  if (! isWrapper(self)) 
-    {
-      Py_INCREF(self);
-      return self;
-    }
-  
-  if (WRAPPER(self)->obj)
-    {
-      result=WRAPPER(self)->obj;
-      while (isWrapper(result) && WRAPPER(result)->obj)
-      	result=WRAPPER(result)->obj;
-    }
-  else result=Py_None;
-  Py_INCREF(result);
-  return result;
+    PyObject *result = get_base(self);
+    Py_INCREF(result);
+    return result;
 }
 
 static PyObject *
-module_aq_base(PyObject *ignored, PyObject *args)
+module_aq_base(PyObject *ignored, PyObject *self)
 {
-  PyObject *self;
-  UNLESS (PyArg_ParseTuple(args, "O", &self)) return NULL;
-
-  return capi_aq_base(self);
+    return capi_aq_base(self);
 }
 
 static PyObject *
@@ -2015,7 +2000,7 @@ static struct PyMethodDef methods[] = {
    "aq_get(ob, name [, default]) -- "
    "Get an attribute, acquiring it if necessary."
   },
-  {"aq_base", (PyCFunction)module_aq_base, METH_VARARGS, 
+  {"aq_base", (PyCFunction)module_aq_base, METH_O,
    "aq_base(ob) -- Get the object unwrapped"},
   {"aq_parent", (PyCFunction)module_aq_parent, METH_VARARGS, 
    "aq_parent(ob) -- Get the parent of an object"},

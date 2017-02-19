@@ -1805,26 +1805,22 @@ module_aq_parent(PyObject *ignored, PyObject *self)
 static PyObject *
 capi_aq_self(PyObject *self)
 {
-  PyObject *result;
-  if (! isWrapper(self)) 
-    {
-      Py_INCREF(self);
-      return self;
-    }
-  
-  if (WRAPPER(self)->obj) result=WRAPPER(self)->obj;
-  else result=Py_None;
+    PyObject *result;
 
-  Py_INCREF(result);
-  return result;
+    if (!isWrapper(self)) {
+        result = self;
+    } else {
+        result = WRAPPER(self)->obj;
+    }
+
+    Py_INCREF(result);
+    return result;
 }
 
 static PyObject *
-module_aq_self(PyObject *ignored, PyObject *args)
+module_aq_self(PyObject *ignored, PyObject *self)
 {
-  PyObject *self;
-  UNLESS (PyArg_ParseTuple(args, "O", &self)) return NULL;
-  return capi_aq_self(self);
+    return capi_aq_self(self);
 }
 
 static PyObject *
@@ -1993,7 +1989,7 @@ static struct PyMethodDef methods[] = {
    "aq_base(ob) -- Get the object unwrapped"},
   {"aq_parent", (PyCFunction)module_aq_parent, METH_O,
    "aq_parent(ob) -- Get the parent of an object"},
-  {"aq_self", (PyCFunction)module_aq_self, METH_VARARGS, 
+  {"aq_self", (PyCFunction)module_aq_self, METH_O,
    "aq_self(ob) -- Get the object with the outermost wrapper removed"},
   {"aq_inner", (PyCFunction)module_aq_inner, METH_VARARGS, 
    "aq_inner(ob) -- "

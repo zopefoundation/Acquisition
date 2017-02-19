@@ -28,24 +28,11 @@ PyVar_Assign(PyObject **v,  PyObject *e)
 }
 
 #define ASSIGN(V,E) PyVar_Assign(&(V),(E))
-#define UNLESS(E) if (!(E))
-#define UNLESS_ASSIGN(V,E) ASSIGN(V,E); UNLESS(V)
 #define OBJECT(O) ((PyObject*)(O))
 
 /* sizeof("x") == 2 because of the '\0' byte. */
 #define STR_STARTSWITH(ob, pattern) ((strncmp(ob, pattern, sizeof(pattern) - 1) == 0))
 #define STR_EQ(ob, pattern) ((strcmp(ob, pattern) == 0))
-
-#if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
-typedef int Py_ssize_t;
-typedef Py_ssize_t (*lenfunc)(PyObject *);
-typedef PyObject *(*ssizeargfunc)(PyObject *, Py_ssize_t);
-typedef PyObject *(*ssizessizeargfunc)(PyObject *, Py_ssize_t, Py_ssize_t);
-typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
-typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
-#define PY_SSIZE_T_MAX INT_MAX
-#define PY_SSIZE_T_MIN INT_MIN
-#endif
 
 static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__mod__, *py__pow__, *py__divmod__, *py__lshift__, *py__rshift__,
@@ -60,7 +47,7 @@ static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__iand__, *py__ixor__, *py__ior__, *py__floordiv__, *py__truediv__,
   *py__ifloordiv__, *py__itruediv__, *py__matmul__, *py__imatmul__, *py__idiv__;
 
-static PyObject *Acquired=0;
+static PyObject *Acquired = NULL;
 
 static void
 init_py_names(void)

@@ -20,14 +20,7 @@
 
 static ACQUISITIONCAPI AcquisitionCAPI;
 
-static void
-PyVar_Assign(PyObject **v,  PyObject *e)
-{
-  Py_XDECREF(*v);
-  *v=e;
-}
-
-#define ASSIGN(V,E) PyVar_Assign(&(V),(E))
+#define ASSIGN(dst, src) Py_XSETREF(dst, src)
 #define OBJECT(O) ((PyObject*)(O))
 
 /* sizeof("x") == 2 because of the '\0' byte. */

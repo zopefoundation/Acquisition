@@ -352,6 +352,18 @@ apply__of__(PyObject *self, PyObject *inst)
 }
 
 static PyObject *
+get_inner(PyObject *ob)
+{
+    if (isWrapper(ob)) {
+        while (isWrapper(WRAPPER(ob)->obj)) {
+            ob = WRAPPER(ob)->obj;
+        }
+    }
+
+    return ob;
+}
+
+static PyObject *
 get_base(PyObject *ob)
 {
     while (isWrapper(ob)) {
@@ -403,7 +415,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
     switch(*name) {
         case 'b':
             if (strcmp(name, "base") == 0) {
-                for (r = self->obj; isWrapper(r); r = WRAPPER(r)->obj) {}
+                r = get_base(OBJECT(self));
                 Py_INCREF(r);
                 return r;
             }
@@ -464,12 +476,9 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             if (strcmp(name, "inContextOf") == 0) {
                 return Py_FindAttr(OBJECT(self), oname);
             } else if (strcmp(name, "inner") == 0) {
-                for (r = self->obj; isWrapper(r); r = WRAPPER(r)->obj) {
-                    self = WRAPPER(r);
-                }
-
-                Py_INCREF(self);
-                return OBJECT(self);
+                r = get_inner(OBJECT(self));
+                Py_INCREF(r);
+                return r;
             }
             break;
 
@@ -607,11 +616,7 @@ Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
     }
 
     /* If we are doing a containment search, then replace self with aq_inner */
-    if (containment) {
-        while (isWrapper(self->obj)) {
-            self = WRAPPER(self->obj);
-        }
-    }
+    self = containment ? WRAPPER(get_inner(OBJECT(self))) : self;
 
     if (sob) {
         if (isWrapper(self->obj)) {
@@ -853,12 +858,8 @@ Wrapper_setattro(Wrapper *self, PyObject *oname, PyObject *v)
         ASSIGN(self->container, v);
         result = 0;
     } else {
-        /* Unwrap passed in wrappers! */
-        while (v && isWrapper(v)) {
-            v = WRAPPER(v)->obj;
-        }
         if (v) {
-            result = PyObject_SetAttr(self->obj, oname, v);
+            result = PyObject_SetAttr(self->obj, oname, get_base(v));
         }
         else {
             result = PyObject_DelAttr(self->obj, oname);
@@ -1806,12 +1807,7 @@ module_aq_self(PyObject *ignored, PyObject *self)
 static PyObject *
 capi_aq_inner(PyObject *self)
 {
-    if (isWrapper(self)) {
-        while (isWrapper(WRAPPER(self)->obj)) {
-            self = WRAPPER(self)->obj;
-        }
-    }
-
+    self = get_inner(self);
     Py_INCREF(self);
     return self;
 }
@@ -1841,10 +1837,8 @@ capi_aq_chain(PyObject *self, int containment)
     while (1) {
         if (isWrapper(self)) {
             if (containment) {
-                while (isWrapper(WRAPPER(self)->obj)) {
-                    ASSIGN(self, WRAPPER(self)->obj);
-                    Py_INCREF(self);
-                }
+                ASSIGN(self, get_inner(self));
+                Py_INCREF(self);
             }
 
             if (PyList_Append(result, OBJECT(self)) < 0) {

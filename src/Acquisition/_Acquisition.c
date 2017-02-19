@@ -1845,70 +1845,73 @@ module_aq_inner(PyObject *ignored, PyObject *self)
 static PyObject *
 capi_aq_chain(PyObject *self, int containment)
 {
-  PyObject *result, *v, *tb;
+    PyObject *result;
 
-  UNLESS (result=PyList_New(0)) return NULL;
+    /* This allows Py_XDECREF at the end.
+     * Needed, because the result of PyObject_GetAttr(self, py__parent__) must
+     * be kept alive until not needed anymore. It could be that the refcount of
+     * its return value is 1 => calling Py_DECREF too early leads to segfault.
+     */
+    Py_INCREF(self);
 
-  while (1)
-    {
-      if (isWrapper(self))
-	{
-	  if (WRAPPER(self)->obj)
-	    {
-	      if (containment)
-		while (WRAPPER(self)->obj && isWrapper(WRAPPER(self)->obj))
-		  self=WRAPPER(self)->obj;
-	      if (PyList_Append(result,OBJECT(self)) < 0)
-		goto err;
-	    }
-	  if (WRAPPER(self)->container) 
-	    {
-	      self=WRAPPER(self)->container;
-	      continue;
-	    }
-	}
-      else
-        {
-          if (PyList_Append(result, self) < 0)
-            goto err;
+    if ((result = PyList_New(0)) == NULL) {
+        return NULL;
+    }
 
-          if ((self=PyObject_GetAttr(self, py__parent__)))
-            {
-              Py_DECREF(self); /* We don't need our own reference. */
-              if (self!=Py_None)
+    while (1) {
+        if (isWrapper(self)) {
+            if (containment) {
+                while (isWrapper(WRAPPER(self)->obj)) {
+                    ASSIGN(self, WRAPPER(self)->obj);
+                    Py_INCREF(self);
+                }
+            }
+
+            if (PyList_Append(result, OBJECT(self)) < 0) {
+                goto err;
+            }
+
+            if (WRAPPER(self)->container) {
+                ASSIGN(self, WRAPPER(self)->container);
+                Py_INCREF(self);
                 continue;
             }
-          else
-            {
-              PyErr_Fetch(&self,&v,&tb);
-              if (self && (self != PyExc_AttributeError))
-                {
-                  PyErr_Restore(self,v,tb);
-                  return NULL;
+        } else {
+            if (PyList_Append(result, self) < 0) {
+                goto err;
+            }
+
+            ASSIGN(self, PyObject_GetAttr(self, py__parent__));
+            if (self) {
+                if (self != Py_None) {
+                    continue;
                 }
-              Py_XDECREF(self); Py_XDECREF(v); Py_XDECREF(tb);
+            } else if (!swallow_attribute_error()) {
+                goto err;
             }
         }
-
-      break;
+        break;
     }
   
-  return result;
+    Py_XDECREF(self);
+    return result;
 err:
-  Py_DECREF(result);
-  return result;
+    Py_XDECREF(self);
+    Py_DECREF(result);
+    return NULL;
 }
 
 static PyObject *
 module_aq_chain(PyObject *ignored, PyObject *args)
 {
-  PyObject *self;
-  int containment=0;
+    PyObject *self;
+    int containment = 0;
 
-  UNLESS (PyArg_ParseTuple(args, "O|i", &self, &containment))
-    return NULL;
+    if (!PyArg_ParseTuple(args, "O|i", &self, &containment)) {
+        return NULL;
+    }
 
-  return capi_aq_chain(self, containment);
+    return capi_aq_chain(self, containment);
 }
 
 static PyObject *

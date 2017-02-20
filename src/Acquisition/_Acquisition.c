@@ -414,7 +414,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
 
     switch(*name) {
         case 'b':
-            if (strcmp(name, "base") == 0) {
+            if (STR_EQ(name, "base")) {
                 r = get_base(OBJECT(self));
                 Py_INCREF(r);
                 return r;
@@ -422,7 +422,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             break;
 
         case 'p':
-            if (strcmp(name, "parent") == 0) {
+            if (STR_EQ(name, "parent")) {
                 r = self->container ? self->container : Py_None;
                 Py_INCREF(r);
                 return r;
@@ -430,14 +430,14 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             break;
 
         case 's':
-            if (strcmp(name, "self") == 0) {
+            if (STR_EQ(name, "self")) {
                 Py_INCREF(self->obj);
                 return self->obj;
             }
             break;
 
         case 'e':
-            if (strcmp(name, "explicit") == 0) {
+            if (STR_EQ(name, "explicit")) {
                 if (isExplicitWrapper(self)) {
                     Py_INCREF(self);
                     return OBJECT(self);
@@ -448,13 +448,13 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             break;
 
         case 'a':
-            if (strcmp(name, "acquire") == 0) {
+            if (STR_EQ(name, "acquire")) {
                 return Py_FindAttr(OBJECT(self), oname);
             }
             break;
 
         case 'c':
-            if (strcmp(name, "chain") == 0) {
+            if (STR_EQ(name, "chain")) {
                 if ((r = PyList_New(0)) == NULL) {
                     return NULL;
                 }
@@ -473,9 +473,9 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             break;
 
         case 'i':
-            if (strcmp(name, "inContextOf") == 0) {
+            if (STR_EQ(name, "inContextOf")) {
                 return Py_FindAttr(OBJECT(self), oname);
-            } else if (strcmp(name, "inner") == 0) {
+            } else if (STR_EQ(name, "inner")) {
                 r = get_inner(OBJECT(self));
                 Py_INCREF(r);
                 return r;
@@ -483,7 +483,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
             break;
 
         case 'u':
-            if (strcmp(name, "uncle") == 0) {
+            if (STR_EQ(name, "uncle")) {
                 return NATIVE_FROM_STRING("Bob");
             }
             break;

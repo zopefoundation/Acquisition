@@ -149,23 +149,24 @@ CallMethodArgs(PyObject *self, PyObject *name, char *format, ...)
 static PyObject *
 diff_to_bool(int diff, int op)
 {
-	PyObject *result;
-	int istrue;
+    PyObject *result;
+    int istrue;
 
-	switch (op) {
-		case Py_EQ: istrue = diff == 0; break;
-		case Py_NE: istrue = diff != 0; break;
-		case Py_LE: istrue = diff <= 0; break;
-		case Py_GE: istrue = diff >= 0; break;
-		case Py_LT: istrue = diff < 0; break;
-		case Py_GT: istrue = diff > 0; break;
-		default:
-			assert(! "op unknown");
-			istrue = 0; /* To shut up compiler */
-	}
-	result = istrue ? Py_True : Py_False;
-	Py_INCREF(result);
-	return result;
+    switch (op) {
+        case Py_EQ: istrue = diff == 0; break;
+        case Py_NE: istrue = diff != 0; break;
+        case Py_LE: istrue = diff <= 0; break;
+        case Py_GE: istrue = diff >= 0; break;
+        case Py_LT: istrue = diff < 0; break;
+        case Py_GT: istrue = diff > 0; break;
+        default:
+            assert(! "op unknown");
+            istrue = 0; /* To shut up compiler */
+    }
+
+    result = istrue ? Py_True : Py_False;
+    Py_INCREF(result);
+    return result;
 }
 
 static PyObject*
@@ -391,7 +392,7 @@ Wrapper_traverse(Wrapper *self, visitproc visit, void *arg)
     return 0;
 }
 
-static int 
+static int
 Wrapper_clear(Wrapper *self)
 {
     Py_CLEAR(self->obj);
@@ -400,7 +401,7 @@ Wrapper_clear(Wrapper *self)
 }
 
 static void
-Wrapper_dealloc(Wrapper *self)     
+Wrapper_dealloc(Wrapper *self)
 {
     Wrapper_clear(self);
     Py_TYPE(self)->tp_free(OBJECT(self));
@@ -494,7 +495,7 @@ Wrapper_special(Wrapper *self, char *name, PyObject *oname)
 
 static int
 apply_filter(PyObject *filter, PyObject *inst, PyObject *oname, PyObject *r,
-	     PyObject *extra, PyObject *orig)
+             PyObject *extra, PyObject *orig)
 {
     /* Calls the filter, passing arguments.
 
@@ -527,19 +528,19 @@ apply_filter(PyObject *filter, PyObject *inst, PyObject *oname, PyObject *r,
 }
 
 static PyObject *
-Wrapper_acquire(Wrapper *self, PyObject *oname, 
-		PyObject *filter, PyObject *extra, PyObject *orig,
-		int explicit, int containment);
+Wrapper_acquire(Wrapper *self, PyObject *oname,
+                PyObject *filter, PyObject *extra, PyObject *orig,
+                int explicit, int containment);
 
 static PyObject *
 Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
-		PyObject *filter, PyObject *extra, PyObject *orig,
-		int sob, int sco, int explicit, int containment);
+                      PyObject *filter, PyObject *extra, PyObject *orig,
+                      int sob, int sco, int explicit, int containment);
 
 static PyObject *
 Wrapper_findattr(Wrapper *self, PyObject *oname,
-		PyObject *filter, PyObject *extra, PyObject *orig,
-		int sob, int sco, int explicit, int containment)
+                 PyObject *filter, PyObject *extra, PyObject *orig,
+                 int sob, int sco, int explicit, int containment)
 /*
   Parameters:
 
@@ -572,8 +573,8 @@ Wrapper_findattr(Wrapper *self, PyObject *oname,
 
 static PyObject *
 Wrapper_findattr_name(Wrapper *self, char* name, PyObject *oname,
-		PyObject *filter, PyObject *extra, PyObject *orig,
-		int sob, int sco, int explicit, int containment)
+                      PyObject *filter, PyObject *extra, PyObject *orig,
+                      int sob, int sco, int explicit, int containment)
 /*
  Exactly the same as Wrapper_findattr, except that the incoming
  Python name string/unicode object has already been decoded
@@ -1093,7 +1094,7 @@ Wrapper_contains(PyObject *self, PyObject *v)
    Instead the base object needs to be checked and the wrapper must only
    be used when actually calling `__getitem__` or setting up a sequence
    iterator. */
-static PyObject * 
+static PyObject *
 Wrapper_iter(Wrapper *self)
 {
   PyObject *obj = self->obj;
@@ -1118,14 +1119,14 @@ Wrapper_iter(Wrapper *self)
 }
 
 static PySequenceMethods Wrapper_as_sequence = {
-	(lenfunc)Wrapper_length,		/*sq_length*/
-	Wrapper_add,		/*sq_concat*/
-	(ssizeargfunc)Wrapper_repeat,		/*sq_repeat*/
-	(ssizeargfunc)Wrapper_item,		/*sq_item*/
-	(ssizessizeargfunc)Wrapper_slice,		/*sq_slice*/
-	(ssizeobjargproc)Wrapper_ass_item,	/*sq_ass_item*/
-	(ssizessizeobjargproc)Wrapper_ass_slice,	/*sq_ass_slice*/
-	(objobjproc)Wrapper_contains,		/*sq_contains*/
+    (lenfunc)Wrapper_length,            /*sq_length*/
+    Wrapper_add,                        /*sq_concat*/
+    (ssizeargfunc)Wrapper_repeat,       /*sq_repeat*/
+    (ssizeargfunc)Wrapper_item,         /*sq_item*/
+    (ssizessizeargfunc)Wrapper_slice,   /*sq_slice*/
+    (ssizeobjargproc)Wrapper_ass_item,  /*sq_ass_item*/
+    (ssizessizeobjargproc)Wrapper_ass_slice,    /*sq_ass_slice*/
+    (objobjproc)Wrapper_contains,       /*sq_contains*/
 };
 
 /* -------------------------------------------------------------- */
@@ -1157,9 +1158,9 @@ Wrapper_ass_sub(PyObject *self, PyObject *key, PyObject *v)
 }
 
 static PyMappingMethods Wrapper_as_mapping = {
-  (lenfunc)Wrapper_length,		/*mp_length*/
-  (binaryfunc)Wrapper_subscript,	/*mp_subscript*/
-  (objobjargproc)Wrapper_ass_sub,	/*mp_ass_subscript*/
+    (lenfunc)Wrapper_length,        /*mp_length*/
+    (binaryfunc)Wrapper_subscript,  /*mp_subscript*/
+    (objobjargproc)Wrapper_ass_sub, /*mp_ass_subscript*/
 };
 
 /* -------------------------------------------------------------- */
@@ -1380,7 +1381,7 @@ static PyNumberMethods Wrapper_as_number = {
 
 
 static char *acquire_args[] = {"object", "name", "filter", "extra", "explicit",
-			       "default", "containment", NULL};
+                               "default", "containment", NULL};
 
 static PyObject *
 Wrapper_acquire_method(Wrapper *self, PyObject *args, PyObject *kw)
@@ -1605,7 +1606,7 @@ capi_aq_acquire(
     PyObject *self,
     PyObject *name,
     PyObject *filter,
-	PyObject *extra,
+    PyObject *extra,
     int explicit,
     PyObject *defalt,
     int containment)
@@ -1722,7 +1723,7 @@ module_aq_get(PyObject *r, PyObject *args)
 {
     PyObject *self, *name, *defalt = NULL;
     int containment = 0;
-  
+
     if (!PyArg_ParseTuple(args, "OO|Oi", &self, &name, &defalt, &containment)) {
         return NULL;
     }
@@ -1730,7 +1731,7 @@ module_aq_get(PyObject *r, PyObject *args)
     return capi_aq_get(self, name, defalt, containment);
 }
 
-static int 
+static int
 capi_aq_iswrapper(PyObject *self) {
     return isWrapper(self);
 }
@@ -1864,7 +1865,7 @@ capi_aq_chain(PyObject *self, int containment)
         }
         break;
     }
-  
+
     Py_XDECREF(self);
     return result;
 err:
@@ -1941,7 +1942,7 @@ module_aq_inContextOf(PyObject *ignored, PyObject *args)
 }
 
 static struct PyMethodDef methods[] = {
-  {"aq_acquire", (PyCFunction)module_aq_acquire, METH_VARARGS|METH_KEYWORDS, 
+  {"aq_acquire", (PyCFunction)module_aq_acquire, METH_VARARGS|METH_KEYWORDS,
    "aq_acquire(ob, name [, filter, extra, explicit]) -- "
    "Get an attribute, acquiring it if necessary"
   },
@@ -1958,7 +1959,7 @@ static struct PyMethodDef methods[] = {
   {"aq_inner", (PyCFunction)module_aq_inner, METH_O,
    "aq_inner(ob) -- "
    "Get the object with all but the innermost wrapper removed"},
-  {"aq_chain", (PyCFunction)module_aq_chain, METH_VARARGS, 
+  {"aq_chain", (PyCFunction)module_aq_chain, METH_VARARGS,
    "aq_chain(ob [, containment]) -- "
    "Get a list of objects in the acquisition environment"},
   {"aq_inContextOf", (PyCFunction)module_aq_inContextOf, METH_VARARGS,

@@ -20,6 +20,7 @@ import unittest
 import sys
 import platform
 import operator
+import os
 from doctest import DocTestSuite, DocFileSuite
 
 import ExtensionClass
@@ -3665,6 +3666,17 @@ class TestProxying(unittest.TestCase):
         self._check_bool(base_class=Acquisition.Explicit)
 
 
+class TestCompilation(unittest.TestCase):
+
+    def test_compile(self):
+        if PYPY or 'PURE_PYTHON' in os.environ:
+            with self.assertRaises(ImportError):
+                from Acquisition import _Acquisition
+        else:
+            from Acquisition import _Acquisition
+            self.assertTrue(hasattr(_Acquisition, 'AcquisitionCAPI'))
+
+
 def test_suite():
     import os.path
     here = os.path.dirname(__file__)
@@ -3682,6 +3694,7 @@ def test_suite():
         unittest.makeSuite(TestUnicode),
         unittest.makeSuite(TestProxying),
         unittest.makeSuite(TestCooperativeBase),
+        unittest.makeSuite(TestCompilation),
     ]
 
     # This file is only available in a source checkout, skip it

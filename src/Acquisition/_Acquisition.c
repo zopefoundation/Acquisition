@@ -20,6 +20,18 @@
 
 static ACQUISITIONCAPI AcquisitionCAPI;
 
+// Py_XSETREF is undefined in Python 3.4 only, it's present in 2.7 and 3.5
+#ifndef Py_XSETREF
+
+#define Py_XSETREF(op, op2)                     \
+    do {                                        \
+        PyObject *_py_tmp = (PyObject *)(op);   \
+        (op) = (op2);                           \
+        Py_XDECREF(_py_tmp);                    \
+    } while (0)
+
+#endif
+
 #define ASSIGN(dst, src) Py_XSETREF(dst, src)
 #define OBJECT(O) ((PyObject*)(O))
 

@@ -4,6 +4,7 @@ Changelog
 4.5.0 (unreleased)
 ------------------
 
+- Fix C code under Python 3.4, with missing Py_XSETREF.
 
 4.4.0 (2017-05-04)
 ------------------

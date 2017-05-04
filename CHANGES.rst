@@ -4,6 +4,8 @@ Changelog
 4.4.0 (unreleased)
 ------------------
 
+- Enable the C extension under Python 3.
+
 - Drop support for Python 3.3.
 
 4.3.0 (2017-01-20)

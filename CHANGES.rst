@@ -4,6 +4,7 @@ Changelog
 4.5.0 (unreleased)
 ------------------
 
+- Ensure our dependencies match our expactations about C extensions.
 
 4.4.1 (2017-05-04)
 ------------------

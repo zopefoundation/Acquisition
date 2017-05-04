@@ -18,13 +18,12 @@ from __future__ import print_function
 import gc
 import unittest
 import sys
-import platform
 import operator
-import os
 from doctest import DocTestSuite, DocFileSuite
 
 import ExtensionClass
 import Acquisition
+from Acquisition import IS_PYPY, IS_PURE
 
 
 if sys.version_info >= (3,):
@@ -43,8 +42,6 @@ else:
     PY2 = True
     PY3 = False
 
-py_impl = getattr(platform, 'python_implementation', lambda: None)
-PYPY = py_impl() == 'PyPy'
 if not hasattr(gc, 'get_threshold'):
     # PyPy
     gc.get_threshold = lambda: ()
@@ -1919,7 +1916,7 @@ def test_Basic_gc():
     ...     ignore = gc.collect()
     ...     del a
     ...     removed = gc.collect()
-    ...     print(removed > 0 or PYPY)
+    ...     print(removed > 0 or IS_PYPY)
     removed
     True
     removed
@@ -1951,7 +1948,7 @@ def test_Wrapper_gc():
     ...     ignored = gc.collect()
     ...     del a
     ...     removed = gc.collect()
-    ...     removed > 0 or PYPY
+    ...     removed > 0 or IS_PYPY
     removed
     True
     removed
@@ -3534,7 +3531,7 @@ class TestProxying(unittest.TestCase):
 
         self.assertEqual(base.derived(1, k=2), (42, 1, 2))
 
-        if not PYPY:
+        if not IS_PYPY:
             # XXX: This test causes certain versions
             # of PyPy to segfault (at least 2.6.0-alpha1)
             class NotCallable(base_class):
@@ -3669,8 +3666,8 @@ class TestProxying(unittest.TestCase):
 class TestCompilation(unittest.TestCase):
 
     def test_compile(self):
-        if PYPY or 'PURE_PYTHON' in os.environ:
-            with self.assertRaises(ImportError):
+        if IS_PYPY or IS_PURE:
+            with self.assertRaises((AttributeError, ImportError)):
                 from Acquisition import _Acquisition
         else:
             from Acquisition import _Acquisition

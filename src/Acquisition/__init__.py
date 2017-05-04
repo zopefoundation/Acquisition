@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 
 import os
 import operator
+import platform
 import sys
 import types
 import weakref
@@ -15,6 +16,9 @@ from zope.interface import classImplements
 
 from .interfaces import IAcquirer
 from .interfaces import IAcquisitionWrapper
+
+IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
+IS_PURE = 'PURE_PYTHON' in os.environ
 
 
 class Acquired(object):
@@ -938,11 +942,10 @@ def aq_inContextOf(self, o, inner=True):
     return False
 
 
-if 'PURE_PYTHON' not in os.environ:  # pragma: no cover
-    try:
-        from ._Acquisition import *  # NOQA
-    except ImportError:
-        pass
+if not (IS_PYPY or IS_PURE):  # pragma: no cover
+    # Make sure we can import the C extension of our dependency.
+    from ExtensionClass import _ExtensionClass  # NOQA
+    from ._Acquisition import *  # NOQA
 
 classImplements(Explicit, IAcquirer)
 classImplements(ExplicitAcquisitionWrapper, IAcquisitionWrapper)

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.4.0 (unreleased)
+4.4.0 (2017-05-04)
 ------------------
 
 - Enable the C extension under Python 3.

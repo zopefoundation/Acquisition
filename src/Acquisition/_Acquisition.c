@@ -2050,7 +2050,7 @@ module_init(void)
     AcquisitionCAPI.AQ_Inner = capi_aq_inner;
     AcquisitionCAPI.AQ_Chain = capi_aq_chain;
 
-    api = PyCapsule_New(&AcquisitionCAPI, "AcquisitionCAPI", NULL);
+    api = PyCapsule_New(&AcquisitionCAPI, "Acquisition.AcquisitionCAPI", NULL);
 
     PyDict_SetItemString(d, "AcquisitionCAPI", api);
     Py_DECREF(api);

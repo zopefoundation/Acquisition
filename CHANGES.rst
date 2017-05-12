@@ -1,8 +1,10 @@
 Changelog
 =========
 
-4.5.0 (unreleased)
+4.4.2 (2017-05-12)
 ------------------
+
+- Fixed C capsule name to fix import errors.
 
 - Ensure our dependencies match our expactations about C extensions.
 

@@ -74,7 +74,7 @@ try:
         import pkg_resources
     from urllib.request import urlopen
 except ImportError:
-    from urllib.request import urlopen
+    from urllib2 import urlopen
 
 ez = {}
 exec(urlopen('https://bootstrap.pypa.io/ez_setup.py').read(), ez)

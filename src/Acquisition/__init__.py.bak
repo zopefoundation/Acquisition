@@ -1,4 +1,4 @@
-
+from __future__ import absolute_import, print_function
 
 # pylint:disable=W0212,R0911,R0912
 
@@ -48,12 +48,12 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
 
 
 if sys.version_info < (3,):
-    import copyreg
+    import copy_reg
 
     def _rebound_method(method, wrapper):
         """Returns a version of the method with self bound to `wrapper`"""
         if isinstance(method, types.MethodType):
-            method = types.MethodType(method.__func__, wrapper, method.__self__.__class__)
+            method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
     exec("""def _reraise(tp, value, tb=None):
     raise tp, value, tb
@@ -338,7 +338,7 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
     type_obj = type(obj)
     wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
     if wrapper_subclass is _NOT_GIVEN:
-        slotnames = copyreg._slotnames(type_obj)
+        slotnames = copy_reg._slotnames(type_obj)
         if slotnames and not isinstance(obj, _Wrapper):
             new_type_dict = {'_Wrapper__DERIVED': True}
 
@@ -531,7 +531,7 @@ class _Wrapper(ExtensionClass.Base):
     # Special methods looked up by the type of self._obj,
     # but which must have the wrapper as self when called
 
-    def __bool__(self):
+    def __nonzero__(self):
         aq_self = self._obj
         type_aq_self = type(aq_self)
         nonzero = getattr(type_aq_self, '__nonzero__', None)
@@ -733,7 +733,7 @@ class _Wrapper(ExtensionClass.Base):
             return operator.getslice(
                 self._obj,
                 key.start if key.start is not None else 0,
-                key.stop if key.stop is not None else sys.maxsize)
+                key.stop if key.stop is not None else sys.maxint)
 
         aq_self = self._obj
         try:

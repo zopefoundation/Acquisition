@@ -14,7 +14,7 @@
 """Acquisition test cases (and useful examples)
 """
 
-
+from __future__ import print_function
 import gc
 import unittest
 import sys
@@ -30,7 +30,7 @@ if sys.version_info >= (3,):
     PY3 = True
     PY2 = False
 
-    def str(self):
+    def unicode(self):
         # For test purposes, redirect the unicode
         # to the type of the object, just like Py2 did
         try:
@@ -47,10 +47,10 @@ if not hasattr(gc, 'get_threshold'):
     gc.get_threshold = lambda: ()
     gc.set_threshold = lambda *x: None
 
-AQ_PARENT = str('aq_parent')
-UNICODE_WAS_CALLED = str('unicode was called')
-STR_WAS_CALLED = str('str was called')
-TRUE = str('True')
+AQ_PARENT = unicode('aq_parent')
+UNICODE_WAS_CALLED = unicode('unicode was called')
+STR_WAS_CALLED = unicode('str was called')
+TRUE = unicode('True')
 
 
 def test_story():
@@ -1619,7 +1619,7 @@ class TestPickle(unittest.TestCase):
 
     def test_cant_persist_acquisition_wrappers_classic(self):
         try:
-            import pickle
+            import cPickle
         except ImportError:
             import pickle as cPickle
 
@@ -1634,18 +1634,18 @@ class TestPickle(unittest.TestCase):
         from Acquisition import ImplicitAcquisitionWrapper
         w = ImplicitAcquisitionWrapper(X(), X())
         with self.assertRaises(TypeError):
-            pickle.dumps(w)
+            cPickle.dumps(w)
 
         # Check for pickle protocol one:
 
         with self.assertRaises(TypeError):
-            pickle.dumps(w, 1)
+            cPickle.dumps(w, 1)
 
         # Check custom pickler:
 
         from io import BytesIO
         file = BytesIO()
-        pickler = pickle.Pickler(file, 1)
+        pickler = cPickle.Pickler(file, 1)
 
         with self.assertRaises(TypeError):
             pickler.dump(w)
@@ -1654,7 +1654,7 @@ class TestPickle(unittest.TestCase):
         # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
 
         file = BytesIO()
-        pickler = pickle.Pickler(file, 1)
+        pickler = cPickle.Pickler(file, 1)
 
         def persistent_id(obj):
             if not hasattr(obj, '_p_oid'):
@@ -1679,7 +1679,7 @@ class TestPickle(unittest.TestCase):
 
     def test_cant_persist_acquisition_wrappers_newstyle(self):
         try:
-            import pickle
+            import cPickle
         except ImportError:
             import pickle as cPickle
 
@@ -1694,18 +1694,18 @@ class TestPickle(unittest.TestCase):
         from Acquisition import ImplicitAcquisitionWrapper
         w = ImplicitAcquisitionWrapper(X(), X())
         with self.assertRaises(TypeError):
-            pickle.dumps(w)
+            cPickle.dumps(w)
 
         # Check for pickle protocol one:
 
         with self.assertRaises(TypeError):
-            pickle.dumps(w, 1)
+            cPickle.dumps(w, 1)
 
         # Check custom pickler:
 
         from io import BytesIO
         file = BytesIO()
-        pickler = pickle.Pickler(file, 1)
+        pickler = cPickle.Pickler(file, 1)
 
         with self.assertRaises(TypeError):
             pickler.dump(w)
@@ -1714,7 +1714,7 @@ class TestPickle(unittest.TestCase):
         # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
 
         file = BytesIO()
-        pickler = pickle.Pickler(file, 1)
+        pickler = cPickle.Pickler(file, 1)
 
         def persistent_id(obj):
             if not hasattr(obj, '_p_oid'):
@@ -3259,7 +3259,7 @@ class TestUnicode(unittest.TestCase):
             def __unicode__(self):
                 return UNICODE_WAS_CALLED
         wrapped = A().__of__(A())
-        self.assertEqual(UNICODE_WAS_CALLED, str(wrapped))
+        self.assertEqual(UNICODE_WAS_CALLED, unicode(wrapped))
         self.assertEqual(str(wrapped), repr(wrapped))
 
     def test_explicit_aq_unicode_should_be_called(self):
@@ -3267,7 +3267,7 @@ class TestUnicode(unittest.TestCase):
             def __unicode__(self):
                 return UNICODE_WAS_CALLED
         wrapped = A().__of__(A())
-        self.assertEqual(UNICODE_WAS_CALLED, str(wrapped))
+        self.assertEqual(UNICODE_WAS_CALLED, unicode(wrapped))
         self.assertEqual(str(wrapped), repr(wrapped))
 
     def test_implicit_should_fall_back_to_str(self):
@@ -3275,7 +3275,7 @@ class TestUnicode(unittest.TestCase):
             def __str__(self):
                 return 'str was called'
         wrapped = A().__of__(A())
-        self.assertEqual(STR_WAS_CALLED, str(wrapped))
+        self.assertEqual(STR_WAS_CALLED, unicode(wrapped))
         self.assertEqual('str was called', str(wrapped))
 
     def test_explicit_should_fall_back_to_str(self):
@@ -3283,7 +3283,7 @@ class TestUnicode(unittest.TestCase):
             def __str__(self):
                 return 'str was called'
         wrapped = A().__of__(A())
-        self.assertEqual(STR_WAS_CALLED, str(wrapped))
+        self.assertEqual(STR_WAS_CALLED, unicode(wrapped))
         self.assertEqual('str was called', str(wrapped))
 
     def test_str_fallback_should_be_called_with_wrapped_self(self):
@@ -3292,7 +3292,7 @@ class TestUnicode(unittest.TestCase):
                 return str(self.aq_parent == outer)
         outer = A()
         inner = A().__of__(outer)
-        self.assertEqual(TRUE, str(inner))
+        self.assertEqual(TRUE, unicode(inner))
 
     def test_unicode_should_be_called_with_wrapped_self(self):
         class A(Acquisition.Implicit):
@@ -3300,7 +3300,7 @@ class TestUnicode(unittest.TestCase):
                 return str(self.aq_parent == outer)
         outer = A()
         inner = A().__of__(outer)
-        self.assertEqual(TRUE, str(inner))
+        self.assertEqual(TRUE, unicode(inner))
 
 
 class TestProxying(unittest.TestCase):
@@ -3374,7 +3374,7 @@ class TestProxying(unittest.TestCase):
         # conversion
         '__complex__': complex,
         '__int__': int,
-        '__long__': int,
+        '__long__': long,
         '__float__': float,
         '__oct__': oct,
         '__hex__': hex,
@@ -3402,7 +3402,7 @@ class TestProxying(unittest.TestCase):
             def converter(self, *args):
                 return f(self.value)
             return converter
-        for k, convert in list(self.__unary_conversion_methods__.items()):
+        for k, convert in self.__unary_conversion_methods__.items():
             acquire_meths[k] = make_converter(convert)
 
         acquire_meths['__len__'] = lambda self: self.value
@@ -3460,7 +3460,7 @@ class TestProxying(unittest.TestCase):
             self.assertEqual(base.value, op(base.derived))
 
         # Conversion functions
-        for meth, converter in list(self.__unary_conversion_methods__.items()):
+        for meth, converter in self.__unary_conversion_methods__.items():
             if not converter:
                 continue
             self.assertEqual(converter(base.value),
@@ -3630,7 +3630,7 @@ class TestProxying(unittest.TestCase):
             if base_class is Acquisition.Explicit:
                 value = Acquisition.Acquired
 
-            def __bool__(self):
+            def __nonzero__(self):
                 return bool(self.value)
             __bool__ = __nonzero__
 

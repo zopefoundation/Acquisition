@@ -4,6 +4,9 @@ Changelog
 2.13.12 (unreleased)
 --------------------
 
+- Fix the extremely rare potential for a crash when the C extensions
+  are in use. See `issue 21 <https://github.com/zopefoundation/Acquisition/issues/21>`_.
+
 
 2.13.11 (2016-09-05)
 --------------------

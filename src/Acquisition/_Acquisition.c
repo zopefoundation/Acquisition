@@ -291,8 +291,9 @@ Wrapper_clear(Wrapper *self)
 static void
 Wrapper_dealloc(Wrapper *self)     
 {
-  Wrapper_clear(self);
-  self->ob_type->tp_free((PyObject*)self);
+    PyObject_GC_UnTrack(OBJECT(self));
+    Wrapper_clear(self);
+    self->ob_type->tp_free((PyObject*)self);
 }
 
 static PyObject *

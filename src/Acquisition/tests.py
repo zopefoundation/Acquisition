@@ -335,7 +335,7 @@ def test_story():
 
     For example, in:
 
-    >>> class HandyForTesting:
+    >>> class HandyForTesting(object):
     ...     def __init__(self, name): self.name=name
     ...     def __str__(self):
     ...       return "%s(%s)" % (self.name, self.__class__.__name__)
@@ -1605,7 +1605,7 @@ class TestPickle(unittest.TestCase):
     def test_cant_pickle_acquisition_wrappers_classic(self):
         import pickle
 
-        class X:
+        class X(object):
             def __getstate__(self):
                 return 1
 
@@ -1682,7 +1682,7 @@ class TestPickle(unittest.TestCase):
         except ImportError:
             import pickle as cPickle
 
-        class X:
+        class X(object):
             _p_oid = '1234'
 
             def __getstate__(self):

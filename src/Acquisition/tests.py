@@ -134,316 +134,278 @@ def showaq(m_self, indent=''):
     return rval
 
 
-def test_story():
-    """
-    Acquisition is a mechanism that allows objects to obtain
-    attributes from their environment.  It is similar to inheritence,
-    except that, rather than traversing an inheritence hierarchy
-    to obtain attributes, a containment hierarchy is traversed.
+class TestStory(unittest.TestCase):
+
+    def test_story(self):
+        # Acquisition is a mechanism that allows objects to obtain
+        # attributes from their environment.  It is similar to inheritence,
+        # except that, rather than traversing an inheritence hierarchy
+        # to obtain attributes, a containment hierarchy is traversed.
+
+        # The "ExtensionClass":ExtensionClass.html. release includes mix-in
+        # extension base classes that can be used to add acquisition as a
+        # feature to extension subclasses.  These mix-in classes use the
+        # context-wrapping feature of ExtensionClasses to implement
+        # acquisition. Consider the following example:
+
+        class C(ExtensionClass.Base):
+            color = 'red'
+
+        class A(Implicit):
+            def report(self):
+                return self.color
+
+        a = A()
+        c = C()
+        c.a = a
+        self.assertEqual(c.a.report(), 'red')
+
+        d = C()
+        d.color = 'green'
+        d.a = a
+        self.assertEqual(d.a.report(), 'green')
+
+        with self.assertRaises(AttributeError):
+            a.report()
+
+        # The class 'A' inherits acquisition behavior from 'Implicit'.
+        # The object, 'a', "has" the color of objects 'c' and 'd'
+        # when it is accessed through them, but it has no color by itself.
+        # The object 'a' obtains attributes from it's environment, where
+        # it's environment is defined by the access path used to reach 'a'.
+
+        # Acquisition wrappers
+
+        # When an object that supports acquisition is accessed through
+        # an extension class instance, a special object, called an
+        # acquisition wrapper, is returned.  In the example above, the
+        # expression 'c.a' returns an acquisition wrapper that
+        # contains references to both 'c' and 'a'. It is this wrapper
+        # that performs attribute lookup in 'c' when an attribute
+        # cannot be found in 'a'.
+
+        # Aquisition wrappers provide access to the wrapped objects
+        # through the attributes 'aq_parent', 'aq_self', 'aq_base'.
+        # In the example above, the expressions:
+        self.assertIs(c.a.aq_parent, c)
+
+        # and:
+        self.assertIs(c.a.aq_self, a)
+
+        # both evaluate to true, but the expression:
+        self.assertIsNot(c.a, a)
+
+        # evaluates to false, because the expression 'c.a' evaluates
+        # to an acquisition wrapper around 'c' and 'a', not 'a' itself.
+
+        # The attribute 'aq_base' is similar to 'aq_self'. Wrappers may be
+        # nested and 'aq_self' may be a wrapped object.  The 'aq_base'
+        # attribute is the underlying object with all wrappers removed.
+
+        # Acquisition Control
+
+        # Two styles of acquisition are supported in the current
+        # ExtensionClass release, implicit and explicit aquisition.
+
+        # Implicit acquisition
+
+        # Implicit acquisition is so named because it searches for
+        # attributes from the environment automatically whenever an
+        # attribute cannot be obtained directly from an object or
+        # through inheritence.
+
+        # An attribute may be implicitly acquired if it's name does
+        # not begin with an underscore, '_'.
+        # To support implicit acquisition, an object should inherit
+        # from the mix-in class 'Implicit'.
 
-    The "ExtensionClass":ExtensionClass.html. release includes mix-in
-    extension base classes that can be used to add acquisition as a
-    feature to extension subclasses.  These mix-in classes use the
-    context-wrapping feature of ExtensionClasses to implement
-    acquisition. Consider the following example:
+        # Explicit Acquisition
+
+        # When explicit acquisition is used, attributes are not
+        # automatically obtained from the environment. Instead, the
+        # method 'aq_aquire' must be used, as in:
+        # print(c.a.aq_acquire('color'))
 
-    >>> class C(ExtensionClass.Base):
-    ...   color='red'
+        # To support explicit acquisition, an object should inherit
+        # from the mix-in class 'Explicit'.
 
-    >>> class A(Implicit):
-    ...   def report(self):
-    ...     print(self.color)
+        # Controlled Acquisition
 
-    >>> a = A()
-    >>> c = C()
-    >>> c.a = a
+        # A class (or instance) can provide attribute by attribute control
+        # over acquisition.  This is done by:
+        # - subclassing from 'Explicit', and
+        # - setting all attributes that should be acquired to the special
+        #   value: 'Acquisition.Acquired'.  Setting an attribute to this
+        #   value also allows inherited attributes to be overridden with
+        #   acquired ones.
+        # For example, in:
+
+        class E(Explicit):
+            id = 1
+            secret = 2
+            color = Acquisition.Acquired
+            __roles__ = Acquisition.Acquired
+
+        # The *only* attributes that are automatically acquired from
+        # containing objects are 'color', and '__roles__'.
+
+        c = C()
+        c.foo = 'foo'
+        c.e = E()
+        self.assertEqual(c.e.color, 'red')
+        with self.assertRaises(AttributeError):
+            c.e.foo
+
+        # Note also that the '__roles__' attribute is acquired even
+        # though it's name begins with an underscore:
 
-    >>> c.a.report()
-    red
+        c.__roles__ = 'Manager', 'Member'
+        self.assertEqual(c.e.__roles__, ('Manager', 'Member'))
 
-    >>> d = C()
-    >>> d.color = 'green'
-    >>> d.a = a
-
-    >>> d.a.report()
-    green
-
-    >>> try:
-    ...     a.report()
-    ... except AttributeError:
-    ...     pass
-    ... else:
-    ...     raise AssertionError('AttributeError not raised.')
-
-    The class 'A' inherits acquisition behavior from
-    'Implicit'.  The object, 'a', "has" the color of
-    objects 'c' and 'd' when it is accessed through them, but it
-    has no color by itself.  The object 'a' obtains attributes
-    from it's environment, where it's environment is defined by
-    the access path used to reach 'a'.
-
-    Acquisition wrappers
-
-    When an object that supports acquisition is accessed through
-    an extension class instance, a special object, called an
-    acquisition wrapper, is returned.  In the example above, the
-    expression 'c.a' returns an acquisition wrapper that
-    contains references to both 'c' and 'a'.  It is this wrapper
-    that performs attribute lookup in 'c' when an attribute
-    cannot be found in 'a'.
-
-    Aquisition wrappers provide access to the wrapped objects
-    through the attributes 'aq_parent', 'aq_self', 'aq_base'.
-    In the example above, the expressions:
-
-    >>> c.a.aq_parent is c
-    1
-
-    and:
-
-    >>> c.a.aq_self is a
-    1
-
-    both evaluate to true, but the expression:
-
-    >>> c.a is a
-    0
-
-    evaluates to false, because the expression 'c.a' evaluates
-    to an acquisition wrapper around 'c' and 'a', not 'a' itself.
-
-    The attribute 'aq_base' is similar to 'aq_self'.  Wrappers may be
-    nested and 'aq_self' may be a wrapped object.  The 'aq_base'
-    attribute is the underlying object with all wrappers removed.
-
-    Acquisition Control
-
-    Two styles of acquisition are supported in the current
-    ExtensionClass release, implicit and explicit aquisition.
-
-    Implicit acquisition
-
-    Implicit acquisition is so named because it searches for
-    attributes from the environment automatically whenever an
-    attribute cannot be obtained directly from an object or
-    through inheritence.
-
-    An attribute may be implicitly acquired if it's name does
-    not begin with an underscore, '_'.
-
-    To support implicit acquisition, an object should inherit
-    from the mix-in class 'Implicit'.
-
-    Explicit Acquisition
-
-    When explicit acquisition is used, attributes are not
-    automatically obtained from the environment.  Instead, the
-    method 'aq_aquire' must be used, as in:
-
-    print(c.a.aq_acquire('color'))
-
-    To support explicit acquisition, an object should inherit
-    from the mix-in class 'Explicit'.
-
-    Controlled Acquisition
-
-    A class (or instance) can provide attribute by attribute control
-    over acquisition.  This is done by:
-
-    - subclassing from 'Explicit', and
-
-    - setting all attributes that should be acquired to the special
-      value: 'Acquisition.Acquired'.  Setting an attribute to this
-      value also allows inherited attributes to be overridden with
-      acquired ones.
-
-    For example, in:
-
-    >>> class E(Explicit):
-    ...    id = 1
-    ...    secret = 2
-    ...    color = Acquisition.Acquired
-    ...    __roles__ = Acquisition.Acquired
-
-    The *only* attributes that are automatically acquired from
-    containing objects are 'color', and '__roles__'.
-
-    >>> c = C()
-    >>> c.foo = 'foo'
-    >>> c.e = E()
-    >>> c.e.color
-    'red'
-    >>> c.e.foo
-    Traceback (most recent call last):
-    ...
-    AttributeError: foo
-
-    Note also that the '__roles__' attribute is acquired even
-    though it's name begins with an underscore:
-
-    >>> c.__roles__ = 'Manager', 'Member'
-    >>> c.e.__roles__
-    ('Manager', 'Member')
-
-    In fact, the special 'Acquisition.Acquired' value can be used
-    in 'Implicit' objects to implicitly acquire
-    selected objects that smell like private objects.
-
-    >>> class I(Implicit):
-    ...    __roles__ = Acquisition.Acquired
-
-    >>> c.x = C()
-    >>> try:
-    ...     c.x.__roles__
-    ... except AttributeError:
-    ...     pass
-    ... else:
-    ...     raise AssertionError('AttributeError not raised.')
-
-    >>> c.x = I()
-    >>> c.x.__roles__
-    ('Manager', 'Member')
-
-    Filtered Acquisition
-
-    The acquisition method, 'aq_acquire', accepts two optional
-    arguments. The first of the additional arguments is a
-    "filtering" function that is used when considering whether to
-    acquire an object.  The second of the additional arguments is an
-    object that is passed as extra data when calling the filtering
-    function and which defaults to 'None'.
-
-    The filter function is called with five arguments:
-
-    - The object that the 'aq_acquire' method was called on,
-
-    - The object where an object was found,
-
-    - The name of the object, as passed to 'aq_acquire',
-
-    - The object found, and
-
-    - The extra data passed to 'aq_acquire'.
-
-    If the filter returns a true object that the object found is
-    returned, otherwise, the acquisition search continues.
-
-    For example, in:
-
-    >>> class HandyForTesting(object):
-    ...     def __init__(self, name): self.name=name
-    ...     def __str__(self):
-    ...       return "%s(%s)" % (self.name, self.__class__.__name__)
-    ...     __repr__=__str__
-
-    >>> class E(Explicit, HandyForTesting):
-    ...     pass
-
-    >>> class Nice(HandyForTesting):
-    ...     isNice=1
-    ...     def __str__(self):
-    ...        return HandyForTesting.__str__(self)+' and I am nice!'
-    ...     __repr__=__str__
-
-    >>> a = E('a')
-    >>> a.b = E('b')
-    >>> a.b.c = E('c')
-    >>> a.p = Nice('spam')
-    >>> a.b.p = E('p')
-
-    >>> def find_nice(self, ancestor, name, object, extra):
-    ...     return hasattr(object,'isNice') and object.isNice
-
-    >>> print(a.b.c.aq_acquire('p', find_nice))
-    spam(Nice) and I am nice!
-
-    The filtered acquisition in the last line skips over the first
-    attribute it finds with the name 'p', because the attribute
-    doesn't satisfy the condition given in the filter.
-
-    Acquisition and methods
-
-    Python methods of objects that support acquisition can use
-    acquired attributes as in the 'report' method of the first example
-    above.  When a Python method is called on an object that is
-    wrapped by an acquisition wrapper, the wrapper is passed to the
-    method as the first argument.  This rule also applies to
-    user-defined method types and to C methods defined in pure mix-in
-    classes.
-
-    Unfortunately, C methods defined in extension base classes that
-    define their own data structures, cannot use aquired attributes at
-    this time.  This is because wrapper objects do not conform to the
-    data structures expected by these methods.
-
-    Acquiring Acquiring objects
-
-    Consider the following example:
-
-    >>> class C(Implicit):
-    ...     def __init__(self, name): self.name=name
-    ...     def __str__(self):
-    ...         return "%s(%s)" % (self.name, self.__class__.__name__)
-    ...     __repr__=__str__
-
-    >>> a = C("a")
-    >>> a.b = C("b")
-    >>> a.b.pref = "spam"
-    >>> a.b.c = C("c")
-    >>> a.b.c.color = "red"
-    >>> a.b.c.pref = "eggs"
-    >>> a.x = C("x")
-
-    >>> o = a.b.c.x
-
-    The expression 'o.color' might be expected to return '"red"'. In
-    earlier versions of ExtensionClass, however, this expression
-    failed.  Acquired acquiring objects did not acquire from the
-    environment they were accessed in, because objects were only
-    wrapped when they were first found, and were not rewrapped as they
-    were passed down the acquisition tree.
-
-    In the current release of ExtensionClass, the expression "o.color"
-    does indeed return '"red"'.
-
-    >>> o.color
-    'red'
-
-    When searching for an attribute in 'o', objects are searched in
-    the order 'x', 'a', 'b', 'c'. So, for example, the expression,
-    'o.pref' returns '"spam"', not '"eggs"':
-
-    >>> o.pref
-    'spam'
-
-    In earlier releases of ExtensionClass, the attempt to get the
-    'pref' attribute from 'o' would have failed.
-
-    If desired, the current rules for looking up attributes in complex
-    expressions can best be understood through repeated application of
-    the '__of__' method:
-
-    'a.x' -- 'x.__of__(a)'
-
-    'a.b' -- 'b.__of__(a)'
-
-    'a.b.x' -- 'x.__of__(a).__of__(b.__of__(a))'
-
-    'a.b.c' -- 'c.__of__(b.__of__(a))'
-
-    'a.b.c.x' --
-        'x.__of__(a).__of__(b.__of__(a)).__of__(c.__of__(b.__of__(a)))'
-
-    and by keeping in mind that attribute lookup in a wrapper
-    is done by trying to lookup the attribute in the wrapped object
-    first and then in the parent object.  In the expressions above
-    involving the '__of__' method, lookup proceeds from left to right.
-
-    Note that heuristics are used to avoid most of the repeated
-    lookups. For example, in the expression: 'a.b.c.x.foo', the object
-    'a' is searched no more than once, even though it is wrapped three
-    times.
-"""
+        # In fact, the special 'Acquisition.Acquired' value can be used
+        # in 'Implicit' objects to implicitly acquire
+        # selected objects that smell like private objects.
+
+        class I(Implicit):
+            __roles__ = Acquisition.Acquired
+
+        c.x = C()
+        with self.assertRaises(AttributeError):
+            c.x.__roles__
+
+        c.x = I()
+        self.assertEqual(c.x.__roles__, ('Manager', 'Member'))
+
+        # Filtered Acquisition
+
+        # The acquisition method, 'aq_acquire', accepts two optional
+        # arguments. The first of the additional arguments is a
+        # "filtering" function that is used when considering whether to
+        # acquire an object.  The second of the additional arguments is an
+        # object that is passed as extra data when calling the filtering
+        # function and which defaults to 'None'.
+
+        # The filter function is called with five arguments:
+        # - The object that the 'aq_acquire' method was called on,
+        # - The object where an object was found,
+        # - The name of the object, as passed to 'aq_acquire',
+        # - The object found, and
+        # - The extra data passed to 'aq_acquire'.
+
+        # If the filter returns a true object that the object found is
+        # returned, otherwise, the acquisition search continues.
+        # For example, in:
+
+        class HandyForTesting(object):
+            def __init__(self, name):
+                self.name = name
+
+            def __str__(self):
+                return "%s(%s)" % (self.name, self.__class__.__name__)
+
+            __repr__ = __str__
+
+        class E(Explicit, HandyForTesting):
+            pass
+
+        class Nice(HandyForTesting):
+            isNice = 1
+
+            def __str__(self):
+                return HandyForTesting.__str__(self) + ' and I am nice!'
+
+            __repr__ = __str__
+
+        a = E('a')
+        a.b = E('b')
+        a.b.c = E('c')
+        a.p = Nice('spam')
+        a.b.p = E('p')
+
+        def find_nice(self, ancestor, name, object, extra):
+            return hasattr(object, 'isNice') and object.isNice
+
+        self.assertEqual(str(a.b.c.aq_acquire('p', find_nice)),
+                         'spam(Nice) and I am nice!')
+
+        # The filtered acquisition in the last line skips over the first
+        # attribute it finds with the name 'p', because the attribute
+        # doesn't satisfy the condition given in the filter.
+
+        # Acquisition and methods
+
+        # Python methods of objects that support acquisition can use
+        # acquired attributes as in the 'report' method of the first example
+        # above.  When a Python method is called on an object that is
+        # wrapped by an acquisition wrapper, the wrapper is passed to the
+        # method as the first argument.  This rule also applies to
+        # user-defined method types and to C methods defined in pure mix-in
+        # classes.
+
+        # Unfortunately, C methods defined in extension base classes that
+        # define their own data structures, cannot use aquired attributes at
+        # this time.  This is because wrapper objects do not conform to the
+        # data structures expected by these methods.
+
+        # Acquiring Acquiring objects
+
+        # Consider the following example:
+        class C(Implicit):
+            def __init__(self, name):
+                self.name = name
+
+            def __str__(self):
+                return "%s(%s)" % (self.name, self.__class__.__name__)
+
+            __repr__ = __str__
+
+        a = C("a")
+        a.b = C("b")
+        a.b.pref = "spam"
+        a.b.c = C("c")
+        a.b.c.color = "red"
+        a.b.c.pref = "eggs"
+        a.x = C("x")
+        o = a.b.c.x
+
+        # The expression 'o.color' might be expected to return '"red"'. In
+        # earlier versions of ExtensionClass, however, this expression
+        # failed.  Acquired acquiring objects did not acquire from the
+        # environment they were accessed in, because objects were only
+        # wrapped when they were first found, and were not rewrapped as they
+        # were passed down the acquisition tree.
+
+        # In the current release of ExtensionClass, the expression "o.color"
+        # does indeed return '"red"'.
+        self.assertEqual(o.color, 'red')
+
+        # When searching for an attribute in 'o', objects are searched in
+        # the order 'x', 'a', 'b', 'c'. So, for example, the expression,
+        # 'o.pref' returns '"spam"', not '"eggs"':
+        self.assertEqual(o.pref, 'spam')
+
+        # In earlier releases of ExtensionClass, the attempt to get the
+        # 'pref' attribute from 'o' would have failed.
+
+        # If desired, the current rules for looking up attributes in complex
+        # expressions can best be understood through repeated application of
+        # the '__of__' method:
+        # 'a.x' -- 'x.__of__(a)'
+        # 'a.b' -- 'b.__of__(a)'
+        # 'a.b.x' -- 'x.__of__(a).__of__(b.__of__(a))'
+        # 'a.b.c' -- 'c.__of__(b.__of__(a))'
+        # 'a.b.c.x' --
+        #     'x.__of__(a).__of__(b.__of__(a)).__of__(c.__of__(b.__of__(a)))'
+
+        # and by keeping in mind that attribute lookup in a wrapper
+        # is done by trying to lookup the attribute in the wrapped object
+        # first and then in the parent object.  In the expressions above
+        # involving the '__of__' method, lookup proceeds from left to right.
+
+        # Note that heuristics are used to avoid most of the repeated
+        # lookups. For example, in the expression: 'a.b.c.x.foo', the object
+        # 'a' is searched no more than once, even though it is wrapped three
+        # times.
 
 
 def test_unwrapped():
@@ -668,31 +630,6 @@ def test_simple():
     True
     >>> a.b.c.__parent__ == a.b
     True
-    """
-
-
-def test__of__exception():
-    """
-    Wrapper_findattr did't check for an exception in a user defined
-    __of__ method before passing the result to the filter. In this
-    case the 'value' argument of the filter was NULL, which caused
-    a segfault when being accessed.
-
-    >>> class X(Implicit):
-    ...     def __of__(self, parent):
-    ...         if aq_base(parent) is not parent:
-    ...             raise NotImplementedError('ack')
-    ...         return X.inheritedAttribute('__of__')(self, parent)
-    ...
-    >>> a = I('a')
-    >>> a.b = I('b')
-    >>> a.b.x = X('x')
-    >>> aq_acquire(a.b, 'x',
-    ...     lambda self, object, name, value, extra: repr(value))
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: ack
-
     """
 
 
@@ -1349,207 +1286,64 @@ def test_mixed_explicit_and_explicit():
     """
 
 
-def test_aq_inContextOf():
-    """
-    >>> from ExtensionClass import Base
+class TestAqAlgorithm(unittest.TestCase):
 
-    >>> class B(Base):
-    ...     color='red'
+    def test_AqAlg(self):
+        A = I('A')
+        B = I('B')
+        A.B = B
+        A.B.color = 'red'
+        C = I('C')
+        A.C = C
+        D = I('D')
+        A.C.D = D
 
-    >>> class A(Implicit):
-    ...     def hi(self):
-    ...         print(self.__class__.__name__)
-    ...         print(self.color)
+        self.assertEqual(aq_chain(A), [A])
+        self.assertEqual(aq_chain(A, 1), [A])
+        self.assertEqual(list(map(aq_base, aq_chain(A, 1))), [A])
 
-    >>> class Location(object):
-    ...     __parent__ = None
+        self.assertEqual(str(aq_chain(A.C)), str([C, A]))
+        self.assertEqual(aq_chain(A.C, 1), [C, A])
+        self.assertEqual(list(map(aq_base, aq_chain(A.C, 1))), [C, A])
 
-    >>> b=B()
-    >>> b.a=A()
-    >>> b.a.hi()
-    A
-    red
-    >>> b.a.color='green'
-    >>> b.a.hi()
-    A
-    green
-    >>> try:
-    ...     A().hi()
-    ...     raise RuntimeError( 'Program error', 'spam')
-    ... except AttributeError: pass
-    A
+        self.assertEqual(str(aq_chain(A.C.D)), str([D, C, A]))
+        self.assertEqual(aq_chain(A.C.D, 1), [D, C, A])
+        self.assertEqual(list(map(aq_base, aq_chain(A.C.D, 1))), [D, C, A])
 
-       New test for wrapper comparisons.
+        self.assertEqual(str(aq_chain(A.B.C)), str([C, B, A]))
+        self.assertEqual(aq_chain(A.B.C, 1), [C, A])
+        self.assertEqual(list(map(aq_base, aq_chain(A.B.C, 1))), [C, A])
 
-    >>> foo = b.a
-    >>> bar = b.a
-    >>> foo == bar
-    1
-    >>> c = A()
-    >>> b.c = c
-    >>> b.c.d = c
-    >>> b.c.d == c
-    1
-    >>> b.c.d == b.c
-    1
-    >>> b.c == c
-    1
+        self.assertEqual(str(aq_chain(A.B.C.D)), str([D, C, B, A]))
+        self.assertEqual(aq_chain(A.B.C.D, 1), [D, C, A])
+        self.assertEqual(list(map(aq_base, aq_chain(A.B.C.D, 1))), [D, C, A])
 
-    >>> l = Location()
-    >>> l.__parent__ = b.c
-
-    >>> def checkContext(self, o):
-    ...     # Python equivalent to aq_inContextOf
-    ...     next = self
-    ...     o = aq_base(o)
-    ...     while 1:
-    ...         if aq_base(next) is o:
-    ...             return 1
-    ...         self = aq_inner(next)
-    ...         if self is None:
-    ...             break
-    ...         next = aq_parent(self)
-    ...         if next is None:
-    ...             break
-    ...     return 0
+        self.assertEqual(A.B.C.D.color, 'red')
+        self.assertEqual(aq_get(A.B.C.D, "color", None), 'red')
+        self.assertIsNone(aq_get(A.B.C.D, "color", None, 1))
 
 
-    >>> checkContext(b.c, b)
-    1
-    >>> not checkContext(b.c, b.a)
-    1
+class TestExplicitAcquisition(unittest.TestCase):
 
-    >>> checkContext(l, b)
-    1
-    >>> checkContext(l, b.c)
-    1
-    >>> not checkContext(l, b.a)
-    1
+    def test_explicit_acquisition(self):
+        from ExtensionClass import Base
 
-    aq_inContextOf works the same way:
+        class B(Base):
+            color = 'red'
 
-    >>> aq_inContextOf(b.c, b)
-    1
-    >>> aq_inContextOf(b.c, b.a)
-    0
+        class A(Explicit):
+            def hi(self):
+                return self.acquire('color')
 
-    >>> aq_inContextOf(l, b)
-    1
-    >>> aq_inContextOf(l, b.c)
-    1
-    >>> aq_inContextOf(l, b.a)
-    0
+        b = B()
+        b.a = A()
+        self.assertEqual(b.a.hi(), 'red')
 
-    >>> b.a.aq_inContextOf(b)
-    1
-    >>> b.c.aq_inContextOf(b)
-    1
-    >>> b.c.d.aq_inContextOf(b)
-    1
-    >>> b.c.d.aq_inContextOf(c)
-    1
-    >>> b.c.d.aq_inContextOf(b.c)
-    1
-    >>> b.c.aq_inContextOf(foo)
-    0
-    >>> b.c.aq_inContextOf(b.a)
-    0
-    >>> b.a.aq_inContextOf('somestring')
-    0
-    """
+        b.a.color = 'green'
+        self.assertEqual(b.a.hi(), 'green')
 
-
-def test_AqAlg():
-    """
-    >>> A=I('A')
-    >>> A.B=I('B')
-    >>> A.B.color='red'
-    >>> A.C=I('C')
-    >>> A.C.D=I('D')
-
-    >>> A
-    A
-    >>> aq_chain(A)
-    [A]
-    >>> aq_chain(A, 1)
-    [A]
-    >>> list(map(aq_base, aq_chain(A, 1)))
-    [A]
-    >>> A.C
-    C
-    >>> aq_chain(A.C)
-    [C, A]
-    >>> aq_chain(A.C, 1)
-    [C, A]
-    >>> list(map(aq_base, aq_chain(A.C, 1)))
-    [C, A]
-
-    >>> A.C.D
-    D
-    >>> aq_chain(A.C.D)
-    [D, C, A]
-    >>> aq_chain(A.C.D, 1)
-    [D, C, A]
-    >>> list(map(aq_base, aq_chain(A.C.D, 1)))
-    [D, C, A]
-
-    >>> A.B.C
-    C
-    >>> aq_chain(A.B.C)
-    [C, B, A]
-    >>> aq_chain(A.B.C, 1)
-    [C, A]
-    >>> list(map(aq_base, aq_chain(A.B.C, 1)))
-    [C, A]
-
-    >>> A.B.C.D
-    D
-    >>> aq_chain(A.B.C.D)
-    [D, C, B, A]
-    >>> aq_chain(A.B.C.D, 1)
-    [D, C, A]
-    >>> list(map(aq_base, aq_chain(A.B.C.D, 1)))
-    [D, C, A]
-
-
-    >>> A.B.C.D.color
-    'red'
-    >>> aq_get(A.B.C.D, "color", None)
-    'red'
-    >>> aq_get(A.B.C.D, "color", None, 1)
-
-    """
-
-
-def test_explicit_acquisition():
-    """
-    >>> from ExtensionClass import Base
-
-    >>> class B(Base):
-    ...     color='red'
-
-    >>> class A(Explicit):
-    ...     def hi(self):
-    ...         print(self.__class__.__name__)
-    ...         print(self.acquire('color'))
-
-    >>> b=B()
-    >>> b.a=A()
-    >>> b.a.hi()
-    A
-    red
-    >>> b.a.color='green'
-    >>> b.a.hi()
-    A
-    green
-
-    >>> try:
-    ...     A().hi()
-    ...     raise RuntimeError('Program error', 'spam')
-    ... except AttributeError: pass
-    A
-
-    """
+        with self.assertRaises(AttributeError):
+            A().hi()
 
 
 class TestCreatingWrappers(unittest.TestCase):
@@ -2658,6 +2452,25 @@ class TestWrapper(unittest.TestCase):
 
 class TestOf(unittest.TestCase):
 
+    def test__of__exception(self):
+        # Wrapper_findattr did't check for an exception in a user defined
+        # __of__ method before passing the result to the filter. In this
+        # case the 'value' argument of the filter was NULL, which caused
+        # a segfault when being accessed.
+
+        class X(Implicit):
+            def __of__(self, parent):
+                if aq_base(parent) is not parent:
+                    raise NotImplementedError('ack')
+                return X.inheritedAttribute('__of__')(self, parent)
+
+        a = I('a')
+        a.b = I('b')
+        a.b.x = X('x')
+        with self.assertRaises(NotImplementedError):
+            aq_acquire(a.b, 'x',
+                       lambda self, object, name, value, extra: repr(value))
+
     def test_wrapper_calls_of_on_non_wrapper(self):
         # The ExtensionClass protocol is respected even for non-Acquisition
         # objects.
@@ -2692,6 +2505,83 @@ class TestOf(unittest.TestCase):
 
 
 class TestAQInContextOf(unittest.TestCase):
+
+    def test_aq_inContextOf(self):
+        from ExtensionClass import Base
+
+        class B(Base):
+            color = 'red'
+
+        class A(Implicit):
+            def hi(self):
+                return self.color
+
+        class Location(object):
+            __parent__ = None
+
+        b = B()
+        b.a = A()
+        self.assertEqual(b.a.hi(), 'red')
+
+        b.a.color = 'green'
+        self.assertEqual(b.a.hi(), 'green')
+
+        with self.assertRaises(AttributeError):
+            A().hi()
+
+        # New test for wrapper comparisons.
+        foo = b.a
+        bar = b.a
+        self.assertEqual(foo, bar)
+
+        c = A()
+        b.c = c
+        b.c.d = c
+        self.assertEqual(b.c.d, c)
+        self.assertEqual(b.c.d, b.c)
+        self.assertEqual(b.c, c)
+
+        l = Location()
+        l.__parent__ = b.c
+
+        def checkContext(self, o):
+            # Python equivalent to aq_inContextOf
+            next = self
+            o = aq_base(o)
+            while 1:
+                if aq_base(next) is o:
+                    return True
+                self = aq_inner(next)
+                if self is None:
+                    break
+                next = aq_parent(self)
+                if next is None:
+                    break
+            return False
+
+        self.assertTrue(checkContext(b.c, b))
+        self.assertFalse(checkContext(b.c, b.a))
+
+        self.assertTrue(checkContext(l, b))
+        self.assertTrue(checkContext(l, b.c))
+        self.assertFalse(checkContext(l, b.a))
+
+        # aq_inContextOf works the same way:
+        self.assertTrue(aq_inContextOf(b.c, b))
+        self.assertFalse(aq_inContextOf(b.c, b.a))
+
+        self.assertTrue(aq_inContextOf(l, b))
+        self.assertTrue(aq_inContextOf(l, b.c))
+        self.assertFalse(aq_inContextOf(l, b.a))
+
+        self.assertTrue(b.a.aq_inContextOf(b))
+        self.assertTrue(b.c.aq_inContextOf(b))
+        self.assertTrue(b.c.d.aq_inContextOf(b))
+        self.assertTrue(b.c.d.aq_inContextOf(c))
+        self.assertTrue(b.c.d.aq_inContextOf(b.c))
+        self.assertFalse(b.c.aq_inContextOf(foo))
+        self.assertFalse(b.c.aq_inContextOf(b.a))
+        self.assertFalse(b.a.aq_inContextOf('somestring'))
 
     def test_aq_inContextOf_odd_cases(self):
         # The aq_inContextOf function still works in some artificial cases.

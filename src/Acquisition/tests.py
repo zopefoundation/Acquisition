@@ -3450,25 +3450,7 @@ def test_suite():
 
     suites = [
         DocTestSuite(),
-        unittest.makeSuite(TestCreatingWrappers),
-        unittest.makeSuite(TestPickle),
-        unittest.makeSuite(TestInterfaces),
-        unittest.makeSuite(TestMixin),
-        unittest.makeSuite(TestGC),
-        unittest.makeSuite(TestAqParentParentInteraction),
-        unittest.makeSuite(TestParentCircles),
-        unittest.makeSuite(TestBugs),
-        unittest.makeSuite(TestSpecialNames),
-        unittest.makeSuite(TestWrapper),
-        unittest.makeSuite(TestOf),
-        unittest.makeSuite(TestAQInContextOf),
-        unittest.makeSuite(TestCircles),
-        unittest.makeSuite(TestAcquire),
-        unittest.makeSuite(TestCooperativeBase),
-        unittest.makeSuite(TestImplicitWrappingGetattribute),
-        unittest.makeSuite(TestUnicode),
-        unittest.makeSuite(TestProxying),
-        unittest.makeSuite(TestCompilation),
+        unittest.defaultTestLoader.loadTestsFromName(__name__),
     ]
 
     # This file is only available in a source checkout, skip it

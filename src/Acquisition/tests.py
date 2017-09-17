@@ -55,11 +55,6 @@ else:
     PY2 = True
     PY3 = False
 
-if not hasattr(gc, 'get_threshold'):
-    # PyPy
-    gc.get_threshold = lambda: ()
-    gc.set_threshold = lambda *x: None
-
 if 'Acquisition._Acquisition' not in sys.modules:
     CAPI = False
 else:
@@ -1893,18 +1888,23 @@ class TestMixin(unittest.TestCase):
 
 
 class TestGC(unittest.TestCase):
+    # Tests both `__del__` being called and GC collection.
+    # Note that PyPy always reports 0 collected objects even
+    # though we can see its finalizers run.
 
-    def setUp(self):
-        self.thresholds = gc.get_threshold()
-        gc.set_threshold(0)
+    # Not PyPy
+    SUPPORTS_GC_THRESHOLD = hasattr(gc, 'get_threshold')
 
-    def tearDown(self):
-        gc.set_threshold(*self.thresholds)
+    if SUPPORTS_GC_THRESHOLD:
+        def setUp(self):
+            self.thresholds = gc.get_threshold()
+            gc.set_threshold(0)
+
+        def tearDown(self):
+            gc.set_threshold(*self.thresholds)
 
     def test_Basic_gc(self):
         # Test to make sure that EC instances participate in GC.
-        # Note that PyPy always reports 0 collected objects even
-        # though we can see its finalizers run.
         from ExtensionClass import Base
 
         for B in I, E:
@@ -1924,14 +1924,12 @@ class TestGC(unittest.TestCase):
             gc.collect()
             del a
             removed = gc.collect()
-            if not IS_PYPY:
+            if self.SUPPORTS_GC_THRESHOLD:
                 self.assertTrue(removed > 0)
             self.assertEqual(counter[0], 1)
 
     def test_Wrapper_gc(self):
         # Test to make sure that EC instances participate in GC.
-        # Note that PyPy always reports 0 collected objects even
-        # though we can see its finalizers run.
         for B in I, E:
             counter = [0]
 
@@ -1946,7 +1944,7 @@ class TestGC(unittest.TestCase):
             gc.collect()
             del a
             removed = gc.collect()
-            if not IS_PYPY:
+            if self.SUPPORTS_GC_THRESHOLD:
                 self.assertTrue(removed > 0)
             self.assertEqual(counter[0], 1)
 

@@ -1,12 +1,11 @@
 Changelog
 =========
 
-4.5.0 (unreleased)
+4.4.3 (2017-11-23)
 ------------------
 
 - Fix the extremely rare potential for a crash when the C extensions
   are in use. See `issue 21 <https://github.com/zopefoundation/Acquisition/issues/21>`_.
-
 
 4.4.2 (2017-05-12)
 ------------------

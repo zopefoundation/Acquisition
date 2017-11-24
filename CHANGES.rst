@@ -4,6 +4,7 @@ Changelog
 4.5.0 (unreleased)
 ------------------
 
+- add Appveyor configuration to automate building Windows eggs
 
 4.4.3 (2017-11-23)
 ------------------

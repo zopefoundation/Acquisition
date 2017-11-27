@@ -7,8 +7,6 @@ environment:
   matrix:
     - python: 27
     - python: 27-x64
-    - python: 33
-    - python: 33-x64
     - python: 34
     - python: 34-x64
     - python: 35
@@ -33,6 +31,6 @@ artifacts:
     name: wheel
 
 deploy_script:
-  - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { pip install twine; twine upload dist/* }
+  - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { pip install twine; twine upload dist\*.whl }
 
 deploy: on

@@ -7,14 +7,18 @@ python:
     - 3.6
     - pypy
     - pypy3.3-5.2-alpha1
+
 install:
+    - pip install -U setuptools==33.1.1
     - pip install zc.buildout
     - buildout bootstrap
     - buildout
+
 script:
     - bin/test -v1
 notifications:
     email: false
+
 cache:
   pip: true
   directories:

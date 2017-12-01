@@ -3,6 +3,7 @@
 *.so
 .installed.cfg
 *.egg-info/
+.tox/
 bin/
 develop-eggs/
 eggs/

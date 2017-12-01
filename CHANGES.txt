@@ -6,6 +6,8 @@ Changelog
 
 - add ``tox`` test fixtures
 
+- add Appveyor configuration for Windows wheel builds
+
 2.13.12 (2017-12-01)
 --------------------
 

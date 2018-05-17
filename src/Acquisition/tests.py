@@ -3268,7 +3268,7 @@ class TestProxying(unittest.TestCase):
             getattr(operator, name)(base.derived, base.derived2)
 
         self.assertFalse(base.derived2 == base.derived)
-        self.assertEquals(base.derived, base.derived)
+        self.assertEqual(base.derived, base.derived)
 
     def test_implicit_proxy_comporison(self):
         self._check_comparison()

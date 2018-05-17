@@ -4,6 +4,7 @@ Changelog
 4.5.0 (unreleased)
 ------------------
 
+- Avoid deprecation warnings by using current API.
 
 4.4.4 (2017-11-24)
 ------------------

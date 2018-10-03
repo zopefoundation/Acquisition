@@ -6,20 +6,24 @@ python:
     - 3.5
     - 3.6
     - pypy
-    - pypy3.3-5.2-alpha1
-
+    - pypy3
+include:
+    matrix:
+        - python: "3.7"
+          dist: xenial
+          sudo: true
 install:
+    - pip install coveralls coverage
     - pip install six==1.10.0 # force to avoid conflict with zc.recipe.testrunner
-    - pip install -U setuptools==33.1.1
     - pip install zc.buildout
     - buildout bootstrap
     - buildout
-
 script:
-    - bin/test -v1
+    - coverage run bin/test -v1
+after_success:
+    - coveralls
 notifications:
     email: false
-
 cache:
   pip: true
   directories:

@@ -7,8 +7,8 @@ python:
     - 3.6
     - pypy
     - pypy3
-include:
-    matrix:
+matrix:
+    include:
         - python: "3.7"
           dist: xenial
           sudo: true

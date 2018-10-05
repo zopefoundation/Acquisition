@@ -6,12 +6,12 @@ Changelog
 
 - Avoid deprecation warnings by using current API.
 
-- Added support for Python 3.7.
+- Add support for Python 3.7.
 
 4.4.4 (2017-11-24)
 ------------------
 
-- add Appveyor configuration to automate building Windows eggs
+- Add Appveyor configuration to automate building Windows eggs.
 
 4.4.3 (2017-11-23)
 ------------------
@@ -22,7 +22,7 @@ Changelog
 4.4.2 (2017-05-12)
 ------------------
 
-- Fixed C capsule name to fix import errors.
+- Fix C capsule name to fix import errors.
 
 - Ensure our dependencies match our expactations about C extensions.
 

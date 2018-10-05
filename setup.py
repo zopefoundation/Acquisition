@@ -36,11 +36,11 @@ else:
                   include_dirs=['include', 'src']),
     ]
 
-__version__ = '4.5.0.dev0'
+version = '4.5'
 
 setup(
     name='Acquisition',
-    version=__version__,
+    version=version,
     url='https://github.com/zopefoundation/Acquisition',
     license='ZPL 2.1',
     description="Acquisition is a mechanism that allows objects to obtain "

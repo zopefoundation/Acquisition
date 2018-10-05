@@ -1,8 +1,8 @@
 Changelog
 =========
 
-4.5.0 (unreleased)
-------------------
+4.5 (2018-10-05)
+----------------
 
 - Avoid deprecation warnings by using current API.
 

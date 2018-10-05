@@ -1,5 +1,14 @@
 include *.txt
 include *.rst
+include .coveragerc
+include buildout.cfg
+include tox.ini
+
+include bootstrap.py
+exclude bootstrap.py
+
+include *.yml
+exclude *.yml
 
 recursive-include include *
 recursive-include src *

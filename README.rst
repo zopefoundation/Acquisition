@@ -119,7 +119,7 @@ Controlling Acquisition
 -----------------------
 
 A class (or instance) can provide attribute by attribute control over
-acquisition. Your should subclass from ``Acquisition.Explicit``, and set
+acquisition. You should subclass from ``Acquisition.Explicit``, and set
 all attributes that should be acquired to the special value
 ``Acquisition.Acquired``. Setting an attribute to this value also allows
 inherited attributes to be overridden with acquired ones. For example::

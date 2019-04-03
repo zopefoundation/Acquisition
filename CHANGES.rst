@@ -4,7 +4,7 @@ Changelog
 4.6 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Drop support for Python 3.4.
 
 
 4.5 (2018-10-05)

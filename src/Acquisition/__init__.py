@@ -566,6 +566,13 @@ class _Wrapper(ExtensionClass.Base):
         except (AttributeError, TypeError):  # pragma: no cover (Only Py3)
             return str(aq_self)
 
+    def __bytes__(self):
+        aq_self = self._obj
+        try:
+            return _rebound_method(aq_self.__bytes__, self)()
+        except (AttributeError, TypeError):  # pragma: no cover (Only Py3)
+            return bytes(aq_self)
+
     __binary_special_methods__ = [
         # general numeric
         '__add__',

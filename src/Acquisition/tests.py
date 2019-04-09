@@ -2449,6 +2449,7 @@ class TestWrapper(unittest.TestCase):
         # By the time it gets there, it's not wrapped:
         self.assertIs(type(child.__dict__['child2']), Impl)
 
+    @unittest.skipIf(PY2, 'Python 2 has no explicit bytes support')
     def test__bytes__is_correcty_wrapped(self):
         class A(Implicit):
 

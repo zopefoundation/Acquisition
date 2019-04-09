@@ -2449,6 +2449,17 @@ class TestWrapper(unittest.TestCase):
         # By the time it gets there, it's not wrapped:
         self.assertIs(type(child.__dict__['child2']), Impl)
 
+    def test__bytes__is_correcty_wrapped(self):
+        class A(Implicit):
+
+            def __bytes__(self):
+                return b'my bytes'
+
+        a = A()
+        a.b = A()
+        wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
+        self.assertEqual(b'my bytes', bytes(wrapper))
+
 
 class TestOf(unittest.TestCase):
 

@@ -1,17 +1,20 @@
+.tox
 bin
 build
 dist
+eggs
+htmlcov
 lib
 parts
 
 *.dll
+*.egg-info
 *.pyc
 *.pyo
 *.so
-.installed.cfg
-eggs
-*.egg-info
-develop-eggs
 .coverage
+.installed.cfg
+coverage.xml
+develop-eggs
 nosetests.xml
-.tox/
+pyvenv.cfg

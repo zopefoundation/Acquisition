@@ -58,7 +58,7 @@ if sys.version_info < (3,):
     exec("""def _reraise(tp, value, tb=None):
     raise tp, value, tb
 """)
-else:  # pragma: no cover (python 2 is currently our reference)
+else:  # pragma: PY3
     import copyreg as copy_reg
 
     def _rebound_method(method, wrapper):
@@ -563,7 +563,7 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__str__, self)()
-        except (AttributeError, TypeError):  # pragma: no cover (Only Py3)
+        except (AttributeError, TypeError):  # pragma: PY3
             return str(aq_self)
 
     def __bytes__(self):

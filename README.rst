@@ -429,7 +429,7 @@ Conclusion
 ----------
 
 Acquisition provides a powerful way to dynamically share information
-between objects. Zope 2 uses acquisition for a number of its key
+between objects. Zope uses acquisition for a number of its key
 features including security, object publishing, and DTML variable
 lookup. Acquisition also provides an elegant solution to the problem
 of circular references for many classes of problems. While acquisition

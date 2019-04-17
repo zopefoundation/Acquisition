@@ -982,7 +982,11 @@ Wrapper_bytes(Wrapper *self)
         return r;
     } else {
         PyErr_Clear();
+#ifdef PY3K
+        return PyBytes_FromObject(self->obj);
+#else
         return Wrapper_str(self);
+#endif
     }
 }
 

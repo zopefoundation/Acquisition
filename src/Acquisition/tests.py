@@ -2450,7 +2450,7 @@ class TestWrapper(unittest.TestCase):
         self.assertIs(type(child.__dict__['child2']), Impl)
 
     @unittest.skipIf(PY2, 'Python 2 has no explicit bytes support')
-    def test__bytes__is_correcty_wrapped(self):
+    def test__bytes__is_correcty_wrapped(self):  # pragma: PY3
         class A(Implicit):
 
             def __bytes__(self):
@@ -2460,6 +2460,17 @@ class TestWrapper(unittest.TestCase):
         a.b = A()
         wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
         self.assertEqual(b'my bytes', bytes(wrapper))
+
+    @unittest.skipIf(PY2, 'Python 2 has no explicit bytes support')
+    def test_AttributeError_if_object_has_no__bytes__(self):  # pragma: PY3
+        class A(Implicit):
+            pass
+
+        a = A()
+        a.b = A()
+        wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
+        with self.assertRaises(TypeError):
+            bytes(wrapper)
 
 
 class TestOf(unittest.TestCase):

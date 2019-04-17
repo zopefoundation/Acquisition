@@ -47,7 +47,7 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 
-if sys.version_info < (3,):
+if sys.version_info < (3,):  # pragma: PY2
     import copy_reg
 
     def _rebound_method(method, wrapper):
@@ -570,7 +570,7 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__bytes__, self)()
-        except (AttributeError, TypeError):  # pragma: no cover (Only Py3)
+        except (AttributeError, TypeError):  # pragma: PY3
             return bytes(aq_self)
 
     __binary_special_methods__ = [

@@ -8,6 +8,10 @@ Changelog
 
 - Add support for Python 3.8a3.
 
+- Add support to call ``bytes()`` on an object wrapped by an
+  ``ImplicitAcquisitionWrapper``.
+  (`#38 <https://github.com/zopefoundation/Acquisition/issues/38>`_)
+
 
 4.5 (2018-10-05)
 ----------------

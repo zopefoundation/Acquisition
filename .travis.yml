@@ -19,9 +19,9 @@ matrix:
         - python: "3.8-dev"
           dist: xenial
 install:
-    - pip install coveralls coverage
-    - pip install six==1.10.0 # force to avoid conflict with zc.recipe.testrunner
-    - pip install zc.buildout
+    - pip install -U coveralls coverage coverage-python-version
+    - pip install -U six
+    - pip install -U zc.buildout
     - buildout bootstrap
     - buildout
 script:

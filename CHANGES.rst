@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.7 (unreleased)
+----------------
+
+- Nothing changed yet.
+
+
 4.6 (2019-04-24)
 ----------------
 

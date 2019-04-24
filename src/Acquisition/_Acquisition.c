@@ -46,7 +46,8 @@ static PyObject *py__add__, *py__sub__, *py__mul__, *py__div__,
   *py__long__, *py__float__, *py__oct__, *py__hex__,
   *py__getitem__, *py__setitem__, *py__delitem__,
   *py__getslice__, *py__setslice__, *py__delslice__,  *py__contains__,
-  *py__len__, *py__of__, *py__call__, *py__repr__, *py__str__, *py__unicode__,
+  *py__len__, *py__of__, *py__call__, *py__repr__,
+  *py__str__, *py__unicode__, *py__bytes__,
   *py__cmp__, *py__parent__, *py__iter__, *py__bool__, *py__index__, *py__iadd__,
   *py__isub__, *py__imul__, *py__imod__, *py__ipow__, *py__ilshift__, *py__irshift__,
   *py__iand__, *py__ixor__, *py__ior__, *py__floordiv__, *py__truediv__,
@@ -95,6 +96,7 @@ init_py_names(void)
   INIT_PY_NAME(__repr__);
   INIT_PY_NAME(__str__);
   INIT_PY_NAME(__unicode__);
+  INIT_PY_NAME(__bytes__);
   INIT_PY_NAME(__cmp__);
   INIT_PY_NAME(__parent__);
   INIT_PY_NAME(__iter__);
@@ -970,6 +972,24 @@ Wrapper_unicode(Wrapper *self)
     }
 }
 
+static PyObject *
+Wrapper_bytes(Wrapper *self)
+{
+    PyObject *r;
+
+    if ((r = PyObject_GetAttr(OBJECT(self), py__bytes__))) {
+        ASSIGN(r, PyObject_CallFunction(r, NULL, NULL));
+        return r;
+    } else {
+        PyErr_Clear();
+#ifdef PY3K
+        return PyBytes_FromObject(self->obj);
+#else
+        return Wrapper_str(self);
+#endif
+    }
+}
+
 static long
 Wrapper_hash(Wrapper *self)
 {
@@ -1487,6 +1507,8 @@ static struct PyMethodDef Wrapper_methods[] = {
    "Wrappers are not picklable"},
   {"__unicode__", (PyCFunction)Wrapper_unicode, METH_NOARGS,
    "Unicode"},
+  {"__bytes__", (PyCFunction)Wrapper_bytes, METH_NOARGS,
+   "Bytes"},
   {NULL,  NULL}
 };
 

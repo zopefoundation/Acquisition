@@ -2449,6 +2449,34 @@ class TestWrapper(unittest.TestCase):
         # By the time it gets there, it's not wrapped:
         self.assertIs(type(child.__dict__['child2']), Impl)
 
+    def test__bytes__is_correcty_wrapped(self):
+        class A(Implicit):
+
+            def __bytes__(self):
+                return b'my bytes'
+
+        a = A()
+        a.b = A()
+        wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
+
+        self.assertEqual(b'my bytes', wrapper.__bytes__())
+        if PY3:  # pragma: PY3
+            self.assertEqual(b'my bytes', bytes(wrapper))
+
+    def test_AttributeError_if_object_has_no__bytes__(self):
+        class A(Implicit):
+            pass
+
+        a = A()
+        a.b = A()
+        wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
+        with self.assertRaises(AttributeError):
+            wrapper.__bytes__()
+
+        if PY3:  # pragma: PY3
+            with self.assertRaises(TypeError):
+                bytes(wrapper)
+
 
 class TestOf(unittest.TestCase):
 

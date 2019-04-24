@@ -2458,7 +2458,10 @@ class TestWrapper(unittest.TestCase):
         a = A()
         a.b = A()
         wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
-        self.assertEqual(b'my bytes', bytes(wrapper))
+
+        self.assertEqual(b'my bytes', wrapper.__bytes__())
+        if PY3:  # pragma: PY3
+            self.assertEqual(b'my bytes', bytes(wrapper))
 
     def test_AttributeError_if_object_has_no__bytes__(self):
         class A(Implicit):
@@ -2467,8 +2470,12 @@ class TestWrapper(unittest.TestCase):
         a = A()
         a.b = A()
         wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
-        with self.assertRaises(TypeError):
-            bytes(wrapper)
+        with self.assertRaises(AttributeError):
+            wrapper.__bytes__()
+
+        if PY3:  # pragma: PY3
+            with self.assertRaises(TypeError):
+                bytes(wrapper)
 
 
 class TestOf(unittest.TestCase):

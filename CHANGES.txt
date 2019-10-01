@@ -8,6 +8,8 @@ Changelog
 
 - add Appveyor configuration for Windows wheel builds
 
+- drop support for Python 2.6
+
 2.13.12 (2017-12-01)
 --------------------
 

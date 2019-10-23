@@ -16,7 +16,7 @@ matrix:
           python: "3.7"
           env: PURE_PYTHON=1
           dist: xenial
-        - python: "3.8-dev"
+        - python: "3.8"
           dist: xenial
 install:
     - pip install -U coveralls coverage coverage-python-version

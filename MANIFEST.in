@@ -4,9 +4,6 @@ include .coveragerc
 include buildout.cfg
 include tox.ini
 
-include bootstrap.py
-exclude bootstrap.py
-
 include *.yml
 exclude *.yml
 

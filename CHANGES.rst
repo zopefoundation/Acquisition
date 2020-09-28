@@ -4,7 +4,7 @@ Changelog
 4.7 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Add support for Python 3.8 and 3.9.
 
 
 4.6 (2019-04-24)

@@ -1,11 +1,16 @@
 [run]
 branch = True
 source = Acquisition
-plugins = coverage_python_version
 
 [report]
 precision = 2
 show_missing = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == '__main__':
+    raise NotImplementedError
+    raise AssertionError
+    self.fail
 
 [paths]
 source =

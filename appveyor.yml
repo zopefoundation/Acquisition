@@ -5,8 +5,6 @@ environment:
       secure: y/k8TP312tLRATkXU5dq+g==
 
   matrix:
-    - python: 27
-    - python: 27-x64
     - python: 36
     - python: 36-x64
     - python: 37

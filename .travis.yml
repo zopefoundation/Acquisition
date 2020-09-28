@@ -1,17 +1,12 @@
 language: python
 python:
-    - 2.7
     - 3.6
     - 3.7
     - 3.8
     - 3.9-dev
-    - pypy
     - pypy3
 matrix:
     include:
-        - name: "2.7-pure"
-          python: "2.7"
-          env: PURE_PYTHON=1
         - name: "3.8-pure"
           python: "3.8"
           env: PURE_PYTHON=1

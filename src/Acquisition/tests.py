@@ -14,7 +14,6 @@
 """Acquisition test cases (and useful examples)
 """
 
-from __future__ import print_function
 import gc
 import unittest
 import sys
@@ -39,21 +38,15 @@ from Acquisition import (  # NOQA
     IS_PURE,
 )
 
-if sys.version_info >= (3,):
-    PY3 = True
-    PY2 = False
 
-    def unicode(self):
-        # For test purposes, redirect the unicode
-        # to the type of the object, just like Py2 did
-        try:
-            return type(self).__unicode__(self)
-        except AttributeError as e:
-            return type(self).__str__(self)
-    long = int
-else:
-    PY2 = True
-    PY3 = False
+def unicode(self):
+    # For test purposes, redirect the unicode
+    # to the type of the object, just like Py2 did
+    try:
+        return type(self).__unicode__(self)
+    except AttributeError:
+        return type(self).__str__(self)
+
 
 if 'Acquisition._Acquisition' not in sys.modules:
     CAPI = False
@@ -62,17 +55,17 @@ else:
 
 MIXIN_POST_CLASS_DEFINITION = True
 try:
-    class Plain(object):
+    class Plain:
         pass
     Plain.__bases__ = (ExtensionClass.Base, )
 except TypeError:
     # Not supported
     MIXIN_POST_CLASS_DEFINITION = False
 
-AQ_PARENT = unicode('aq_parent')
-UNICODE_WAS_CALLED = unicode('unicode was called')
-STR_WAS_CALLED = unicode('str was called')
-TRUE = unicode('True')
+AQ_PARENT = 'aq_parent'
+UNICODE_WAS_CALLED = 'unicode was called'
+STR_WAS_CALLED = 'str was called'
+TRUE = 'True'
 
 
 class I(Implicit):
@@ -93,7 +86,7 @@ class E(Explicit):
         return self.id
 
 
-class Location(object):
+class Location:
     __parent__ = None
 
 
@@ -296,12 +289,12 @@ class TestStory(unittest.TestCase):
         # returned, otherwise, the acquisition search continues.
         # For example, in:
 
-        class HandyForTesting(object):
+        class HandyForTesting:
             def __init__(self, name):
                 self.name = name
 
             def __str__(self):
-                return "%s(%s)" % (self.name, self.__class__.__name__)
+                return "{}({})".format(self.name, self.__class__.__name__)
 
             __repr__ = __str__
 
@@ -355,7 +348,7 @@ class TestStory(unittest.TestCase):
                 self.name = name
 
             def __str__(self):
-                return "%s(%s)" % (self.name, self.__class__.__name__)
+                return "{}({})".format(self.name, self.__class__.__name__)
 
             __repr__ = __str__
 
@@ -1394,7 +1387,7 @@ class TestPickle(unittest.TestCase):
     def test_cant_pickle_acquisition_wrappers_classic(self):
         import pickle
 
-        class X(object):
+        class X:
             def __getstate__(self):
                 return 1
 
@@ -1431,7 +1424,7 @@ class TestPickle(unittest.TestCase):
     def test_cant_pickle_acquisition_wrappers_newstyle(self):
         import pickle
 
-        class X(object):
+        class X:
             def __getstate__(self):
                 return 1
 
@@ -1471,7 +1464,7 @@ class TestPickle(unittest.TestCase):
         except ImportError:
             import pickle as cPickle
 
-        class X(object):
+        class X:
             _p_oid = '1234'
 
             def __getstate__(self):
@@ -1519,7 +1512,7 @@ class TestPickle(unittest.TestCase):
             pickler.inst_persistent_id = persistent_id
         except AttributeError:
             pass
-        pickler.persistent_id = persistent_id  # PyPy and Py3k
+        pickler.persistent_id = persistent_id
         pickler.dump(w)
         state = file.getvalue()
         self.assertTrue(b'1234' in state)
@@ -1531,7 +1524,7 @@ class TestPickle(unittest.TestCase):
         except ImportError:
             import pickle as cPickle
 
-        class X(object):
+        class X:
             _p_oid = '1234'
 
             def __getstate__(self):
@@ -1578,7 +1571,7 @@ class TestPickle(unittest.TestCase):
         except AttributeError:
             pass
 
-        pickler.persistent_id = persistent_id  # PyPy and Py3k
+        pickler.persistent_id = persistent_id
         pickler.dump(w)
         state = file.getvalue()
         self.assertTrue(b'1234' in state)
@@ -1624,7 +1617,7 @@ class TestMixin(unittest.TestCase):
         # but also doesn't result in any wrappers.
         from ExtensionClass import Base
 
-        class Plain(object):
+        class Plain:
             pass
 
         self.assertEqual(Plain.__bases__, (object, ))
@@ -1653,7 +1646,7 @@ class TestMixin(unittest.TestCase):
         # We can mix-in Base as part of multiple inheritance.
         from ExtensionClass import Base
 
-        class MyBase(object):
+        class MyBase:
             pass
 
         class MixedIn(Base, MyBase):
@@ -1727,7 +1720,7 @@ class TestGC(unittest.TestCase):
         for B in I, E:
             counter = [0]
 
-            class C(object):
+            class C:
                 def __del__(self, counter=counter):
                     counter[0] += 1
 
@@ -1784,7 +1777,7 @@ def test_container_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    >>> c[5:] == (5, None)
     slicing...
     True
 
@@ -1807,7 +1800,7 @@ def test_container_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    >>> i.c[5:] == (5, None)
     slicing...
     True
 
@@ -1850,7 +1843,7 @@ def test_container_proxying():
     >>> c[5:10]
     slicing...
     (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    >>> c[5:] == (5, None)
     slicing...
     True
 
@@ -1873,7 +1866,7 @@ def test_container_proxying():
     >>> i.c[5:10]
     slicing...
     (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    >>> i.c[5:] == (5, None)
     slicing...
     True
 
@@ -2460,8 +2453,7 @@ class TestWrapper(unittest.TestCase):
         wrapper = Acquisition.ImplicitAcquisitionWrapper(a.b, a)
 
         self.assertEqual(b'my bytes', wrapper.__bytes__())
-        if PY3:  # pragma: PY3
-            self.assertEqual(b'my bytes', bytes(wrapper))
+        self.assertEqual(b'my bytes', bytes(wrapper))
 
     def test_AttributeError_if_object_has_no__bytes__(self):
         class A(Implicit):
@@ -2473,9 +2465,8 @@ class TestWrapper(unittest.TestCase):
         with self.assertRaises(AttributeError):
             wrapper.__bytes__()
 
-        if PY3:  # pragma: PY3
-            with self.assertRaises(TypeError):
-                bytes(wrapper)
+        with self.assertRaises(TypeError):
+            bytes(wrapper)
 
 
 class TestOf(unittest.TestCase):
@@ -2544,7 +2535,7 @@ class TestAQInContextOf(unittest.TestCase):
             def hi(self):
                 return self.color
 
-        class Location(object):
+        class Location:
             __parent__ = None
 
         b = B()
@@ -2637,7 +2628,7 @@ class TestAQInContextOf(unittest.TestCase):
                               Acquisition.ImplicitAcquisitionWrapper)
 
         # Following parent pointers in weird circumstances works too:
-        class WithParent(object):
+        class WithParent:
             __parent__ = None
 
         self.assertEqual(aq_inContextOf(WithParent(), root), 0)
@@ -2665,7 +2656,7 @@ class TestCircles(unittest.TestCase):
         from Acquisition import _Wrapper as Wrapper
         from Acquisition import _Wrapper_acquire
 
-        class Repeated(object):
+        class Repeated:
             hello = "world"
 
             def __repr__(self):
@@ -2793,7 +2784,7 @@ class TestAcquire(unittest.TestCase):
         self.assertEqual(aq_acquire(self.a.b.c, 'nonesuch', default=4), 4)
 
     def test_no_wrapper_but___parent___falls_back_to_default(self):
-        class NotWrapped(object):
+        class NotWrapped:
             pass
         child = NotWrapped()
         child.__parent__ = NotWrapped()
@@ -2817,7 +2808,7 @@ class TestCooperativeBase(unittest.TestCase):
             def __getattribute__(self, name):
                 if name == 'magic':
                     return 42
-                return super(ExtendsBase, self).__getattribute__(name)
+                return super().__getattribute__(name)
 
         class Acquirer(kind, ExtendsBase):
             pass
@@ -2848,7 +2839,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_object_getattribute_in_rebound_method_with_slots(self):
 
-        class Persistent(object):
+        class Persistent:
             __slots__ = ('__flags',)
 
             def __init__(self):
@@ -2874,7 +2865,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_type_with_slots_reused(self):
 
-        class Persistent(object):
+        class Persistent:
             __slots__ = ('__flags',)
 
             def __init__(self):
@@ -2892,7 +2883,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_object_getattribute_in_rebound_method_with_dict(self):
 
-        class Persistent(object):
+        class Persistent:
             def __init__(self):
                 self.__flags = 42
 
@@ -2916,7 +2907,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_object_getattribute_in_rebound_method_with_slots_and_dict(self):
 
-        class Persistent(object):
+        class Persistent:
             __slots__ = ('__flags', '__dict__')
 
             def __init__(self):
@@ -2992,6 +2983,7 @@ class TestProxying(unittest.TestCase):
     __binary_numeric_methods__ = [
         '__add__',
         '__sub__',
+        '__matmul__',
         '__mul__',
         # '__floordiv__',  # not implemented in C
         '__mod__',
@@ -3023,6 +3015,7 @@ class TestProxying(unittest.TestCase):
         # in place
         '__iadd__',
         '__isub__',
+        '__imatmul__',
         '__imul__',
         '__idiv__',
         '__itruediv__',
@@ -3040,12 +3033,6 @@ class TestProxying(unittest.TestCase):
         # '__coerce__',
     ]
 
-    if PY3 and sys.version_info.minor >= 5:
-        __binary_numeric_methods__.extend([
-            '__matmul__',
-            '__imatmul__'
-        ])
-
     __unary_special_methods__ = [
         # arithmetic
         '__neg__',
@@ -3058,7 +3045,7 @@ class TestProxying(unittest.TestCase):
         # conversion
         '__complex__': complex,
         '__int__': int,
-        '__long__': long,
+        '__long__': int,
         '__float__': float,
         '__oct__': oct,
         '__hex__': hex,
@@ -3090,10 +3077,7 @@ class TestProxying(unittest.TestCase):
             acquire_meths[k] = make_converter(convert)
 
         acquire_meths['__len__'] = lambda self: self.value
-
-        if PY3:
-            # Under Python 3, oct() and hex() call __index__ directly
-            acquire_meths['__index__'] = acquire_meths['__int__']
+        acquire_meths['__index__'] = acquire_meths['__int__']
 
         if base_class == Explicit:
             acquire_meths['value'] = Acquisition.Acquired
@@ -3282,7 +3266,7 @@ class TestProxying(unittest.TestCase):
                             '__ne__', '__ge__', '__le__']
 
         def _never_called(self, other):
-            raise RuntimeError("This should never be called")
+            raise AssertionError("This should never be called")
 
         class RichCmpNeverCalled(base_class):
             for _name in rich_cmp_methods:

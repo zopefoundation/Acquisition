@@ -1,8 +1,7 @@
-from __future__ import absolute_import, print_function
-
 # pylint:disable=W0212,R0911,R0912
 
 
+import copyreg
 import os
 import operator
 import platform
@@ -21,7 +20,7 @@ IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
 IS_PURE = 'PURE_PYTHON' in os.environ
 
 
-class Acquired(object):
+class Acquired:
     "Marker for explicit acquisition"
 
 
@@ -47,32 +46,19 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 
-if sys.version_info < (3,):  # pragma: PY2
-    import copy_reg
+def _rebound_method(method, wrapper):
+    """Returns a version of the method with self bound to `wrapper`"""
+    if isinstance(method, types.MethodType):
+        method = types.MethodType(method.__func__, wrapper)
+    return method
 
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.im_func, wrapper, method.im_class)
-        return method
-    exec("""def _reraise(tp, value, tb=None):
-    raise tp, value, tb
-""")
-else:  # pragma: PY3
-    import copyreg as copy_reg
 
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.__func__, wrapper)
-        return method
-
-    def _reraise(tp, value, tb=None):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
+def _reraise(tp, value, tb=None):
+    if value is None:
+        value = tp()
+    if value.__traceback__ is not tb:
+        raise value.with_traceback(tb)
+    raise value
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -338,7 +324,7 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
     type_obj = type(obj)
     wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
     if wrapper_subclass is _NOT_GIVEN:
-        slotnames = copy_reg._slotnames(type_obj)
+        slotnames = copyreg._slotnames(type_obj)
         if slotnames and not isinstance(obj, _Wrapper):
             new_type_dict = {'_Wrapper__DERIVED': True}
 
@@ -367,7 +353,7 @@ class _Wrapper(ExtensionClass.Base):
         if wrapper_subclass:
             inst = wrapper_subclass(obj, container)
         else:
-            inst = super(_Wrapper, cls).__new__(cls)
+            inst = super().__new__(cls)
         inst._obj = obj
         inst._container = container
         if hasattr(obj, '__dict__') and not isinstance(obj, _Wrapper):
@@ -379,7 +365,7 @@ class _Wrapper(ExtensionClass.Base):
         return inst
 
     def __init__(self, obj, container):
-        super(_Wrapper, self).__init__()
+        super().__init__()
         self._obj = obj
         self._container = container
 
@@ -536,7 +522,6 @@ class _Wrapper(ExtensionClass.Base):
         type_aq_self = type(aq_self)
         nonzero = getattr(type_aq_self, '__nonzero__', None)
         if nonzero is None:
-            # Py3 bool?
             nonzero = getattr(type_aq_self, '__bool__', None)
         if nonzero is None:
             # a len?
@@ -563,14 +548,14 @@ class _Wrapper(ExtensionClass.Base):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__str__, self)()
-        except (AttributeError, TypeError):  # pragma: PY3
+        except (AttributeError, TypeError):
             return str(aq_self)
 
     def __bytes__(self):
         aq_self = self._obj
         try:
             return _rebound_method(aq_self.__bytes__, self)()
-        except (AttributeError, TypeError):  # pragma: PY3
+        except (AttributeError, TypeError):
             return bytes(aq_self)
 
     __binary_special_methods__ = [
@@ -678,8 +663,7 @@ class _Wrapper(ExtensionClass.Base):
 
     def __len__(self):
         # if len is missing, it should raise TypeError
-        # (AttributeError is acceptable under Py2, but Py3
-        # breaks list conversion if AttributeError is raised)
+        # (AttributeError breaks list conversion if it is raised)
         try:
             l = getattr(type(self._obj), '__len__')
         except AttributeError:
@@ -698,7 +682,7 @@ class _Wrapper(ExtensionClass.Base):
             # complains:
             # (TypeError: 'sequenceiterator' expected, got 'Wrapper' instead)
 
-            class WrapperIter(object):
+            class WrapperIter:
                 __slots__ = ('_wrapper',)
 
                 def __init__(self, o):
@@ -733,15 +717,6 @@ class _Wrapper(ExtensionClass.Base):
             setter(self, key, value)
 
     def __getitem__(self, key):
-        if isinstance(key, slice) and hasattr(operator, 'getslice'):
-            # Only on Python 2
-            # XXX: This is probably not proxying correctly, but the existing
-            # tests pass with this behaviour
-            return operator.getslice(
-                self._obj,
-                key.start if key.start is not None else 0,
-                key.stop if key.stop is not None else sys.maxint)
-
         aq_self = self._obj
         try:
             getter = type(aq_self).__getitem__
@@ -783,7 +758,7 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return super(_Acquirer, self).__getattribute__(name)
+            return super().__getattribute__(name)
         except AttributeError:
             # the doctests have very specific error message
             # requirements (but at least we can preserve the traceback)

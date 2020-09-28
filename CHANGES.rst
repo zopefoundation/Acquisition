@@ -1,7 +1,7 @@
 Changelog
 =========
 
-5.0 (unreleased)
+4.7 (unreleased)
 ----------------
 
 - Add support for Python 3.8 and 3.9.

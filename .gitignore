@@ -13,6 +13,7 @@ parts
 *.pyo
 *.so
 .coverage
+.coverage.*
 .installed.cfg
 coverage.xml
 develop-eggs

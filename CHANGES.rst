@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.7 (unreleased)
+4.7 (2020-10-07)
 ----------------
 
 - Add support for Python 3.8 and 3.9.

@@ -36,7 +36,7 @@ else:
                   include_dirs=['include', 'src']),
     ]
 
-version = '4.7'
+version = '4.8.dev0'
 
 setup(
     name='Acquisition',

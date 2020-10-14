@@ -4,9 +4,12 @@ Changelog
 5.0 (unreleased)
 ----------------
 
-- Add support for Python 3.8 and 3.9.
-
 - Drop support for Python 2 and 3.5.
+
+4.7 (2020-10-07)
+----------------
+
+- Add support for Python 3.8 and 3.9.
 
 
 4.6 (2019-04-24)

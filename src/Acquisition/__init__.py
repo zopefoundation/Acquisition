@@ -949,10 +949,11 @@ def aq_inContextOf(self, o, inner=True):
     return False
 
 
-if not (IS_PYPY or IS_PURE):  # pragma: no cover
-    # Make sure we can import the C extension of our dependency.
-    from ExtensionClass import _ExtensionClass  # NOQA
-    from ._Acquisition import *  # NOQA
+# if not (IS_PYPY or IS_PURE):  # pragma: no cover
+#     # Make sure we can import the C extension of our dependency.
+#     from ExtensionClass import _ExtensionClass  # NOQA
+#     from ._Acquisition import *  # NOQA
+from ._Acquisition import AcquisitionCAPI  # NOQA
 
 classImplements(Explicit, IAcquirer)
 classImplements(ExplicitAcquisitionWrapper, IAcquisitionWrapper)

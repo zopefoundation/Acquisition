@@ -505,13 +505,12 @@ class _Wrapper(ExtensionClass.Base):
     # define __cmp__ the same way, and redirect the rich comparison operators
     # to it. (Note that these attributes are also hardcoded in getattribute)
     def __cmp__(self, other):
-        aq_self = self._obj
-        if hasattr(type(aq_self), '__cmp__'):
-            return _rebound_method(aq_self.__cmp__, self)(other)
-
         my_base = aq_base(self)
+        cmp = getattr(type(my_base), "__cmp__", None)
+        if cmp is not None:
+            return cmp(self, other)
         other_base = aq_base(other)
-        if my_base == other_base:
+        if my_base is other_base:
             return 0
         return -1 if id(my_base) < id(other_base) else 1
 

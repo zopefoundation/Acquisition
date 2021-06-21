@@ -2295,23 +2295,12 @@ class TestBugs(unittest.TestCase):
         class CmpOrdered(I):
             def __cmp__(self, other):
                 return cmp(self.id, other.id)
-        class RichOrdered(I):
-            def __eq__(self, other):
-                return self.id == other.id
-            def __lt__(self, other):
-                return self.id < other.id
-        o = top = CmpOrdered("")
-        for i in range(10):
-            o.i = CmpOrdered("")
-            o = o.i
-        self.assertEqual(o.__cmp__(top), 0)
-        self.assertEqual(o.__cmp__(CmpOrdered("1")), -1)
-        o = top = RichOrdered("")
-        for i in range(10):
-            o.i = RichOrdered("")
-            o = o.i
-        self.assertEqual(o.__cmp__(top), 0)
-        self.assertEqual(o.__cmp__(RichOrdered("1")), -1)
+        Ordered = CmpOrdered
+        top = Ordered("")
+        top.o = Ordered("")
+        o = top.o
+        self.assertEqual(o.o.__cmp__(top), 0)
+        self.assertEqual(o.o.__cmp__(Ordered("1")), -1)
 
 
 
@@ -3314,7 +3303,7 @@ class TestProxying(unittest.TestCase):
         base = B()
         base.value = 42
 
-        rich_cmp_methods = ['__lt__', '__gt__',  # '__eq__',
+        rich_cmp_methods = ['__lt__', '__gt__',  '__eq__',
                             '__ne__', '__ge__', '__le__']
 
         def _never_called(self, other):
@@ -3328,7 +3317,7 @@ class TestProxying(unittest.TestCase):
         base.derived2 = RichCmpNeverCalled()
         # We can access all of the operators, but only because
         # they are masked
-        for name in rich_cmp_methods + ['__eq__']:
+        for name in rich_cmp_methods:
             getattr(operator, name)(base.derived, base.derived2)
 
         self.assertFalse(base.derived2 == base.derived)

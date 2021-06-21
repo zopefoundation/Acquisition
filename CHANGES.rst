@@ -6,8 +6,8 @@ Changelog
 
 - Various fixes for the ``PURE_PYTHON`` version, e.g.
   make ``Acquired`` an ``str`` (as required by ``Zope``),
-  respect base object's ``__eq__``,
-  (`#48 <https://github.com/zopefoundation/Acquisition/issues/48>`_).
+  avoid infinite ``__cmp__`` loop,
+  fix (`#48 <https://github.com/zopefoundation/Acquisition/issues/48>`_).
 
 
 4.7 (2020-10-07)

@@ -7,6 +7,7 @@ Changelog
 - Various fixes for the ``PURE_PYTHON`` version, e.g.
   make ``Acquired`` an ``str`` (as required by ``Zope``),
   avoid infinite ``__cmp__`` loop,
+  fix (`#51 <https://github.com/zopefoundation/Acquisition/issues/51>`_),
   fix (`#48 <https://github.com/zopefoundation/Acquisition/issues/48>`_).
 
 

@@ -37,6 +37,7 @@ from Acquisition import (  # NOQA
     Implicit,
     IS_PYPY,
     IS_PURE,
+    _Wrapper,
 )
 
 if sys.version_info >= (3,):
@@ -2302,6 +2303,11 @@ class TestBugs(unittest.TestCase):
         self.assertEqual(o.o.__cmp__(top), 0)
         self.assertEqual(o.o.__cmp__(Ordered("1")), -1)
 
+    def test_bool(self):
+        top = I("")
+        top.o = I("")
+        o = top.o
+        self.assertTrue(bool(o.o))
 
 
 class TestSpecialNames(unittest.TestCase):

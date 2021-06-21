@@ -50,6 +50,10 @@ if sys.version_info >= (3,):
             return type(self).__unicode__(self)
         except AttributeError as e:
             return type(self).__str__(self)
+
+    def cmp(x, y):
+        return 0 if x == y else -1 if x < y else 1
+
     long = int
 else:
     PY2 = True
@@ -292,7 +296,7 @@ class TestStory(unittest.TestCase):
         # - The object found, and
         # - The extra data passed to 'aq_acquire'.
 
-        # If the filter returns a true object that the object found is
+        # If the filter returns a true object then the object found is
         # returned, otherwise, the acquisition search continues.
         # For example, in:
 
@@ -2278,6 +2282,38 @@ class TestBugs(unittest.TestCase):
         except AttributeError:
             raise
 
+    def test_wrapped_attr(self):
+        top = I("")
+        top.f = I("f")
+        f = top.f
+        i = I("i")
+        i.f = f
+        self.assertIs(i.f.aq_self, f)
+        self.assertIs(i.f.aq_parent, i)
+
+    def test__cmp__(self):
+        class CmpOrdered(I):
+            def __cmp__(self, other):
+                return cmp(self.id, other.id)
+        class RichOrdered(I):
+            def __eq__(self, other):
+                return self.id == other.id
+            def __lt__(self, other):
+                return self.id < other.id
+        o = top = CmpOrdered("")
+        for i in range(10):
+            o.i = CmpOrdered("")
+            o = o.i
+        self.assertEqual(o.__cmp__(top), 0)
+        self.assertEqual(o.__cmp__(CmpOrdered("1")), -1)
+        o = top = RichOrdered("")
+        for i in range(10):
+            o.i = RichOrdered("")
+            o = o.i
+        self.assertEqual(o.__cmp__(top), 0)
+        self.assertEqual(o.__cmp__(RichOrdered("1")), -1)
+
+
 
 class TestSpecialNames(unittest.TestCase):
 
@@ -3278,7 +3314,7 @@ class TestProxying(unittest.TestCase):
         base = B()
         base.value = 42
 
-        rich_cmp_methods = ['__lt__', '__gt__', '__eq__',
+        rich_cmp_methods = ['__lt__', '__gt__',  # '__eq__',
                             '__ne__', '__ge__', '__le__']
 
         def _never_called(self, other):
@@ -3292,7 +3328,7 @@ class TestProxying(unittest.TestCase):
         base.derived2 = RichCmpNeverCalled()
         # We can access all of the operators, but only because
         # they are masked
-        for name in rich_cmp_methods:
+        for name in rich_cmp_methods + ['__eq__']:
             getattr(operator, name)(base.derived, base.derived2)
 
         self.assertFalse(base.derived2 == base.derived)

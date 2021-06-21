@@ -21,8 +21,11 @@ IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
 IS_PURE = 'PURE_PYTHON' in os.environ
 
 
-class Acquired(object):
-    "Marker for explicit acquisition"
+# Bring this in line with the "C" implementation
+# Zope requires this to be an `str`
+##class Acquired(object):
+##    "Marker for explicit acquisition"
+Acquired = "<Special Object Used to Force Acquisition>"
 
 
 _NOT_FOUND = object()  # marker
@@ -426,12 +429,14 @@ class _Wrapper(ExtensionClass.Base):
         # the wrapped __of__ method because it gets here via the
         # descriptor code path)...
         wrapper = self._obj.__of__(parent)
-        if (not isinstance(wrapper, _Wrapper) or
-                not isinstance(wrapper._container, _Wrapper)):
+        if not isinstance(wrapper, _Wrapper):
             return wrapper
         # but the returned wrapper should be based on this object's
         # wrapping chain
         wrapper._obj = self
+
+        if not isinstance(wrapper._container, _Wrapper):
+            return wrapper
 
         while (isinstance(wrapper._obj, _Wrapper) and
                (wrapper._obj._container is wrapper._container._obj)):
@@ -506,7 +511,7 @@ class _Wrapper(ExtensionClass.Base):
 
         my_base = aq_base(self)
         other_base = aq_base(other)
-        if my_base is other_base:
+        if my_base == other_base:
             return 0
         return -1 if id(my_base) < id(other_base) else 1
 

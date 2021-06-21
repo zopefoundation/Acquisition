@@ -21,10 +21,6 @@ IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
 IS_PURE = 'PURE_PYTHON' in os.environ
 
 
-# Bring this in line with the "C" implementation
-# Zope requires this to be an `str`
-##class Acquired(object):
-##    "Marker for explicit acquisition"
 Acquired = "<Special Object Used to Force Acquisition>"
 
 

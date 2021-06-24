@@ -24,6 +24,7 @@ ls -ld /cache
 ls -ld /cache/pip
 
 # Compile wheels
+BASEPATH="$PATH"
 for PYBIN in /opt/python/*/bin; do
     if [[ "${PYBIN}" == *"cp27"* ]] || \
        [[ "${PYBIN}" == *"cp35"* ]] || \
@@ -36,7 +37,9 @@ for PYBIN in /opt/python/*/bin; do
         if [ `uname -m` == 'aarch64' ]; then
          cd /io/
          "${PYBIN}/pip" install tox zope.testrunner
+	 PATH="$PYBIN:$BASEPATH"
          "${PYBIN}/tox" -e py
+	 PATH="$BASEPATH"
          cd ..
         fi
         rm -rf /io/build /io/*.egg-info

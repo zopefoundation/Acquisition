@@ -1,0 +1,17 @@
+# Generated from:
+# https://github.com/zopefoundation/meta/tree/master/config/c-code
+[meta]
+template = "c-code"
+commit-id = "d1cc3112dca7b71f6fbd14b1319e2d39f72aeb1a"
+
+[python]
+with-windows = true
+with-pypy = true
+with-legacy-python = true
+with-sphinx-doctests = false
+
+[tox]
+use-flake8 = false
+
+[coverage]
+fail-under = 80

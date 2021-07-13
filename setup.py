@@ -74,6 +74,9 @@ setup(
         'ExtensionClass >= 4.2.0',
         'zope.interface',
     ],
+    extras_require={
+        'test': ['zope.testrunner'],
+    },
     include_package_data=True,
     zip_safe=False,
 )

@@ -16,7 +16,7 @@ with-future-python = false
 use-flake8 = false
 
 [coverage]
-fail-under = 80
+fail-under = 96
 
 [manifest]
 additional-rules = [

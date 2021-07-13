@@ -1,0 +1,37 @@
+# Generated from:
+# https://github.com/zopefoundation/meta/tree/master/config/c-code
+[meta]
+template = "c-code"
+commit-id = "7255f0290e4cb2a8dde91d207a71c9707da6cc19"
+
+[python]
+with-windows = true
+with-pypy = true
+with-legacy-python = true
+with-sphinx-doctests = false
+with-appveyor = true
+with-future-python = false
+
+[tox]
+use-flake8 = false
+
+[coverage]
+fail-under = 96
+
+[manifest]
+additional-rules = [
+    "include *.sh",
+    "recursive-include include *.h",
+    "recursive-include src *.c",
+    "recursive-include src *.h",
+    ]
+
+[appveyor]
+global-env-vars = [
+    "# Currently the builds use @dataflake's Appveyor account.  The PyPI token belongs",
+    "# to zope.wheelbuilder, which is managed by @mgedmin and @dataflake.",
+    "global:",
+    "  TWINE_USERNAME: __token__",
+    "  TWINE_PASSWORD:",
+    "    secure: vSlDBj79vziJOA5k3z16r0q5r//oezNWPJuIyZKwz2GpTwY115Rq2xW/gcj9CsUVpdUYS2OPYiwlAzjTbTTjlb2Ik57qpR4Mp+Dq5ePB8Aa7cn0X6L40egBJ4QEJvm9ugg/sdOGaHVLowMhQQvEzJlsbLm6hZu26cbU2kXTVH9f3JnOFjsTWkVuRkjLvg0a0TWMXPeXekLde9s/LIFUEvG+Flcs/ifTHD8QiWVCvr1Ctqg6QBoywDC2oBe+MUtV3p519rRWShPkEzFFlYbCHPw==",
+    ]

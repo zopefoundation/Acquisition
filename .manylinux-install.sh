@@ -35,7 +35,7 @@ for PYBIN in /opt/python/*/bin; do
         "${PYBIN}/pip" wheel /io/ -w wheelhouse/
         if [ `uname -m` == 'aarch64' ]; then
          cd /io/
-         "${PYBIN}/pip" install tox zope.testrunner
+         "${PYBIN}/pip" install tox
          "${PYBIN}/tox" -e py
          cd ..
         fi

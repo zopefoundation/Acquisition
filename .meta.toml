@@ -14,9 +14,6 @@ with-future-python = false
 
 [tox]
 use-flake8 = false
-testenv-deps = [
-    "zope.testrunner",
-    ]
 
 [coverage]
 fail-under = 80

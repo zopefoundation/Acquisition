@@ -47,6 +47,7 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
 
 
 if sys.version_info < (3,):  # pragma: PY2
+    PY2 = True
     import copy_reg
 
     def _rebound_method(method, wrapper):
@@ -58,6 +59,7 @@ if sys.version_info < (3,):  # pragma: PY2
     raise tp, value, tb
 """)
 else:  # pragma: PY3
+    PY2 = False
     import copyreg as copy_reg
 
     def _rebound_method(method, wrapper):
@@ -709,14 +711,12 @@ class _Wrapper(ExtensionClass.Base):
         setter(key, value)
 
     def __getitem__(self, key):
-        if isinstance(key, slice) and hasattr(operator, 'getslice'):
-            # Only on Python 2
-            # XXX: This is probably not proxying correctly, but the existing
-            # tests pass with this behaviour
-            return operator.getslice(
-                self,
+        if PY2 and isinstance(key, slice):
+            key = slice(
                 key.start if key.start is not None else 0,
-                key.stop if key.stop is not None else sys.maxint)
+                key.stop if key.stop is not None else sys.maxint,
+                # ``step`` is not tested
+                key.step if key.step is not None else 1)
 
         getter = _Wrapper_fetch(self , '__getitem__')
         return getter(key)

@@ -37,6 +37,7 @@ from Acquisition import (  # NOQA
     Implicit,
     IS_PYPY,
     IS_PURE,
+    _Wrapper,
 )
 
 if sys.version_info >= (3,):
@@ -50,6 +51,10 @@ if sys.version_info >= (3,):
             return type(self).__unicode__(self)
         except AttributeError as e:
             return type(self).__str__(self)
+
+    def cmp(x, y):
+        return 0 if x == y else -1 if x < y else 1
+
     long = int
 else:
     PY2 = True
@@ -292,7 +297,7 @@ class TestStory(unittest.TestCase):
         # - The object found, and
         # - The extra data passed to 'aq_acquire'.
 
-        # If the filter returns a true object that the object found is
+        # If the filter returns a true object then the object found is
         # returned, otherwise, the acquisition search continues.
         # For example, in:
 
@@ -1754,7 +1759,7 @@ def test_container_proxying():
     ...     def __getitem__(self, key):
     ...         if isinstance(key, slice):
     ...             print('slicing...')
-    ...             return (key.start,key.stop)
+    ...             return (key.start, key.stop, key.step)
     ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
@@ -1767,7 +1772,7 @@ def test_container_proxying():
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
     ...         print('slicing...')
-    ...         return (start, end)
+    ...         return (start, end, None)
 
     The naked class behaves like this:
 
@@ -1783,8 +1788,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-    (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> c[::] == (None, None, None)
     slicing...
     True
 
@@ -1806,8 +1820,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-    (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> i.c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> i.c[::] == (None, None, None)
     slicing...
     True
 
@@ -1820,7 +1843,7 @@ def test_container_proxying():
     ...     def __getitem__(self, key):
     ...         if isinstance(key, slice):
     ...             print('slicing...')
-    ...             return (key.start,key.stop)
+    ...             return (key.start, key.stop, key.step)
     ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
@@ -1833,7 +1856,7 @@ def test_container_proxying():
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
     ...         print('slicing...')
-    ...         return (start, end)
+    ...         return (start, end, None)
 
     The naked class behaves like this:
 
@@ -1849,8 +1872,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-    (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> c[::] == (None, None, None)
     slicing...
     True
 
@@ -1872,8 +1904,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-    (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> i.c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> i.c[::] == (None, None, None)
     slicing...
     True
 
@@ -2277,6 +2318,32 @@ class TestBugs(unittest.TestCase):
                 time.gmtime()
         except AttributeError:
             raise
+
+    def test_wrapped_attr(self):
+        top = I("")
+        top.f = I("f")
+        f = top.f
+        i = I("i")
+        i.f = f
+        self.assertIs(i.f.aq_self, f)
+        self.assertIs(i.f.aq_parent, i)
+
+    def test__cmp__(self):
+        class CmpOrdered(I):
+            def __cmp__(self, other):
+                return cmp(self.id, other.id)
+        Ordered = CmpOrdered
+        top = Ordered("")
+        top.o = Ordered("")
+        o = top.o
+        self.assertEqual(o.o.__cmp__(top), 0)
+        self.assertEqual(o.o.__cmp__(Ordered("1")), -1)
+
+    def test_bool(self):
+        top = I("")
+        top.o = I("")
+        o = top.o
+        self.assertTrue(bool(o.o))
 
 
 class TestSpecialNames(unittest.TestCase):

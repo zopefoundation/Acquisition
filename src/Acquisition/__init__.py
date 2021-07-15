@@ -21,8 +21,7 @@ IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
 IS_PURE = 'PURE_PYTHON' in os.environ
 
 
-class Acquired(object):
-    "Marker for explicit acquisition"
+Acquired = "<Special Object Used to Force Acquisition>"
 
 
 _NOT_FOUND = object()  # marker
@@ -48,6 +47,7 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
 
 
 if sys.version_info < (3,):  # pragma: PY2
+    PY2 = True
     import copy_reg
 
     def _rebound_method(method, wrapper):
@@ -59,6 +59,7 @@ if sys.version_info < (3,):  # pragma: PY2
     raise tp, value, tb
 """)
 else:  # pragma: PY3
+    PY2 = False
     import copyreg as copy_reg
 
     def _rebound_method(method, wrapper):
@@ -320,6 +321,16 @@ def _Wrapper_findattr(wrapper, name,
     raise AttributeError(orig_name)
 
 
+def _Wrapper_fetch(self, name, default=AttributeError):
+    try:
+        return _Wrapper_findattr(self, name, None, None, None, True,
+                                     type(self)._IS_IMPLICIT, False, False)
+    except AttributeError:
+        if type(default) is type and issubclass(default, Exception):
+            raise default(name)
+        return default
+
+
 _NOT_GIVEN = object()  # marker
 _OGA = object.__getattribute__
 
@@ -426,12 +437,14 @@ class _Wrapper(ExtensionClass.Base):
         # the wrapped __of__ method because it gets here via the
         # descriptor code path)...
         wrapper = self._obj.__of__(parent)
-        if (not isinstance(wrapper, _Wrapper) or
-                not isinstance(wrapper._container, _Wrapper)):
+        if not isinstance(wrapper, _Wrapper):
             return wrapper
         # but the returned wrapper should be based on this object's
         # wrapping chain
         wrapper._obj = self
+
+        if not isinstance(wrapper._container, _Wrapper):
+            return wrapper
 
         while (isinstance(wrapper._obj, _Wrapper) and
                (wrapper._obj._container is wrapper._container._obj)):
@@ -500,11 +513,10 @@ class _Wrapper(ExtensionClass.Base):
     # define __cmp__ the same way, and redirect the rich comparison operators
     # to it. (Note that these attributes are also hardcoded in getattribute)
     def __cmp__(self, other):
-        aq_self = self._obj
-        if hasattr(type(aq_self), '__cmp__'):
-            return _rebound_method(aq_self.__cmp__, self)(other)
-
         my_base = aq_base(self)
+        cmp = getattr(type(my_base), "__cmp__", None)
+        if cmp is not None:
+            return cmp(self, other)
         other_base = aq_base(other)
         if my_base is other_base:
             return 0
@@ -528,50 +540,33 @@ class _Wrapper(ExtensionClass.Base):
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
 
-    # Special methods looked up by the type of self._obj,
-    # but which must have the wrapper as self when called
+    # Special methods:
+    # make implicitly called `obj.__method__`
+    # behave the same way as when emplicitly called
 
     def __nonzero__(self):
-        aq_self = self._obj
-        type_aq_self = type(aq_self)
-        nonzero = getattr(type_aq_self, '__nonzero__', None)
+        nonzero = _Wrapper_fetch(self, '__nonzero__', None)
         if nonzero is None:
             # Py3 bool?
-            nonzero = getattr(type_aq_self, '__bool__', None)
+            nonzero = _Wrapper_fetch(self, '__bool__', None)
         if nonzero is None:
             # a len?
-            nonzero = getattr(type_aq_self, '__len__', None)
+            nonzero = _Wrapper_fetch(self, '__len__', None)
         if nonzero:
-            return bool(nonzero(self))  # Py3 is strict about the return type
+            return bool(nonzero())  # Py3 is strict about the return type
         # If nothing was defined, then it's true
         return True
     __bool__ = __nonzero__
 
     def __unicode__(self):
-        f = getattr(self.aq_self, '__unicode__',
-                    getattr(self.aq_self, '__str__', object.__str__))
-        return _rebound_method(f, self)()
-
-    def __repr__(self):
-        aq_self = self._obj
-        try:
-            return _rebound_method(aq_self.__repr__, self)()
-        except (AttributeError, TypeError):
-            return repr(aq_self)
-
-    def __str__(self):
-        aq_self = self._obj
-        try:
-            return _rebound_method(aq_self.__str__, self)()
-        except (AttributeError, TypeError):  # pragma: PY3
-            return str(aq_self)
+        f = _Wrapper_fetch(self, '__unicode__', None)
+        if f is None:
+            f = _Wrapper_fetch(self, '__str__')
+        return f()
 
     def __bytes__(self):
-        aq_self = self._obj
-        try:
-            return _rebound_method(aq_self.__bytes__, self)()
-        except (AttributeError, TypeError):  # pragma: PY3
-            return bytes(aq_self)
+        return _Wrapper_fetch(self, '__bytes__', TypeError)()
+
 
     __binary_special_methods__ = [
         # general numeric
@@ -634,6 +629,11 @@ class _Wrapper(ExtensionClass.Base):
     ]
 
     __unary_special_methods__ = [
+        # misc
+        '__repr__',
+        # requres ``AttributeError`` --> ``TypeError`` for PY3
+        # '__bytes__',
+        '__str__',
         # arithmetic
         '__neg__',
         '__pos__',
@@ -655,22 +655,12 @@ class _Wrapper(ExtensionClass.Base):
         # '__str__',
     ]
 
-    for _name in __binary_special_methods__:
+    for _name in __unary_special_methods__ + __binary_special_methods__:
         def _make_op(_name):
-            def op(self, other):
-                aq_self = self._obj
-                return getattr(type(aq_self), _name)(self, other)
+            def op(self, *args):
+                return _Wrapper_fetch(self, _name)(*args)
             return op
         locals()[_name] = _make_op(_name)
-
-    for _name in __unary_special_methods__:
-        def _make_op(_name):
-            def op(self):
-                aq_self = self._obj
-                return getattr(type(aq_self), _name)(self)
-            return op
-        locals()[_name] = _make_op(_name)
-
     del _make_op
     del _name
 
@@ -680,19 +670,13 @@ class _Wrapper(ExtensionClass.Base):
         # if len is missing, it should raise TypeError
         # (AttributeError is acceptable under Py2, but Py3
         # breaks list conversion if AttributeError is raised)
-        try:
-            l = getattr(type(self._obj), '__len__')
-        except AttributeError:
-            raise TypeError('object has no len()')
-        else:
-            return l(self)
+        return _Wrapper_fetch(self, '__len__', TypeError)()
 
     def __iter__(self):
-        # For things that provide either __iter__ or just __getitem__,
-        # we need to be sure that the wrapper is provided as self
-        if hasattr(self._obj, '__iter__'):
-            return _rebound_method(self._obj.__iter__, self)()
-        if hasattr(self._obj, '__getitem__'):
+        it = _Wrapper_fetch(self, '__iter__', None)
+        if it is not None:
+            return it()
+        if hasattr(self, '__getitem__'):
             # Unfortunately we cannot simply call iter(self._obj)
             # and rebind im_self like we do above: the Python runtime
             # complains:
@@ -709,46 +693,30 @@ class _Wrapper(ExtensionClass.Base):
             it = WrapperIter(self)
             return iter(it)
 
-        return iter(self._obj)
+        raise TypeError("__iter__")
 
     def __contains__(self, item):
         # First, if the type of the object defines __contains__ then
         # use it
-        aq_self = self._obj
-        aq_contains = getattr(type(aq_self), '__contains__', None)
+        aq_contains = _Wrapper_fetch(self, '__contains__', None)
         if aq_contains:
-            return aq_contains(self, item)
+            return aq_contains(item)
         # Next, we should attempt to iterate like the interpreter;
         # but the C code doesn't do this, so we don't either.
         # return item in iter(self)
         raise AttributeError('__contains__')
 
     def __setitem__(self, key, value):
-        aq_self = self._obj
-        try:
-            setter = type(aq_self).__setitem__
-        except AttributeError:
-            raise AttributeError("__setitem__")  # doctests care about the name
-        else:
-            setter(self, key, value)
+        setter = _Wrapper_fetch(self, "__setitem__")
+        setter(key, value)
 
     def __getitem__(self, key):
-        if isinstance(key, slice) and hasattr(operator, 'getslice'):
-            # Only on Python 2
-            # XXX: This is probably not proxying correctly, but the existing
-            # tests pass with this behaviour
-            return operator.getslice(
-                self._obj,
-                key.start if key.start is not None else 0,
-                key.stop if key.stop is not None else sys.maxint)
+        getter = _Wrapper_fetch(self , '__getitem__')
+        return getter(key)
 
-        aq_self = self._obj
-        try:
-            getter = type(aq_self).__getitem__
-        except AttributeError:
-            raise AttributeError("__getitem__")  # doctests care about the name
-        else:
-            return getter(self, key)
+    if PY2:
+        def __getslice__(self, start, end):
+            return _Wrapper_fetch(self, '__getslice__')(start, end)
 
     def __call__(self, *args, **kwargs):
         try:

@@ -1759,7 +1759,7 @@ def test_container_proxying():
     ...     def __getitem__(self, key):
     ...         if isinstance(key, slice):
     ...             print('slicing...')
-    ...             return (key.start,key.stop)
+    ...             return (key.start, key.stop, key.step)
     ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
@@ -1772,7 +1772,7 @@ def test_container_proxying():
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
     ...         print('slicing...')
-    ...         return (start, end)
+    ...         return (start, end, None)
 
     The naked class behaves like this:
 
@@ -1788,8 +1788,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-    (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> c[::] == (None, None, None)
     slicing...
     True
 
@@ -1811,8 +1820,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-    (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> i.c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> i.c[::] == (None, None, None)
     slicing...
     True
 
@@ -1825,7 +1843,7 @@ def test_container_proxying():
     ...     def __getitem__(self, key):
     ...         if isinstance(key, slice):
     ...             print('slicing...')
-    ...             return (key.start,key.stop)
+    ...             return (key.start, key.stop, key.step)
     ...         print('getitem', key)
     ...         if key == 4:
     ...             raise IndexError
@@ -1838,7 +1856,7 @@ def test_container_proxying():
     ...         return iter((42,))
     ...     def __getslice__(self, start, end):
     ...         print('slicing...')
-    ...         return (start, end)
+    ...         return (start, end, None)
 
     The naked class behaves like this:
 
@@ -1854,8 +1872,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-    (5, 10)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> c[::] == (None, None, None)
     slicing...
     True
 
@@ -1877,8 +1904,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-    (5, 10)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None)
+    (5, 10, None)
+    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    slicing...
+    True
+    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    slicing...
+    True
+    >>> i.c[5:10:5] == (5, 10, 5)
+    slicing...
+    True
+    >>> i.c[::] == (None, None, None)
     slicing...
     True
 
@@ -3309,7 +3345,7 @@ class TestProxying(unittest.TestCase):
         base = B()
         base.value = 42
 
-        rich_cmp_methods = ['__lt__', '__gt__',  '__eq__',
+        rich_cmp_methods = ['__lt__', '__gt__', '__eq__',
                             '__ne__', '__ge__', '__le__']
 
         def _never_called(self, other):

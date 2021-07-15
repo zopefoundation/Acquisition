@@ -711,15 +711,12 @@ class _Wrapper(ExtensionClass.Base):
         setter(key, value)
 
     def __getitem__(self, key):
-        if PY2 and isinstance(key, slice):
-            key = slice(
-                key.start if key.start is not None else 0,
-                key.stop if key.stop is not None else sys.maxint,
-                # ``step`` is not tested
-                key.step if key.step is not None else 1)
-
         getter = _Wrapper_fetch(self , '__getitem__')
         return getter(key)
+
+    if PY2:
+        def __getslice__(self, start, end):
+            return _Wrapper_fetch(self, '__getslice__')(start, end)
 
     def __call__(self, *args, **kwargs):
         try:

@@ -9,6 +9,8 @@ Changelog
   avoid infinite ``__cmp__`` loop,
   fix (`#51 <https://github.com/zopefoundation/Acquisition/issues/51>`_),
   fix (`#48 <https://github.com/zopefoundation/Acquisition/issues/48>`_).
+  
+- Create aarch64 wheels.
 
 
 4.7 (2020-10-07)

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.9 (unreleased)
+----------------
+
+- Nothing changed yet.
+
+
 4.8 (2021-07-20)
 ----------------
 

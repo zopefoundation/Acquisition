@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.8 (unreleased)
+4.8 (2021-07-20)
 ----------------
 
 - Various fixes for the ``PURE_PYTHON`` version, e.g.

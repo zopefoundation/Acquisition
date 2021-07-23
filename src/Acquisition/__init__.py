@@ -4,7 +4,6 @@ from __future__ import absolute_import, print_function
 
 
 import os
-import operator
 import platform
 import sys
 import types
@@ -18,12 +17,9 @@ from .interfaces import IAcquirer
 from .interfaces import IAcquisitionWrapper
 
 IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
-IS_PURE = 'PURE_PYTHON' in os.environ
-
-
+IS_PURE = int(os.environ.get('PURE_PYTHON', '0'))
+CAPI = not (IS_PYPY or IS_PURE)
 Acquired = "<Special Object Used to Force Acquisition>"
-
-
 _NOT_FOUND = object()  # marker
 
 ###
@@ -917,7 +913,7 @@ def aq_inContextOf(self, o, inner=True):
     return False
 
 
-if not (IS_PYPY or IS_PURE):  # pragma: no cover
+if CAPI:  # pragma: no cover
     # Make sure we can import the C extension of our dependency.
     from ExtensionClass import _ExtensionClass  # NOQA
     from ._Acquisition import *  # NOQA

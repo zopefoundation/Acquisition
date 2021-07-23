@@ -35,6 +35,7 @@ from Acquisition import (  # NOQA
     aq_self,
     Explicit,
     Implicit,
+    CAPI,
     IS_PYPY,
     IS_PURE,
     _Wrapper,
@@ -3282,18 +3283,15 @@ class TestProxying(unittest.TestCase):
 
         self.assertEqual(base.derived(1, k=2), (42, 1, 2))
 
-        if not IS_PYPY:
-            # XXX: This test causes certain versions
-            # of PyPy to segfault (at least 2.6.0-alpha1)
-            class NotCallable(base_class):
-                pass
+        class NotCallable(base_class):
+            pass
 
-            base.derived = NotCallable()
-            try:
-                base.derived()
-                self.fail("Not callable")
-            except (TypeError, AttributeError):
-                pass
+        base.derived = NotCallable()
+        try:
+            base.derived()
+            self.fail("Not callable")
+        except (TypeError, AttributeError):
+            pass
 
     def test_implicit_proxy_call(self):
         self._check_call()
@@ -3416,19 +3414,18 @@ class TestProxying(unittest.TestCase):
 
 class TestCompilation(unittest.TestCase):
 
-    def test_compile(self):
-        if IS_PYPY or IS_PURE:
-            # the test wants to verify that in a Python only
-            # setup, the C extension is not generated.
-            # However, for efficiency reasons, the tests are usually
-            # run in a shared environment, and the test would fail
-            # as the C extension is available
-            pass
-##            with self.assertRaises((AttributeError, ImportError)):
-##                from Acquisition import _Acquisition
-        else:
+    def test_compilation(self):
+        self.assertEqual(CAPI, not (IS_PYPY or IS_PURE))
+        try:
             from Acquisition import _Acquisition
+            cExplicit = _Acquisition.Explicit
+        except ImportError:
+            cExplicit = None  # PyPy never has a C module.
+        if CAPI:  # pragma: no cover
             self.assertTrue(hasattr(_Acquisition, 'AcquisitionCAPI'))
+            self.assertEqual(Explicit, cExplicit)
+        else:
+            self.assertNotEqual(Explicit, cExplicit)
 
 
 def test_suite():

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.9 (unreleased)
+4.9 (2021-08-19)
 ----------------
 
 - On CPython no longer omit compiling the C code when ``PURE_PYTHON`` is

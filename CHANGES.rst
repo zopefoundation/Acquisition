@@ -4,7 +4,9 @@ Changelog
 4.9 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- On CPython no longer omit compiling the C code when ``PURE_PYTHON`` is
+  required. Just evaluate it at runtime.
+  (`#53 <https://github.com/zopefoundation/Acquisition/issues/53>`_)
 
 
 4.8 (2021-07-20)

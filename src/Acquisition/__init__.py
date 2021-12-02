@@ -382,7 +382,17 @@ class _Wrapper(ExtensionClass.Base):
             # so that if it has methods that use `object.__getattribute__`
             # they still work. Note that because we have slots,
             # we won't interfere with the contents of that dict.
-            object.__setattr__(inst, '__dict__', obj.__dict__)
+            od = obj.__dict__
+            if not isinstance(od, dict):
+                # Python 3 refuses to set ``__dict__`` to a non dict
+                # thus, convert
+                # Note: later changes to ``od`` will not be
+                # reflected by the wrapper. But, it is rare
+                # that ``od`` is not a dict (usually for class objects)
+                # and wrappers are transient entities. Thus, the
+                # risk should not be too high.
+                od = dict(od)
+            object.__setattr__(inst, '__dict__', od)
         return inst
 
     def __init__(self, obj, container):

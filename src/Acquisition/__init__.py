@@ -761,7 +761,7 @@ class _Acquirer(ExtensionClass.Base):
         except AttributeError:
             # the doctests have very specific error message
             # requirements (but at least we can preserve the traceback)
-            _, _, tb = sys.exc_info()
+            tb = sys.exc_info()[2]
             try:
                 _reraise(AttributeError, AttributeError(name), tb)
             finally:

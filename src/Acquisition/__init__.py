@@ -51,9 +51,6 @@ if sys.version_info < (3,):  # pragma: PY2
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
-    exec("""def _reraise(tp, value, tb=None):
-    raise tp, value, tb
-""")
 else:  # pragma: PY3
     PY2 = False
     import copyreg as copy_reg
@@ -63,13 +60,6 @@ else:  # pragma: PY3
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.__func__, wrapper)
         return method
-
-    def _reraise(tp, value, tb=None):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -758,14 +748,10 @@ class _Acquirer(ExtensionClass.Base):
     def __getattribute__(self, name):
         try:
             return super(_Acquirer, self).__getattribute__(name)
-        except AttributeError:
+        except AttributeError as exc:
             # the doctests have very specific error message
-            # requirements (but at least we can preserve the traceback)
-            tb = sys.exc_info()[2]
-            try:
-                _reraise(AttributeError, AttributeError(name), tb)
-            finally:
-                del tb
+            exc.args = AttributeError(name).args
+            raise
 
     def __of__(self, context):
         return type(self)._Wrapper(self, context)

@@ -2545,6 +2545,17 @@ class TestWrapper(unittest.TestCase):
             with self.assertRaises(TypeError):
                 bytes(wrapper)
 
+    def test_aq_acquire_with_class_and_filter(self):
+        class C(object):
+            a = 1
+        allow = lambda *args: True
+        deny = lambda *args: False
+        self.assertEqual(aq_acquire(C, "a", allow), C.a)
+        with self.assertRaises(AttributeError):
+            aq_acquire(C, "a", deny)
+        with self.assertRaises(AttributeError):
+            aq_acquire(C, "b")
+
 
 class TestOf(unittest.TestCase):
 

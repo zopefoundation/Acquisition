@@ -51,9 +51,6 @@ if sys.version_info < (3,):  # pragma: PY2
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.im_func, wrapper, method.im_class)
         return method
-    exec("""def _reraise(tp, value, tb=None):
-    raise tp, value, tb
-""")
 else:  # pragma: PY3
     PY2 = False
     import copyreg as copy_reg
@@ -63,13 +60,6 @@ else:  # pragma: PY3
         if isinstance(method, types.MethodType):
             method = types.MethodType(method.__func__, wrapper)
         return method
-
-    def _reraise(tp, value, tb=None):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -382,7 +372,17 @@ class _Wrapper(ExtensionClass.Base):
             # so that if it has methods that use `object.__getattribute__`
             # they still work. Note that because we have slots,
             # we won't interfere with the contents of that dict.
-            object.__setattr__(inst, '__dict__', obj.__dict__)
+            od = obj.__dict__
+            if not isinstance(od, dict):
+                # Python 3 refuses to set ``__dict__`` to a non dict
+                # thus, convert
+                # Note: later changes to ``od`` will not be
+                # reflected by the wrapper. But, it is rare
+                # that ``od`` is not a dict (usually for class objects)
+                # and wrappers are transient entities. Thus, the
+                # risk should not be too high.
+                od = dict(od)
+            object.__setattr__(inst, '__dict__', od)
         return inst
 
     def __init__(self, obj, container):
@@ -748,14 +748,10 @@ class _Acquirer(ExtensionClass.Base):
     def __getattribute__(self, name):
         try:
             return super(_Acquirer, self).__getattribute__(name)
-        except AttributeError:
+        except AttributeError as exc:
             # the doctests have very specific error message
-            # requirements (but at least we can preserve the traceback)
-            _, _, tb = sys.exc_info()
-            try:
-                _reraise(AttributeError, AttributeError(name), tb)
-            finally:
-                del tb
+            exc.args = AttributeError(name).args
+            raise
 
     def __of__(self, context):
         return type(self)._Wrapper(self, context)

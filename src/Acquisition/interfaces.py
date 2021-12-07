@@ -10,9 +10,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Acquisition z3 interfaces.
-
-$Id$
+"""Acquisition interfaces.
 
 For details, see
 `README.rst <https://github.com/zopefoundation/Acquisition#readme>`_
@@ -62,7 +60,7 @@ class IAcquisitionWrapper(Interface):
         is unsuccessful, it may continue the search in the parent.
 
         When the attribute is found and *filter* is not None,
-        *filter* is called with the parameters:
+        *filter* is called with the following parameters:
 
           self
             the object ``aq_acquire`` was called on
@@ -79,7 +77,7 @@ class IAcquisitionWrapper(Interface):
           *extra*
             ``aq_acquire`` parameter
 
-        If the call returns true, *value* is returned,
+        If the call returns ``True``, *value* is returned,
         otherwise the search continues.
 
         *explicit* controls whether the attribute is also searched

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.10 (unreleased)
+4.10 (2021-12-07)
 -----------------
 
 - Fix bug in the ``PURE_PYTHON`` version affecting ``aq_acquire`` applied

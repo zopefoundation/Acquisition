@@ -7,7 +7,9 @@ Changelog
 - Fix bug in the ``PURE_PYTHON`` version affecting ``aq_acquire`` applied
   to a class with a filter.
 
-- Improve interface documentation
+- Improve interface documentation.
+
+- Add support for Python 3.10.
 
 
 4.9 (2021-08-19)

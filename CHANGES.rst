@@ -6,6 +6,8 @@ Changelog
 
 - Add support for Python 3.11 (as of 3.11.0b3).
 
+- Switch from ``-Ofast`` to ``-O3`` when compiling code for Linux wheels.
+
 
 4.10 (2021-12-07)
 -----------------

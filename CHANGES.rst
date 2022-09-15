@@ -7,7 +7,7 @@ Changelog
 - Add support for Python 3.11 (as of 3.11.0rc1).
 
 - Switch from ``-Ofast`` to ``-O3`` when compiling code for Linux wheels.
-  (`#64 https://github.com/zopefoundation/Acquisition/pull/64>`_)
+  (`#64 <https://github.com/zopefoundation/Acquisition/pull/64>`_)
 
 
 4.10 (2021-12-07)

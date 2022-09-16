@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.11 (unreleased)
+4.11 (2022-09-16)
 -----------------
 
 - Add support for Python 3.11 (as of 3.11.0rc1).

@@ -4,7 +4,7 @@ Changelog
 4.12 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Add support for final Python 3.11 release.
 
 
 4.11 (2022-09-16)

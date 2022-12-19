@@ -41,24 +41,11 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 
-if sys.version_info < (3,):  # pragma: PY2
-    PY2 = True
-    import copy_reg
-
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.im_func, wrapper, method.im_class)
-        return method
-else:  # pragma: PY3
-    PY2 = False
-    import copyreg as copy_reg
-
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.__func__, wrapper)
-        return method
+def _rebound_method(method, wrapper):
+    """Returns a version of the method with self bound to `wrapper`"""
+    if isinstance(method, types.MethodType):
+        method = types.MethodType(method.__func__, wrapper)
+    return method
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -708,10 +695,6 @@ class _Wrapper(ExtensionClass.Base):
     def __getitem__(self, key):
         getter = _Wrapper_fetch(self , '__getitem__')
         return getter(key)
-
-    if PY2:
-        def __getslice__(self, start, end):
-            return _Wrapper_fetch(self, '__getslice__')(start, end)
 
     def __call__(self, *args, **kwargs):
         try:

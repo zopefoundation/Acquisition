@@ -41,7 +41,6 @@ from Acquisition import (  # NOQA
 )
 
 
-<<<<<<< HEAD
 def unicode(self):
     # For test purposes, redirect the unicode
     # to the type of the object, just like Py2 did
@@ -50,23 +49,9 @@ def unicode(self):
     except AttributeError:
         return type(self).__str__(self)
 
-=======
-    def unicode(self):
-        # For test purposes, redirect the unicode
-        # to the type of the object, just like Py2 did
-        try:
-            return type(self).__unicode__(self)
-        except AttributeError as e:
-            return type(self).__str__(self)
+def cmp(x, y):
+    return 0 if x == y else -1 if x < y else 1
 
-    def cmp(x, y):
-        return 0 if x == y else -1 if x < y else 1
-
-    long = int
-else:
-    PY2 = True
-    PY3 = False
->>>>>>> master
 
 if 'Acquisition._Acquisition' not in sys.modules:
     CAPI = False
@@ -1796,22 +1781,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-<<<<<<< HEAD
-    (5, 10)
-    >>> c[5:] == (5, None)
-=======
     (5, 10, None)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    >>> c[5:] == (5, None, None)
     slicing...
     True
-    >>> c[:10] == (0 if PY2 else None, 10, None)
+    >>> c[:10] == (None, 10, None)
     slicing...
     True
     >>> c[5:10:5] == (5, 10, 5)
     slicing...
     True
     >>> c[::] == (None, None, None)
->>>>>>> master
     slicing...
     True
 
@@ -1833,22 +1813,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-<<<<<<< HEAD
-    (5, 10)
-    >>> i.c[5:] == (5, None)
-=======
     (5, 10, None)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    >>> i.c[5:] == (5, None, None)
     slicing...
     True
-    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    >>> i.c[:10] == (None, 10, None)
     slicing...
     True
     >>> i.c[5:10:5] == (5, 10, 5)
     slicing...
     True
     >>> i.c[::] == (None, None, None)
->>>>>>> master
     slicing...
     True
 
@@ -1890,22 +1865,17 @@ def test_container_proxying():
     [42]
     >>> c[5:10]
     slicing...
-<<<<<<< HEAD
-    (5, 10)
-    >>> c[5:] == (5, None)
-=======
     (5, 10, None)
-    >>> c[5:] == (5, sys.maxsize if PY2 else None, None)
+    >>> c[5:] == (5, None, None)
     slicing...
     True
-    >>> c[:10] == (0 if PY2 else None, 10, None)
+    >>> c[:10] == (None, 10, None)
     slicing...
     True
     >>> c[5:10:5] == (5, 10, 5)
     slicing...
     True
     >>> c[::] == (None, None, None)
->>>>>>> master
     slicing...
     True
 
@@ -1927,22 +1897,17 @@ def test_container_proxying():
     [42]
     >>> i.c[5:10]
     slicing...
-<<<<<<< HEAD
-    (5, 10)
-    >>> i.c[5:] == (5, None)
-=======
     (5, 10, None)
-    >>> i.c[5:] == (5, sys.maxsize if PY2 else None, None)
+    >>> i.c[5:] == (5, None, None)
     slicing...
     True
-    >>> i.c[:10] == (0 if PY2 else None, 10, None)
+    >>> i.c[:10] == (None, 10, None)
     slicing...
     True
     >>> i.c[5:10:5] == (5, 10, 5)
     slicing...
     True
     >>> i.c[::] == (None, None, None)
->>>>>>> master
     slicing...
     True
 

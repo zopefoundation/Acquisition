@@ -26,8 +26,7 @@ with open('CHANGES.rst') as f:
 # PyPy won't build the extension.
 py_impl = getattr(platform, 'python_implementation', lambda: None)
 is_pypy = py_impl() == 'PyPy'
-is_pure = 'PURE_PYTHON' in os.environ
-if is_pypy or is_pure:
+if is_pypy:
     ext_modules = []
 else:
     ext_modules = [
@@ -36,7 +35,11 @@ else:
                   include_dirs=['include', 'src']),
     ]
 
+<<<<<<< HEAD
 version = '5.0.dev0'
+=======
+version = '4.14.dev0'
+>>>>>>> master
 
 setup(
     name='Acquisition',
@@ -53,7 +56,9 @@ setup(
     classifiers=[
         "Development Status :: 6 - Mature",
         "Environment :: Web Environment",
-        "Framework :: Zope2",
+        "Framework :: Zope :: 2",
+        "Framework :: Zope :: 4",
+        "Framework :: Zope :: 5",
         "License :: OSI Approved :: Zope Public License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
@@ -63,6 +68,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
@@ -72,6 +79,9 @@ setup(
         'ExtensionClass >= 4.2.0',
         'zope.interface',
     ],
+    extras_require={
+        'test': ['zope.testrunner'],
+    },
     include_package_data=True,
     zip_safe=False,
 )

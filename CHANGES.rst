@@ -4,7 +4,60 @@ Changelog
 5.0 (unreleased)
 ----------------
 
-- Drop support for Python 2 and 3.5.
+- Drop support for Python 2.7, 3.5, 3.6.
+
+
+4.13 (2022-11-17)
+-----------------
+
+- Add support for building arm64 wheels on macOS.
+
+
+4.12 (2022-11-03)
+-----------------
+
+- Add support for final Python 3.11 release.
+
+
+4.11 (2022-09-16)
+-----------------
+
+- Add support for Python 3.11 (as of 3.11.0rc1).
+
+- Switch from ``-Ofast`` to ``-O3`` when compiling code for Linux wheels.
+  (`#64 <https://github.com/zopefoundation/Acquisition/pull/64>`_)
+
+
+4.10 (2021-12-07)
+-----------------
+
+- Fix bug in the ``PURE_PYTHON`` version affecting ``aq_acquire`` applied
+  to a class with a filter.
+
+- Improve interface documentation.
+
+- Add support for Python 3.10.
+
+
+4.9 (2021-08-19)
+----------------
+
+- On CPython no longer omit compiling the C code when ``PURE_PYTHON`` is
+  required. Just evaluate it at runtime.
+  (`#53 <https://github.com/zopefoundation/Acquisition/issues/53>`_)
+
+
+4.8 (2021-07-20)
+----------------
+
+- Various fixes for the ``PURE_PYTHON`` version, e.g.
+  make ``Acquired`` an ``str`` (as required by ``Zope``),
+  avoid infinite ``__cmp__`` loop.
+  (`#51 <https://github.com/zopefoundation/Acquisition/issues/51>`_,
+  `#48 <https://github.com/zopefoundation/Acquisition/issues/48>`_)
+
+- Create aarch64 wheels.
+
 
 4.7 (2020-10-07)
 ----------------

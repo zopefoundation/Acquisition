@@ -1,19 +1,29 @@
+# Generated from:
+# https://github.com/zopefoundation/meta/tree/master/config/c-code
 [run]
-branch = True
 source = Acquisition
-
-[report]
-precision = 2
-show_missing = True
-exclude_lines =
-    pragma: no cover
-    if __name__ == '__main__':
-    raise NotImplementedError
-    raise AssertionError
-    self.fail
+# New in 5.0; required for the GHA coveralls submission.
+relative_files = True
+branch = true
 
 [paths]
 source =
-  src/
-  .tox/*/lib/*/site-packages/
-  .tox/pypy*/site-packages/
+    src/
+    .tox/*/lib/python*/site-packages/
+    .tox/pypy*/site-packages/
+
+[report]
+show_missing = true
+precision = 2
+exclude_lines =
+    except ImportError:
+    if __name__ == '__main__':
+    pragma: no cover
+    pragma: nocover
+    raise AssertionError
+    raise NotImplementedError
+    raise unittest.Skip
+    self.fail\(
+
+[html]
+directory = parts/htmlcov

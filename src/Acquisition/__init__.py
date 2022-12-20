@@ -1,8 +1,7 @@
-from __future__ import absolute_import, print_function
-
 # pylint:disable=W0212,R0911,R0912
 
 
+import copyreg
 import os
 import platform
 import sys
@@ -42,24 +41,11 @@ def _apply_filter(predicate, inst, name, result, extra, orig):
     return predicate(orig, inst, name, result, extra)
 
 
-if sys.version_info < (3,):  # pragma: PY2
-    PY2 = True
-    import copy_reg
-
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.im_func, wrapper, method.im_class)
-        return method
-else:  # pragma: PY3
-    PY2 = False
-    import copyreg as copy_reg
-
-    def _rebound_method(method, wrapper):
-        """Returns a version of the method with self bound to `wrapper`"""
-        if isinstance(method, types.MethodType):
-            method = types.MethodType(method.__func__, wrapper)
-        return method
+def _rebound_method(method, wrapper):
+    """Returns a version of the method with self bound to `wrapper`"""
+    if isinstance(method, types.MethodType):
+        method = types.MethodType(method.__func__, wrapper)
+    return method
 
 ###
 # Wrapper object protocol, mostly ported from C directly
@@ -335,7 +321,7 @@ def _make_wrapper_subclass_if_needed(cls, obj, container):
     type_obj = type(obj)
     wrapper_subclass = _wrapper_subclass_cache.get(type_obj, _NOT_GIVEN)
     if wrapper_subclass is _NOT_GIVEN:
-        slotnames = copy_reg._slotnames(type_obj)
+        slotnames = copyreg._slotnames(type_obj)
         if slotnames and not isinstance(obj, _Wrapper):
             new_type_dict = {'_Wrapper__DERIVED': True}
 
@@ -364,7 +350,7 @@ class _Wrapper(ExtensionClass.Base):
         if wrapper_subclass:
             inst = wrapper_subclass(obj, container)
         else:
-            inst = super(_Wrapper, cls).__new__(cls)
+            inst = super().__new__(cls)
         inst._obj = obj
         inst._container = container
         if hasattr(obj, '__dict__') and not isinstance(obj, _Wrapper):
@@ -386,7 +372,7 @@ class _Wrapper(ExtensionClass.Base):
         return inst
 
     def __init__(self, obj, container):
-        super(_Wrapper, self).__init__()
+        super().__init__()
         self._obj = obj
         self._container = container
 
@@ -678,7 +664,7 @@ class _Wrapper(ExtensionClass.Base):
             # complains:
             # (TypeError: 'sequenceiterator' expected, got 'Wrapper' instead)
 
-            class WrapperIter(object):
+            class WrapperIter:
                 __slots__ = ('_wrapper',)
 
                 def __init__(self, o):
@@ -709,10 +695,6 @@ class _Wrapper(ExtensionClass.Base):
     def __getitem__(self, key):
         getter = _Wrapper_fetch(self , '__getitem__')
         return getter(key)
-
-    if PY2:
-        def __getslice__(self, start, end):
-            return _Wrapper_fetch(self, '__getslice__')(start, end)
 
     def __call__(self, *args, **kwargs):
         try:
@@ -747,7 +729,7 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return super(_Acquirer, self).__getattribute__(name)
+            return super().__getattribute__(name)
         except AttributeError as exc:
             # the doctests have very specific error message
             exc.args = AttributeError(name).args

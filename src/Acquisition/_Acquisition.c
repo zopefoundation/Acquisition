@@ -20,18 +20,6 @@
 
 static ACQUISITIONCAPI AcquisitionCAPI;
 
-// Py_XSETREF is undefined in Python 3.4 only, it's present in 2.7 and 3.5
-#ifndef Py_XSETREF
-
-#define Py_XSETREF(op, op2)                     \
-    do {                                        \
-        PyObject *_py_tmp = (PyObject *)(op);   \
-        (op) = (op2);                           \
-        Py_XDECREF(_py_tmp);                    \
-    } while (0)
-
-#endif
-
 #define ASSIGN(dst, src) Py_XSETREF(dst, src)
 #define OBJECT(O) ((PyObject*)(O))
 
@@ -982,11 +970,7 @@ Wrapper_bytes(Wrapper *self)
         return r;
     } else {
         PyErr_Clear();
-#ifdef PY3K
         return PyBytes_FromObject(self->obj);
-#else
-        return Wrapper_str(self);
-#endif
     }
 }
 
@@ -1217,11 +1201,6 @@ static PyMappingMethods Wrapper_as_mapping = {
 
 WRAP_BINOP(sub);
 WRAP_BINOP(mul);
-
-#ifndef PY3K
-WRAP_BINOP(div);
-#endif
-
 WRAP_BINOP(mod);
 WRAP_BINOP(divmod);
 WRAP_TERNARYOP(pow);
@@ -1236,26 +1215,11 @@ WRAP_BINOP(xor);
 WRAP_BINOP(or);
 
 WRAP_UNARYOP(int);
-
-#ifndef PY3K
-WRAP_UNARYOP(long);
-#endif
-
 WRAP_UNARYOP(float);
-
-#ifndef PY3K
-WRAP_UNARYOP(oct);
-WRAP_UNARYOP(hex);
-#endif
 
 WRAP_BINOP(iadd);
 WRAP_BINOP(isub);
 WRAP_BINOP(imul);
-
-#ifndef PY3K
-WRAP_BINOP(idiv);
-#endif
-
 WRAP_BINOP(imod);
 WRAP_TERNARYOP(ipow);
 WRAP_BINOP(ilshift);
@@ -1281,11 +1245,7 @@ Wrapper_nonzero(PyObject *self)
     PyObject* result = NULL;
     PyObject* callable = NULL;
 
-#ifdef PY3K
     callable = PyObject_GetAttr(self, py__bool__);
-#else
-    callable = PyObject_GetAttr(self, py__nonzero__);
-#endif
 
     if (callable == NULL) {
         PyErr_Clear();
@@ -1311,43 +1271,11 @@ Wrapper_nonzero(PyObject *self)
 
 }
 
-#ifndef PY3K
-static int
-Wrapper_coerce(PyObject **self, PyObject **o)
-{
-    PyObject *m;
-
-    if ((m=PyObject_GetAttr(*self, py__coerce__)) == NULL) {
-        PyErr_Clear();
-        Py_INCREF(*self);
-        Py_INCREF(*o);
-        return 0;
-    }
-
-    ASSIGN(m, PyObject_CallFunction(m, "O", *o));
-    if (m == NULL) {
-        return -1;
-    }
-
-    if (!PyArg_ParseTuple(m, "OO", self, o)) {
-        Py_DECREF(m);
-        return -1;
-    }
-
-    Py_INCREF(*self);
-    Py_INCREF(*o);
-    Py_DECREF(m);
-    return 0;
-}
-#endif
 
 static PyNumberMethods Wrapper_as_number = {
     Wrapper_add,        /* nb_add */
     Wrapper_sub,        /* nb_subtract */
     Wrapper_mul,        /* nb_multiply */
-#ifndef PY3K
-    Wrapper_div,        /* nb_divide */
-#endif
     Wrapper_mod,        /* nb_remainder */
     Wrapper_divmod,     /* nb_divmod */
     Wrapper_pow,        /* nb_power */
@@ -1361,34 +1289,12 @@ static PyNumberMethods Wrapper_as_number = {
     Wrapper_and,        /* nb_and */
     Wrapper_xor,        /* nb_xor */
     Wrapper_or,         /* nb_or */
-
-#ifndef PY3K
-    Wrapper_coerce,     /* nb_coerce */
-#endif
-
     Wrapper_int,        /* nb_int */
-
-#ifdef PY3K
     NULL,
-#else
-    Wrapper_long,       /* nb_long */
-#endif
-
     Wrapper_float,      /* nb_float */
-
-#ifndef PY3K
-    Wrapper_oct,        /* nb_oct*/
-    Wrapper_hex,        /* nb_hex*/
-#endif
-
     Wrapper_iadd,       /* nb_inplace_add */
     Wrapper_isub,       /* nb_inplace_subtract */
     Wrapper_imul,       /* nb_inplace_multiply */
-
-#ifndef PY3K
-    Wrapper_idiv,       /* nb_inplace_divide */
-#endif
-
     Wrapper_imod,       /* nb_inplace_remainder */
     Wrapper_ipow,       /* nb_inplace_power */
     Wrapper_ilshift,    /* nb_inplace_lshift */
@@ -2003,7 +1909,6 @@ static struct PyMethodDef methods[] = {
   {NULL,	NULL}
 };
 
-#ifdef PY3K
 static struct PyModuleDef moduledef =
 {
     PyModuleDef_HEAD_INIT,
@@ -2016,7 +1921,6 @@ static struct PyModuleDef moduledef =
     NULL,                                   /* m_clear */
     NULL,                                   /* m_free */
 };
-#endif
 
 
 static PyObject*
@@ -2044,14 +1948,7 @@ module_init(void)
         return NULL;
     }
 
-#ifdef PY3K
     m = PyModule_Create(&moduledef);
-#else
-    m = Py_InitModule3("_Acquisition",
-                       methods,
-                       "Provide base classes for acquiring objects\n\n");
-#endif
-
     d = PyModule_GetDict(m);
     init_py_names();
     PyExtensionClass_Export(d,"Acquirer", AcquirerType);
@@ -2081,14 +1978,7 @@ module_init(void)
     return m;
 }
 
-#ifdef PY3K
 PyMODINIT_FUNC PyInit__Acquisition(void)
 {
     return module_init();
 }
-#else
-PyMODINIT_FUNC init_Acquisition(void)
-{
-    module_init();
-}
-#endif

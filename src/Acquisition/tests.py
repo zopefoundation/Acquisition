@@ -299,7 +299,7 @@ class TestStory(unittest.TestCase):
                 self.name = name
 
             def __str__(self):
-                return "{}({})".format(self.name, self.__class__.__name__)
+                return f"{self.name}({self.__class__.__name__})"
 
             __repr__ = __str__
 
@@ -353,7 +353,7 @@ class TestStory(unittest.TestCase):
                 self.name = name
 
             def __str__(self):
-                return "{}({})".format(self.name, self.__class__.__name__)
+                return f"{self.name}({self.__class__.__name__})"
 
             __repr__ = __str__
 
@@ -2536,7 +2536,7 @@ class TestWrapper(unittest.TestCase):
             bytes(wrapper)
 
     def test_aq_acquire_with_class_and_filter(self):
-        class C(object):
+        class C:
             a = 1
         allow = lambda *args: True
         deny = lambda *args: False

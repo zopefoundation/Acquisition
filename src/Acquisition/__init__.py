@@ -729,7 +729,7 @@ class _Acquirer(ExtensionClass.Base):
 
     def __getattribute__(self, name):
         try:
-            return super(_Acquirer, self).__getattribute__(name)
+            return super().__getattribute__(name)
         except AttributeError as exc:
             # the doctests have very specific error message
             exc.args = AttributeError(name).args

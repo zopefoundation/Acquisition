@@ -1,10 +1,10 @@
 Changelog
 =========
 
-5.1 (unreleased)
+5.1 (2023-10-05)
 ----------------
 
-- Add preliminary support for Python 3.12b4.
+- Add support for Python 3.12.
 
 
 5.0 (2023-03-24)

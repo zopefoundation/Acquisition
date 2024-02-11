@@ -1498,26 +1498,20 @@ class TestPickle(unittest.TestCase):
 
         # Check custom pickler with a persistent_id method matching
         # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
+        class Pickler(cPickle.Pickler):
+            def persistent_id(self, obj):
+                if not hasattr(obj, '_p_oid'):
+                    return None
+                klass = type(obj)
+                oid = obj._p_oid
+                if hasattr(klass, '__getnewargs__'):
+                    # Coverage, make sure it can be called
+                    assert klass.__getnewargs__(obj) == ()
+                    return oid
+                return 'class_and_oid', klass
 
         file = BytesIO()
-        pickler = cPickle.Pickler(file, 1)
-
-        def persistent_id(obj):
-            if not hasattr(obj, '_p_oid'):
-                return None
-            klass = type(obj)
-            oid = obj._p_oid
-            if hasattr(klass, '__getnewargs__'):
-                # Coverage, make sure it can be called
-                assert klass.__getnewargs__(obj) == ()
-                return oid
-            return 'class_and_oid', klass
-
-        try:
-            pickler.inst_persistent_id = persistent_id
-        except AttributeError:
-            pass
-        pickler.persistent_id = persistent_id
+        pickler = Pickler(file, 1)
         pickler.dump(w)
         state = file.getvalue()
         self.assertTrue(b'1234' in state)
@@ -1558,25 +1552,18 @@ class TestPickle(unittest.TestCase):
 
         # Check custom pickler with a persistent_id method matching
         # the semantics in ZODB.serialize.ObjectWriter.persistent_id:
+        class Pickler(cPickle.Pickler):
+            def persistent_id(self, obj):
+                if not hasattr(obj, '_p_oid'):
+                    return None
+                klass = type(obj)
+                oid = obj._p_oid
+                if hasattr(klass, '__getnewargs__'):
+                    return oid
+                return 'class_and_oid', klass
 
         file = BytesIO()
-        pickler = cPickle.Pickler(file, 1)
-
-        def persistent_id(obj):
-            if not hasattr(obj, '_p_oid'):
-                return None
-            klass = type(obj)
-            oid = obj._p_oid
-            if hasattr(klass, '__getnewargs__'):
-                return oid
-            return 'class_and_oid', klass
-
-        try:
-            pickler.inst_persistent_id = persistent_id
-        except AttributeError:
-            pass
-
-        pickler.persistent_id = persistent_id
+        pickler = Pickler(file, 1)
         pickler.dump(w)
         state = file.getvalue()
         self.assertTrue(b'1234' in state)

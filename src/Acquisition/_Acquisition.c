@@ -118,7 +118,7 @@ CallMethod(PyObject *self, PyObject *name, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    result = PyEval_CallObjectWithKeywords(callable, args, kwargs);
+    result = PyObject_Call(callable, args, kwargs);
 
     Py_DECREF(callable);
     return result;

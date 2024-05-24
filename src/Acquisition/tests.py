@@ -15,30 +15,27 @@
 """
 
 import gc
-import unittest
-import sys
 import operator
-from doctest import DocTestSuite, DocFileSuite
+import sys
+import unittest
+from doctest import DocFileSuite
+from doctest import DocTestSuite
 
 import ExtensionClass
 
 import Acquisition
-from Acquisition import (  # NOQA
-    aq_acquire,
-    aq_base,
-    aq_chain,
-    aq_get,
-    aq_inContextOf,
-    aq_inner,
-    aq_parent,
-    aq_self,
-    Explicit,
-    Implicit,
-    CAPI,
-    IS_PYPY,
-    IS_PURE,
-    _Wrapper,
-)
+from Acquisition import IS_PURE
+from Acquisition import IS_PYPY
+from Acquisition import Explicit
+from Acquisition import Implicit
+from Acquisition import aq_acquire
+from Acquisition import aq_base
+from Acquisition import aq_chain
+from Acquisition import aq_get
+from Acquisition import aq_inContextOf
+from Acquisition import aq_inner
+from Acquisition import aq_parent
+from Acquisition import aq_self
 
 
 def unicode(self):
@@ -48,6 +45,7 @@ def unicode(self):
         return type(self).__unicode__(self)
     except AttributeError:
         return type(self).__str__(self)
+
 
 def cmp(x, y):
     return 0 if x == y else -1 if x < y else 1
@@ -73,7 +71,7 @@ STR_WAS_CALLED = 'str was called'
 TRUE = 'True'
 
 
-class I(Implicit):
+class Im(Implicit):
 
     def __init__(self, id):
         self.id = id
@@ -264,14 +262,14 @@ class TestStory(unittest.TestCase):
         # in 'Implicit' objects to implicitly acquire
         # selected objects that smell like private objects.
 
-        class I(Implicit):
+        class Im(Implicit):
             __roles__ = Acquisition.Acquired
 
         c.x = C()
         with self.assertRaises(AttributeError):
             c.x.__roles__
 
-        c.x = I()
+        c.x = Im()
         self.assertEqual(c.x.__roles__, ('Manager', 'Member'))
 
         # Filtered Acquisition
@@ -408,7 +406,7 @@ class TestStory(unittest.TestCase):
 
 def test_unwrapped():
     """
-    >>> c = I('unwrapped')
+    >>> c = Im('unwrapped')
     >>> show(c)
     unwrapped
 
@@ -484,10 +482,10 @@ def test_unwrapped():
 
 def test_simple():
     """
-    >>> a = I('a')
+    >>> a = Im('a')
     >>> a.y = 42
-    >>> a.b = I('b')
-    >>> a.b.c = I('c')
+    >>> a.b = Im('b')
+    >>> a.b.c = Im('c')
     >>> show(a.b.c)
     c
     |
@@ -633,13 +631,13 @@ def test_simple():
 
 def test_muliple():
     r"""
-    >>> a = I('a')
+    >>> a = Im('a')
     >>> a.color = 'red'
-    >>> a.a1 = I('a1')
+    >>> a.a1 = Im('a1')
     >>> a.a1.color = 'green'
-    >>> a.a1.a11 = I('a11')
-    >>> a.a2 = I('a2')
-    >>> a.a2.a21 = I('a21')
+    >>> a.a1.a11 = Im('a11')
+    >>> a.a2 = Im('a2')
+    >>> a.a2.a21 = Im('a21')
     >>> show(a.a1.a11.a2.a21)
     a21
     |
@@ -885,13 +883,13 @@ def test_muliple():
 
 def test_pinball():
     r"""
-    >>> a = I('a')
-    >>> a.a1 = I('a1')
-    >>> a.a1.a11 = I('a11')
-    >>> a.a1.a12 = I('a12')
-    >>> a.a2 = I('a2')
-    >>> a.a2.a21 = I('a21')
-    >>> a.a2.a22 = I('a22')
+    >>> a = Im('a')
+    >>> a.a1 = Im('a1')
+    >>> a.a1.a11 = Im('a11')
+    >>> a.a1.a12 = Im('a12')
+    >>> a.a2 = Im('a2')
+    >>> a.a2.a21 = Im('a21')
+    >>> a.a2.a22 = Im('a22')
     >>> show(a.a1.a11.a1.a12.a2.a21.a2.a22)
     a22
     |
@@ -1142,11 +1140,11 @@ def test_explicit():
 
 def test_mixed_explicit_and_explicit():
     """
-    >>> a = I('a')
+    >>> a = Im('a')
     >>> a.y = 42
     >>> a.b = E('b')
     >>> a.b.z = 3
-    >>> a.b.c = I('c')
+    >>> a.b.c = Im('c')
     >>> show(a.b.c)
     c
     |
@@ -1287,13 +1285,13 @@ def test_mixed_explicit_and_explicit():
 class TestAqAlgorithm(unittest.TestCase):
 
     def test_AqAlg(self):
-        A = I('A')
-        B = I('B')
+        A = Im('A')
+        B = Im('B')
         A.B = B
         A.B.color = 'red'
-        C = I('C')
+        C = Im('C')
         A.C = C
-        D = I('D')
+        D = Im('D')
         A.C.D = D
 
         self.assertEqual(aq_chain(A), [A])
@@ -1348,6 +1346,7 @@ class TestCreatingWrappers(unittest.TestCase):
 
     def test_creating_wrappers_directly(self):
         from ExtensionClass import Base
+
         from Acquisition import ImplicitAcquisitionWrapper
 
         class B(Base):
@@ -1618,11 +1617,11 @@ class TestMixin(unittest.TestCase):
 
         # Even after mixing in that base, when we request such an object
         # from an implicit acquiring base, it doesn't come out wrapped:
-        class I(Implicit):
+        class Im(Implicit):
             pass
 
-        root = I()
-        root.a = I()
+        root = Im()
+        root.a = Im()
         root.a.b = Plain()
         self.assertIsInstance(root.a.b, Plain)
 
@@ -1650,11 +1649,11 @@ class TestMixin(unittest.TestCase):
         # Because it's not an acquiring object and doesn't provide `__of__`
         # or `__get__`, when accessed from implicit contexts it doesn't come
         # out wrapped:
-        class I(Implicit):
+        class Im(Implicit):
             pass
 
-        root = I()
-        root.a = I()
+        root = Im()
+        root.a = Im()
         root.a.b = MixedIn()
         self.assertIsInstance(root.a.b, MixedIn)
 
@@ -1686,7 +1685,7 @@ class TestGC(unittest.TestCase):
         # Test to make sure that EC instances participate in GC.
         from ExtensionClass import Base
 
-        for B in I, E:
+        for B in Im, E:
             counter = [0]
 
             class C1(B):
@@ -1709,7 +1708,7 @@ class TestGC(unittest.TestCase):
 
     def test_Wrapper_gc(self):
         # Test to make sure that EC instances participate in GC.
-        for B in I, E:
+        for B in Im, E:
             counter = [0]
 
             class C:
@@ -1731,7 +1730,6 @@ class TestGC(unittest.TestCase):
 def test_container_proxying():
     """Make sure that recent python container-related slots are proxied.
 
-    >>> import sys
     >>> class Impl(Implicit):
     ...     pass
 
@@ -2286,10 +2284,10 @@ class TestBugs(unittest.TestCase):
         import time
 
         class C(Implicit):
-            l = [0, 1, 2, 3, 4]
+            lst = [0, 1, 2, 3, 4]
 
             def __getitem__(self, i):
-                return self.l[i]
+                return self.lst[i]
 
         a = C()
         b = C().__of__(a)
@@ -2300,16 +2298,16 @@ class TestBugs(unittest.TestCase):
             raise
 
     def test_wrapped_attr(self):
-        top = I("")
-        top.f = I("f")
+        top = Im("")
+        top.f = Im("f")
         f = top.f
-        i = I("i")
+        i = Im("i")
         i.f = f
         self.assertIs(i.f.aq_self, f)
         self.assertIs(i.f.aq_parent, i)
 
     def test__cmp__(self):
-        class CmpOrdered(I):
+        class CmpOrdered(Im):
             def __cmp__(self, other):
                 return cmp(self.id, other.id)
         Ordered = CmpOrdered
@@ -2320,8 +2318,8 @@ class TestBugs(unittest.TestCase):
         self.assertEqual(o.o.__cmp__(Ordered("1")), -1)
 
     def test_bool(self):
-        top = I("")
-        top.o = I("")
+        top = Im("")
+        top.o = Im("")
         o = top.o
         self.assertTrue(bool(o.o))
 
@@ -2525,8 +2523,13 @@ class TestWrapper(unittest.TestCase):
     def test_aq_acquire_with_class_and_filter(self):
         class C:
             a = 1
-        allow = lambda *args: True
-        deny = lambda *args: False
+
+        def allow(*args):
+            return True
+
+        def deny(*args):
+            return False
+
         self.assertEqual(aq_acquire(C, "a", allow), C.a)
         with self.assertRaises(AttributeError):
             aq_acquire(C, "a", deny)
@@ -2548,8 +2551,8 @@ class TestOf(unittest.TestCase):
                     raise NotImplementedError('ack')
                 return X.inheritedAttribute('__of__')(self, parent)
 
-        a = I('a')
-        a.b = I('b')
+        a = Im('a')
+        a.b = Im('b')
         a.b.x = X('x')
         with self.assertRaises(NotImplementedError):
             aq_acquire(a.b, 'x',
@@ -2625,8 +2628,8 @@ class TestAQInContextOf(unittest.TestCase):
         self.assertEqual(b.c.d, b.c)
         self.assertEqual(b.c, c)
 
-        l = Location()
-        l.__parent__ = b.c
+        loc = Location()
+        loc.__parent__ = b.c
 
         def checkContext(self, o):
             # Python equivalent to aq_inContextOf
@@ -2646,17 +2649,17 @@ class TestAQInContextOf(unittest.TestCase):
         self.assertTrue(checkContext(b.c, b))
         self.assertFalse(checkContext(b.c, b.a))
 
-        self.assertTrue(checkContext(l, b))
-        self.assertTrue(checkContext(l, b.c))
-        self.assertFalse(checkContext(l, b.a))
+        self.assertTrue(checkContext(loc, b))
+        self.assertTrue(checkContext(loc, b.c))
+        self.assertFalse(checkContext(loc, b.a))
 
         # aq_inContextOf works the same way:
         self.assertTrue(aq_inContextOf(b.c, b))
         self.assertFalse(aq_inContextOf(b.c, b.a))
 
-        self.assertTrue(aq_inContextOf(l, b))
-        self.assertTrue(aq_inContextOf(l, b.c))
-        self.assertFalse(aq_inContextOf(l, b.a))
+        self.assertTrue(aq_inContextOf(loc, b))
+        self.assertTrue(aq_inContextOf(loc, b.c))
+        self.assertFalse(aq_inContextOf(loc, b.a))
 
         self.assertTrue(b.a.aq_inContextOf(b))
         self.assertTrue(b.c.aq_inContextOf(b))

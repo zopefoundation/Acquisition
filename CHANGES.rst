@@ -4,7 +4,7 @@ Changelog
 5.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Build Windows wheels on GHA.
 
 
 5.2 (2024-02-13)

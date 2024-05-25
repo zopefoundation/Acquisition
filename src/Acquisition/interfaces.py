@@ -73,7 +73,7 @@ class IAcquisitionWrapper(Interface):
 
           value
             the attribute value
-            
+
           *extra*
             ``aq_acquire`` parameter
 

@@ -4,16 +4,15 @@
 import copyreg
 import os
 import platform
-import sys
 import types
 import weakref
 
 import ExtensionClass
-
 from zope.interface import classImplements
 
 from .interfaces import IAcquirer
 from .interfaces import IAcquisitionWrapper
+
 
 IS_PYPY = getattr(platform, 'python_implementation', lambda: None)() == 'PyPy'
 IS_PURE = int(os.environ.get('PURE_PYTHON', '0'))
@@ -296,7 +295,7 @@ def _Wrapper_findattr(wrapper, name,
 def _Wrapper_fetch(self, name, default=AttributeError):
     try:
         return _Wrapper_findattr(self, name, None, None, None, True,
-                                     type(self)._IS_IMPLICIT, False, False)
+                                 type(self)._IS_IMPLICIT, False, False)
     except AttributeError:
         if type(default) is type and issubclass(default, Exception):
             raise default(name)
@@ -549,7 +548,6 @@ class _Wrapper(ExtensionClass.Base):
     def __bytes__(self):
         return _Wrapper_fetch(self, '__bytes__', TypeError)()
 
-
     __binary_special_methods__ = [
         # general numeric
         '__add__',
@@ -693,7 +691,7 @@ class _Wrapper(ExtensionClass.Base):
         setter(key, value)
 
     def __getitem__(self, key):
-        getter = _Wrapper_fetch(self , '__getitem__')
+        getter = _Wrapper_fetch(self, '__getitem__')
         return getter(key)
 
     def __call__(self, *args, **kwargs):
@@ -894,6 +892,7 @@ def aq_inContextOf(self, o, inner=True):
 if CAPI:  # pragma: no cover
     # Make sure we can import the C extension of our dependency.
     from ExtensionClass import _ExtensionClass  # NOQA
+
     from ._Acquisition import *  # NOQA
 
 classImplements(Explicit, IAcquirer)

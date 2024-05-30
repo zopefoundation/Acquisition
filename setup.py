@@ -39,7 +39,7 @@ else:
                   include_dirs=['include', 'src']),
     ]
 
-version = '5.3.dev0'
+version = '6.0.dev0'
 
 setup(
     name='Acquisition',
@@ -63,17 +63,17 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     ext_modules=ext_modules,
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     install_requires=[
         'ExtensionClass >= 4.2.0',
         'zope.interface',

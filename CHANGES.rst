@@ -1,8 +1,10 @@
 Changelog
 =========
 
-5.3 (unreleased)
+6.0 (unreleased)
 ----------------
+
+- Drop support for Python 3.7.
 
 - Build Windows wheels on GHA.
 

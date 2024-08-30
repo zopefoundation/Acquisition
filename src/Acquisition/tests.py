@@ -1513,8 +1513,8 @@ class TestPickle(unittest.TestCase):
         pickler = Pickler(file, 1)
         pickler.dump(w)
         state = file.getvalue()
-        self.assertTrue(b'1234' in state)
-        self.assertFalse(b'class_and_oid' in state)
+        self.assertIn(b'1234', state)
+        self.assertNotIn(b'class_and_oid', state)
 
     def test_cant_persist_acquisition_wrappers_newstyle(self):
         try:
@@ -1565,8 +1565,8 @@ class TestPickle(unittest.TestCase):
         pickler = Pickler(file, 1)
         pickler.dump(w)
         state = file.getvalue()
-        self.assertTrue(b'1234' in state)
-        self.assertFalse(b'class_and_oid' in state)
+        self.assertIn(b'1234', state)
+        self.assertNotIn(b'class_and_oid', state)
 
 
 class TestInterfaces(unittest.TestCase):
@@ -1703,7 +1703,7 @@ class TestGC(unittest.TestCase):
             del a
             removed = gc.collect()
             if self.SUPPORTS_GC_THRESHOLD:
-                self.assertTrue(removed > 0)
+                self.assertGreater(removed, 0)
             self.assertEqual(counter[0], 1)
 
     def test_Wrapper_gc(self):
@@ -1723,7 +1723,7 @@ class TestGC(unittest.TestCase):
             del a
             removed = gc.collect()
             if self.SUPPORTS_GC_THRESHOLD:
-                self.assertTrue(removed > 0)
+                self.assertGreater(removed, 0)
             self.assertEqual(counter[0], 1)
 
 
@@ -2214,9 +2214,9 @@ class TestParentCircles(unittest.TestCase):
         y = Impl2().__of__(x)
         x.__parent__ = y
 
-        self.assertTrue(x.__parent__.aq_base is y.aq_base)
-        self.assertTrue(aq_parent(x) is y)
-        self.assertTrue(x.__parent__.__parent__ is x)
+        self.assertIs(x.__parent__.aq_base, y.aq_base)
+        self.assertIs(aq_parent(x), y)
+        self.assertIs(x.__parent__.__parent__, x)
 
         self.assertEqual(x.hello, 'world')
         self.assertEqual(aq_acquire(x, 'hello'), 'world')
@@ -2388,8 +2388,8 @@ class TestWrapper(unittest.TestCase):
         del child_wrapper.__parent__
         del child_wrapper.aq_parent
 
-        self.assertIs(child_wrapper.__parent__, None)
-        self.assertIs(child_wrapper.aq_parent, None)
+        self.assertIsNone(child_wrapper.__parent__)
+        self.assertIsNone(child_wrapper.aq_parent)
         self.assertFalse(hasattr(child_wrapper, 'a'))
 
     def test__cmp__is_called_on_wrapped_object(self):
@@ -2768,7 +2768,7 @@ class TestCircles(unittest.TestCase):
         x.__parent__ = y
         y.__parent__ = x
 
-        self.assertTrue(x.__parent__.__parent__ is x)
+        self.assertIs(x.__parent__.__parent__, x)
         self.assertEqual(aq_acquire(x, 'hello'), 'world')
         self.assertEqual(aq_acquire(x, 'only'), 'here')
 
@@ -2794,11 +2794,13 @@ class TestCircles(unittest.TestCase):
         b.__parent__ = c
         c.__parent__ = a
 
-        self.assertTrue(a.__parent__.__parent__ is c)
-        self.assertTrue(
-            aq_base(a.__parent__.__parent__.__parent__) is a)
-        self.assertTrue(b.__parent__.__parent__ is a)
-        self.assertTrue(c.__parent__.__parent__ is b)
+        self.assertIs(a.__parent__.__parent__, c)
+        self.assertIs(
+            aq_base(a.__parent__.__parent__.__parent__),
+            a
+        )
+        self.assertIs(b.__parent__.__parent__, a)
+        self.assertIs(c.__parent__.__parent__, b)
 
         self.assertEqual(aq_acquire(a, 'hello'), 'world')
         self.assertEqual(aq_acquire(b, 'hello'), 'world')
@@ -2864,7 +2866,7 @@ class TestAcquire(unittest.TestCase):
     def test_w_unicode_attr_name(self):
         # See https://bugs.launchpad.net/acquisition/+bug/143358
         found = aq_acquire(self.a.b.c, AQ_PARENT)
-        self.assertTrue(found.aq_self is self.a.b.aq_self)
+        self.assertIs(found.aq_self, self.a.b.aq_self)
 
 
 class TestCooperativeBase(unittest.TestCase):
@@ -2928,7 +2930,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
         self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
 
         wrapper_dict = object.__getattribute__(wrapper, '__dict__')
-        self.assertFalse('_Persistent__flags' in wrapper_dict)
+        self.assertNotIn('_Persistent__flags', wrapper_dict)
 
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_type_with_slots_reused(self):
@@ -2946,7 +2948,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
         wrapper = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
         wrapper2 = Acquisition.ImplicitAcquisitionWrapper(wrapped, None)
 
-        self.assertTrue(type(wrapper) is type(wrapper2))
+        self.assertIs(type(wrapper), type(wrapper2))
 
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_object_getattribute_in_rebound_method_with_dict(self):
@@ -2970,7 +2972,7 @@ class TestImplicitWrappingGetattribute(unittest.TestCase):
         self.assertEqual(wrapped.get_flags(), wrapper.get_flags())
 
         wrapper_dict = object.__getattribute__(wrapper, '__dict__')
-        self.assertTrue('_Persistent__flags' in wrapper_dict)
+        self.assertIn('_Persistent__flags', wrapper_dict)
 
     @unittest.skipIf(CAPI, 'Pure Python test.')
     def test_object_getattribute_in_rebound_method_with_slots_and_dict(self):
@@ -3228,8 +3230,8 @@ class TestProxying(unittest.TestCase):
 
         base.derived = ReallyContains()
 
-        self.assertTrue(42 in base.derived)
-        self.assertFalse(24 in base.derived)
+        self.assertIn(42, base.derived)
+        self.assertNotIn(24, base.derived)
 
         # Iterable objects are NOT iterated
         # XXX: Is this a bug in the C code? Shouldn't it do
@@ -3344,7 +3346,7 @@ class TestProxying(unittest.TestCase):
         for name in rich_cmp_methods:
             getattr(operator, name)(base.derived, base.derived2)
 
-        self.assertFalse(base.derived2 == base.derived)
+        self.assertNotEqual(base.derived2, base.derived)
         self.assertEqual(base.derived, base.derived)
 
     def test_implicit_proxy_comporison(self):

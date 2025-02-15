@@ -5,6 +5,8 @@ Changelog
 ----------------
 
 
+- Add preliminary support for Python 3.14.
+
 - Drop support for Python 3.8.
 
 6.1 (2024-09-16)

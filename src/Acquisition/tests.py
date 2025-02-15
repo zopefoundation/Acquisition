@@ -1465,7 +1465,7 @@ class TestPickle(unittest.TestCase):
     def test_cant_persist_acquisition_wrappers_classic(self):
         try:
             import cPickle
-        except ImportError:
+        except ModuleNotFoundError:
             import pickle as cPickle
 
         class X:
@@ -1519,7 +1519,7 @@ class TestPickle(unittest.TestCase):
     def test_cant_persist_acquisition_wrappers_newstyle(self):
         try:
             import cPickle
-        except ImportError:
+        except ModuleNotFoundError:
             import pickle as cPickle
 
         class X:
@@ -3405,7 +3405,7 @@ class TestCompilation(unittest.TestCase):
         try:
             from Acquisition import _Acquisition
             cExplicit = _Acquisition.Explicit
-        except ImportError:
+        except ModuleNotFoundError:
             cExplicit = None  # PyPy never has a C module.
         if CAPI:  # pragma: no cover
             self.assertTrue(hasattr(_Acquisition, 'AcquisitionCAPI'))

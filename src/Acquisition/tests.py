@@ -3405,7 +3405,7 @@ class TestCompilation(unittest.TestCase):
         try:
             from Acquisition import _Acquisition
             cExplicit = _Acquisition.Explicit
-        except ImportError:
+        except ImportError:  # cannot use ModuleNotFoundError here as of PyPy
             cExplicit = None  # PyPy never has a C module.
         if CAPI:  # pragma: no cover
             self.assertTrue(hasattr(_Acquisition, 'AcquisitionCAPI'))

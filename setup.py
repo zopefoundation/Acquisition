@@ -17,15 +17,8 @@ import os
 import platform
 
 from setuptools import Extension
-from setuptools import find_packages
 from setuptools import setup
 
-
-with open('README.rst') as f:
-    README = f.read()
-
-with open('CHANGES.rst') as f:
-    CHANGES = f.read()
 
 # PyPy won't build the extension.
 py_impl = getattr(platform, 'python_implementation', lambda: None)
@@ -39,47 +32,5 @@ else:
                   include_dirs=['include', 'src']),
     ]
 
-version = '6.2.dev0'
 
-setup(
-    name='Acquisition',
-    version=version,
-    url='https://github.com/zopefoundation/Acquisition',
-    license='ZPL-2.1',
-    description="Acquisition is a mechanism that allows objects to obtain "
-    "attributes from the containment hierarchy they're in.",
-    author='Zope Foundation and Contributors',
-    author_email='zope-dev@zope.dev',
-    long_description='\n\n'.join([README, CHANGES]),
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    classifiers=[
-        "Development Status :: 6 - Mature",
-        "Environment :: Web Environment",
-        "Framework :: Zope :: 2",
-        "Framework :: Zope :: 4",
-        "Framework :: Zope :: 5",
-        "License :: OSI Approved :: Zope Public License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
-    ],
-    ext_modules=ext_modules,
-    python_requires='>=3.9',
-    install_requires=[
-        'ExtensionClass >= 4.2.0',
-        'zope.interface',
-    ],
-    extras_require={
-        'test': ['zope.testrunner'],
-    },
-    include_package_data=True,
-    zip_safe=False,
-)
+setup(ext_modules=ext_modules)

@@ -1727,250 +1727,157 @@ class TestGC(unittest.TestCase):
             self.assertEqual(counter[0], 1)
 
 
-def test_container_proxying():
-    """Make sure that recent python container-related slots are proxied.
+class TestContainerProxying(unittest.TestCase):
+    """Make sure that recent python container-related slots are proxied."""
 
-    >>> class Impl(Implicit):
-    ...     pass
+    def _make_container_class(self, base):
+        class C(base):
+            def __getitem__(self, key):
+                if isinstance(key, slice):
+                    return (key.start, key.stop, key.step)
+                if key == 4:
+                    raise IndexError
+                return key
 
-    >>> class C(Implicit):
-    ...     def __getitem__(self, key):
-    ...         if isinstance(key, slice):
-    ...             print('slicing...')
-    ...             return (key.start, key.stop, key.step)
-    ...         print('getitem', key)
-    ...         if key == 4:
-    ...             raise IndexError
-    ...         return key
-    ...     def __contains__(self, key):
-    ...         print('contains', repr(key))
-    ...         return key == 5
-    ...     def __iter__(self):
-    ...         print('iterating...')
-    ...         return iter((42,))
-    ...     def __getslice__(self, start, end):
-    ...         print('slicing...')
-    ...         return (start, end, None)
+            def __contains__(self, key):
+                return key == 5
 
-    The naked class behaves like this:
+            def __iter__(self):
+                return iter((42,))
 
-    >>> c = C()
-    >>> 3 in c
-    contains 3
-    False
-    >>> 5 in c
-    contains 5
-    True
-    >>> list(c)
-    iterating...
-    [42]
-    >>> c[5:10]
-    slicing...
-    (5, 10, None)
-    >>> c[5:] == (5, None, None)
-    slicing...
-    True
-    >>> c[:10] == (None, 10, None)
-    slicing...
-    True
-    >>> c[5:10:5] == (5, 10, 5)
-    slicing...
-    True
-    >>> c[::] == (None, None, None)
-    slicing...
-    True
+        return C
 
-    Let's put c in the context of i:
+    def _check_naked_container(self, C):
+        c = C()
+        self.assertNotIn(3, c)
+        self.assertIn(5, c)
+        self.assertEqual(list(c), [42])
+        self.assertEqual(c[5:10], (5, 10, None))
+        self.assertEqual(c[5:], (5, None, None))
+        self.assertEqual(c[:10], (None, 10, None))
+        self.assertEqual(c[5:10:5], (5, 10, 5))
+        self.assertEqual(c[::], (None, None, None))
 
-    >>> i = Impl()
-    >>> i.c = c
+    def _check_wrapped_container(self, ImplClass, C):
+        c = C()
+        i = ImplClass()
+        i.c = c
+        wrapped = i.c
 
-    Now check that __contains__ is properly used:
+        self.assertNotIn(3, wrapped)
+        self.assertIn(5, wrapped)
+        self.assertEqual(list(wrapped), [42])
+        self.assertEqual(wrapped[5:10], (5, 10, None))
+        self.assertEqual(wrapped[5:], (5, None, None))
+        self.assertEqual(wrapped[:10], (None, 10, None))
+        self.assertEqual(wrapped[5:10:5], (5, 10, 5))
+        self.assertEqual(wrapped[::], (None, None, None))
 
-    >>> 3 in i.c # c.__of__(i)
-    contains 3
-    False
-    >>> 5 in i.c
-    contains 5
-    True
-    >>> list(i.c)
-    iterating...
-    [42]
-    >>> i.c[5:10]
-    slicing...
-    (5, 10, None)
-    >>> i.c[5:] == (5, None, None)
-    slicing...
-    True
-    >>> i.c[:10] == (None, 10, None)
-    slicing...
-    True
-    >>> i.c[5:10:5] == (5, 10, 5)
-    slicing...
-    True
-    >>> i.c[::] == (None, None, None)
-    slicing...
-    True
+    def test_implicit_naked(self):
+        C = self._make_container_class(Implicit)
+        self._check_naked_container(C)
 
-    Let's let's test the same again with an explicit wrapper:
+    def test_implicit_wrapped(self):
+        class Impl(Implicit):
+            pass
 
-    >>> class Impl(Explicit):
-    ...     pass
+        C = self._make_container_class(Implicit)
+        self._check_wrapped_container(Impl, C)
 
-    >>> class C(Explicit):
-    ...     def __getitem__(self, key):
-    ...         if isinstance(key, slice):
-    ...             print('slicing...')
-    ...             return (key.start, key.stop, key.step)
-    ...         print('getitem', key)
-    ...         if key == 4:
-    ...             raise IndexError
-    ...         return key
-    ...     def __contains__(self, key):
-    ...         print('contains', repr(key))
-    ...         return key == 5
-    ...     def __iter__(self):
-    ...         print('iterating...')
-    ...         return iter((42,))
-    ...     def __getslice__(self, start, end):
-    ...         print('slicing...')
-    ...         return (start, end, None)
+    def test_explicit_naked(self):
+        C = self._make_container_class(Explicit)
+        self._check_naked_container(C)
 
-    The naked class behaves like this:
+    def test_explicit_wrapped(self):
+        class Impl(Explicit):
+            pass
 
-    >>> c = C()
-    >>> 3 in c
-    contains 3
-    False
-    >>> 5 in c
-    contains 5
-    True
-    >>> list(c)
-    iterating...
-    [42]
-    >>> c[5:10]
-    slicing...
-    (5, 10, None)
-    >>> c[5:] == (5, None, None)
-    slicing...
-    True
-    >>> c[:10] == (None, 10, None)
-    slicing...
-    True
-    >>> c[5:10:5] == (5, 10, 5)
-    slicing...
-    True
-    >>> c[::] == (None, None, None)
-    slicing...
-    True
+        C = self._make_container_class(Explicit)
+        self._check_wrapped_container(Impl, C)
 
-    Let's put c in the context of i:
+    def test_iter_fallback_to_getitem(self):
+        # The wrapper's __iter__ proxy falls back to using the object's
+        # __getitem__ if it has no __iter__.
+        # See https://bugs.launchpad.net/zope2/+bug/360761
+        class C(Implicit):
+            _list = [1, 2, 3]
 
-    >>> i = Impl()
-    >>> i.c = c
+            def __getitem__(self, i):
+                return self._list[i]
 
-    Now check that __contains__ is properly used:
+        c1 = C()
+        self.assertIsNotNone(iter(c1))
+        self.assertEqual(list(c1), [1, 2, 3])
 
-    >>> 3 in i.c # c.__of__(i)
-    contains 3
-    False
-    >>> 5 in i.c
-    contains 5
-    True
-    >>> list(i.c)
-    iterating...
-    [42]
-    >>> i.c[5:10]
-    slicing...
-    (5, 10, None)
-    >>> i.c[5:] == (5, None, None)
-    slicing...
-    True
-    >>> i.c[:10] == (None, 10, None)
-    slicing...
-    True
-    >>> i.c[5:10:5] == (5, 10, 5)
-    slicing...
-    True
-    >>> i.c[::] == (None, None, None)
-    slicing...
-    True
+        c2 = C().__of__(c1)
+        self.assertIsNotNone(iter(c2))
+        self.assertEqual(list(c2), [1, 2, 3])
 
-    Next let's check that the wrapper's __iter__ proxy falls back
-    to using the object's __getitem__ if it has no __iter__.  See
-    https://bugs.launchpad.net/zope2/+bug/360761 .
+    def test_iter_passes_wrapped_self(self):
+        # The __iter__ proxy should pass the wrapped object as self to
+        # the __iter__ of objects defining __iter__.
+        class Impl(Implicit):
+            pass
 
-    >>> class C(Implicit):
-    ...     l=[1,2,3]
-    ...     def __getitem__(self, i):
-    ...         return self.l[i]
+        class C(Implicit):
+            def __iter__(self):
+                for i in range(5):
+                    yield i, self.aq_parent.name
 
-    >>> c1 = C()
-    >>> type(iter(c1)) #doctest: +ELLIPSIS
-    <... '...iterator'>
-    >>> list(c1)
-    [1, 2, 3]
+        c = C()
+        i = Impl()
+        i.c = c
+        i.name = 'i'
+        self.assertEqual(
+            list(i.c),
+            [(0, 'i'), (1, 'i'), (2, 'i'), (3, 'i'), (4, 'i')],
+        )
 
-    >>> c2 = C().__of__(c1)
-    >>> type(iter(c2)) #doctest: +ELLIPSIS
-    <... '...iterator'>
-    >>> list(c2)
-    [1, 2, 3]
+    def test_getitem_passes_wrapped_self(self):
+        # The __iter__ proxy should pass the wrapped object as self to
+        # the __getitem__ of objects without an __iter__.
+        class Impl(Implicit):
+            pass
 
-    The __iter__proxy should also pass the wrapped object as self to
-    the __iter__ of objects defining __iter__:
+        class C(Implicit):
+            def __getitem__(self, i):
+                return self.aq_parent.lst[i]
 
-    >>> class C(Implicit):
-    ...     def __iter__(self):
-    ...         print('iterating...')
-    ...         for i in range(5):
-    ...             yield i, self.aq_parent.name
-    >>> c = C()
-    >>> i = Impl()
-    >>> i.c = c
-    >>> i.name = 'i'
-    >>> list(i.c)
-    iterating...
-    [(0, 'i'), (1, 'i'), (2, 'i'), (3, 'i'), (4, 'i')]
+        c = C()
+        i = Impl()
+        i.c = c
+        i.lst = range(5)
+        self.assertEqual(list(i.c), [0, 1, 2, 3, 4])
 
-    And it should pass the wrapped object as self to
-    the __getitem__ of objects without an __iter__:
+    def test_iter_error_no_iter(self):
+        # Objects with no __iter__ and no __getitem__ should raise TypeError.
+        class Impl(Implicit):
+            pass
 
-    >>> class C(Implicit):
-    ...     def __getitem__(self, i):
-    ...         return self.aq_parent.l[i]
-    >>> c = C()
-    >>> i = Impl()
-    >>> i.c = c
-    >>> i.l = range(5)
-    >>> list(i.c)
-    [0, 1, 2, 3, 4]
+        class C(Implicit):
+            pass
 
-    Finally let's make sure errors are still correctly raised after having
-    to use a modified version of `PyObject_GetIter` for iterator support:
+        c = C()
+        i = Impl()
+        i.c = c
+        with self.assertRaises(TypeError):
+            list(i.c)
 
-    >>> class C(Implicit):
-    ...     pass
-    >>> c = C()
-    >>> i = Impl()
-    >>> i.c = c
-    >>> list(i.c) #doctest: +ELLIPSIS
-    Traceback (most recent call last):
-      ...
-    TypeError: ...iter...
+    def test_iter_error_non_iterator_return(self):
+        # __iter__ returning a non-iterator should raise TypeError.
+        class Impl(Implicit):
+            pass
 
-    >>> class C(Implicit):
-    ...     def __iter__(self):
-    ...         return [42]
-    >>> c = C()
-    >>> i = Impl()
-    >>> i.c = c
-    >>> list(i.c) #doctest: +ELLIPSIS
-    Traceback (most recent call last):
-      ...
-    TypeError: iter() returned non-iterator...
+        class C(Implicit):
+            def __iter__(self):
+                return [42]
 
-    """
+        c = C()
+        i = Impl()
+        i.c = c
+        with self.assertRaises(TypeError) as cm:
+            list(i.c)
+        self.assertIn('iter', str(cm.exception).lower())
 
 
 class TestAqParentParentInteraction(unittest.TestCase):

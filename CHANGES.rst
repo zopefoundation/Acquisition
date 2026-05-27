@@ -4,6 +4,8 @@ Change log
 6.3 (unreleased)
 ----------------
 
+- Add preliminary support for Python 3.15 as of 3.15b1.
+
 - Add support for automatically building and publishing Windows/ARM64 wheels.
 
 - Add support for automatically building and publishing source distributions.

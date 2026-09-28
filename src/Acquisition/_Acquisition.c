@@ -895,7 +895,7 @@ Wrapper_compare(Wrapper *self, PyObject *w)
 
         if (obj == wobj) {
             return 0;
-        } else if (obj < w) {
+        } else if (obj < wobj) {
             return -1;
         } else {
             return 1;

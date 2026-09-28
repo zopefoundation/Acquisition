@@ -3259,6 +3259,32 @@ class TestProxying(unittest.TestCase):
     def test_implicit_proxy_comporison(self):
         self._check_comparison()
 
+    def _check_fallback_ordering_is_antisymmetric(self, base_class=Implicit):
+        # When the wrapped objects implement none of the comparison
+        # methods, wrappers fall back to ordering by the identity of
+        # the underlying (unwrapped) objects. That fallback must still
+        # behave like a proper order: if `a < b` then `b < a` must be
+        # false, no matter which of the two wrappers is used to ask.
+        class B(Implicit):
+            pass
+
+        class Bare(base_class):
+            pass
+
+        base = B()
+        base.derived = Bare()
+        base.derived2 = Bare()
+
+        expected = id(aq_base(base.derived)) < id(aq_base(base.derived2))
+        self.assertEqual(base.derived < base.derived2, expected)
+        self.assertEqual(base.derived2 < base.derived, not expected)
+
+    def test_implicit_proxy_fallback_ordering_is_antisymmetric(self):
+        self._check_fallback_ordering_is_antisymmetric()
+
+    def test_explicit_proxy_fallback_ordering_is_antisymmetric(self):
+        self._check_fallback_ordering_is_antisymmetric(base_class=Explicit)
+
     def test_explicit_proxy_comporison(self):
         self._check_comparison(base_class=Explicit)
 

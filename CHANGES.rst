@@ -4,6 +4,12 @@ Change log
 6.4 (unreleased)
 ----------------
 
+- Fix a bug in the C implementation where comparing two acquisition
+  wrappers whose underlying objects define neither ``__cmp__`` nor a rich
+  comparison method compared the address of one unwrapped object against
+  the address of the *other's wrapper* instead of its unwrapped object.
+  This made the fallback ordering inconsistent, so ``a < b`` and ``b < a``
+  could both be true for the same pair of wrapped objects.
 
 6.3 (2026-08-20)
 ----------------

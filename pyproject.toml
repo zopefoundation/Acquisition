@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Acquisition"
-version = "6.4.dev0"
+version = "6.4"
 description = "Acquisition is a mechanism that allows objects to obtain attributes from the containment hierarchy they're in."
 dynamic = ["readme"]
 requires-python = ">=3.11"

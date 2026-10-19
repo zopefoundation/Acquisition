@@ -485,8 +485,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only publish on tag pushes
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    # Wait for both build jobs to complete
-    needs: [build-package, manylinux]
+    # Only publish if the packages were built and the tests passed
+    needs: [build-package, manylinux, test, release-check]
     environment:
       name: pypi
       url: https://pypi.org/p/Acquisition
